@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>宏國地政|易丞地政 - 員工權益指揮艙 (Live)</title>
+    <title>宏國地政|易丞地政 - 智慧指揮艙 (Ultimate)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -16,6 +16,8 @@
         .input-modern { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 0.5rem; transition: all 0.2s; }
         .input-modern:focus { background: #fff; border-color: #2563eb; outline: none; }
         .hidden-section { display: none; }
+        
+        /* 狀態標籤 */
         .status-badge { padding: 2px 8px; border-radius: 9999px; font-size: 0.75rem; font-weight: bold; }
         .status-pending { background-color: #fef3c7; color: #d97706; }
         .status-approved { background-color: #dcfce7; color: #166534; }
@@ -23,11 +25,15 @@
         .fade-in-up { animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(20px); }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* 新增：薪資影響提示卡樣式 */
-        .impact-card { transition: all 0.3s ease; border-left: 4px solid; }
+        /* 薪資影響提示卡 (關鍵樣式) */
+        .impact-card { transition: all 0.3s ease; border-left: 4px solid; background-color: white; border: 1px solid #e2e8f0; border-left-width: 4px; }
         .impact-full { border-left-color: #22c55e; background-color: #f0fdf4; } /* 全薪 (綠) */
         .impact-half { border-left-color: #f97316; background-color: #fff7ed; } /* 半薪 (橘) */
         .impact-none { border-left-color: #ef4444; background-color: #fef2f2; } /* 無薪 (紅) */
+
+        /* 打卡按鈕特效 */
+        .btn-punch { transition: transform 0.1s; }
+        .btn-punch:active { transform: scale(0.95); }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -38,7 +44,7 @@
                 <div class="w-10 h-10 bg-white text-blue-900 rounded-lg flex items-center justify-center font-bold text-lg serif shadow-lg">宏</div>
                 <div>
                     <h1 class="text-base md:text-lg font-bold tracking-wider serif">宏國地政 | 易丞地政</h1>
-                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">Realtime System</p>
+                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">HR & Attendance System</p>
                 </div>
             </div>
             <div class="flex bg-blue-900/50 rounded-full p-1">
@@ -74,6 +80,26 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-2 space-y-6">
+                    <div class="glass-panel p-6 border-l-4 border-blue-600 fade-in-up">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-location-dot text-blue-600"></i> 定位打卡
+                            </h3>
+                            <span class="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded" id="clockTime">--:--:--</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button onclick="handlePunch('上班')" class="btn-punch flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl">
+                                <i class="fa-solid fa-sun text-2xl mb-2"></i>
+                                <span class="font-bold">上班打卡</span>
+                            </button>
+                            <button onclick="handlePunch('下班')" class="btn-punch flex flex-col items-center justify-center p-4 bg-gradient-to-br from-orange-400 to-red-500 text-white rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-xl">
+                                <i class="fa-solid fa-moon text-2xl mb-2"></i>
+                                <span class="font-bold">下班打卡</span>
+                            </button>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-2 text-center"><i class="fa-solid fa-circle-info"></i> 點擊後系統將存取您的 GPS 位置紀錄</p>
+                    </div>
+
                     <div class="glass-panel p-6 flex flex-col sm:flex-row justify-between items-center bg-gradient-to-r from-white to-blue-50/30 fade-in-up">
                         <div class="flex items-center gap-4 w-full sm:w-auto">
                             <div class="w-14 h-14 bg-slate-800 text-white rounded-full flex items-center justify-center text-xl shadow-lg"><span id="dashboardAvatar">👤</span></div>
@@ -81,12 +107,12 @@
                                 <h2 id="dashboardName" class="text-xl font-bold text-slate-800">...</h2>
                                 <div class="text-slate-500 text-xs mt-1 flex gap-2">
                                     <span class="bg-slate-100 px-2 py-0.5 rounded">年資 <span id="dashboardYears">--</span> 年</span>
-                                    <span class="bg-slate-100 px-2 py-0.5 rounded">額度 <span id="dashboardTotal">--</span> 天</span>
+                                    <span class="bg-slate-100 px-2 py-0.5 rounded">特休額度 <span id="dashboardTotal">--</span> 天</span>
                                 </div>
                             </div>
                         </div>
                         <div class="mt-4 sm:mt-0 text-center w-full sm:w-auto bg-white border border-blue-100 px-6 py-3 rounded-xl shadow-sm">
-                            <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">目前剩餘 (Live)</p>
+                            <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">特休剩餘</p>
                             <div id="dashboardRemaining" class="text-3xl font-black text-blue-600 font-mono">0.0</div>
                         </div>
                     </div>
@@ -96,7 +122,7 @@
                         <form onsubmit="handleLeaveSubmit(event)" class="space-y-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-xs font-bold text-slate-500 mb-1">假別 (自動顯示薪資影響)</label>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">假別</label>
                                     <select id="leaveType" class="w-full p-2.5 input-modern" onchange="updateImpactInfo()">
                                         <option value="特休">特休 (Annual Leave)</option>
                                         <option value="病假">病假 (Sick Leave)</option>
@@ -111,11 +137,11 @@
                                 <div class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">天數</label><input type="number" id="leaveDays" min="0.5" step="0.5" value="1" class="w-full p-2.5 input-modern" oninput="updateImpactInfo()"></div>
                                 <div class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">事由</label><input type="text" id="leaveReason" class="w-full p-2.5 input-modern" placeholder="例：處理私人事務"></div>
                             </div>
-
-                            <div id="impactCard" class="impact-card impact-full p-4 rounded-lg flex justify-between items-center">
+                            
+                            <div id="impactCard" class="impact-card impact-full p-4 rounded-lg flex justify-between items-center mt-2">
                                 <div>
                                     <div class="font-bold text-sm text-slate-700" id="impactTitle">全薪 (工資照給)</div>
-                                    <div class="text-xs text-slate-500" id="impactDesc">此假別依勞基法規定不扣發薪資，僅扣除特休天數。</div>
+                                    <div class="text-xs text-slate-500" id="impactDesc">依勞基法規定，此假別期間工資照給，不扣發薪資。</div>
                                 </div>
                                 <div class="text-right">
                                     <div class="text-xs text-slate-400">預估扣薪</div>
@@ -128,33 +154,30 @@
                     </div>
 
                     <div class="glass-panel p-6 fade-in-up">
-                        <h3 class="font-bold text-slate-700 mb-4 text-sm uppercase tracking-wider">最近申請紀錄</h3>
+                        <h3 class="font-bold text-slate-700 mb-4 text-sm uppercase tracking-wider">最近請假紀錄</h3>
                         <div class="overflow-x-auto"><table class="w-full text-sm text-left"><tbody id="myRequestsTable" class="divide-y divide-slate-100"></tbody></table></div>
                     </div>
                 </div>
 
                 <div class="space-y-6 lg:col-span-1">
                     <div class="glass-panel p-6 bg-slate-900 text-white fade-in-up">
-                        <div class="flex justify-between items-center mb-4"><h3 class="font-bold flex items-center gap-2"><i class="fa-solid fa-calculator text-brand-gold"></i> 月薪與加班設定</h3></div>
+                        <div class="flex justify-between items-center mb-4"><h3 class="font-bold flex items-center gap-2"><i class="fa-solid fa-calculator text-brand-gold"></i> 薪資設定</h3></div>
                         <div class="space-y-5">
                             <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
                                 <label class="block text-xs text-slate-400 mb-1">您的月薪 (用於計算扣薪/加班費)</label>
                                 <input type="number" id="monthlySalary" value="30000" class="bg-transparent text-white font-bold text-lg w-full outline-none" oninput="calculateOvertime(); updateImpactInfo();">
-                                <div class="text-right text-[10px] text-slate-400 mt-1">時薪約 $<span id="displayHourlyRate">125</span> / 日薪約 $<span id="displayDailyRate">1000</span></div>
+                                <div class="text-right text-[10px] text-slate-400 mt-1">時薪約 $<span id="displayHourlyRate">125</span></div>
                             </div>
                             <div><div class="flex justify-between text-xs mb-1 text-slate-400"><span>平日加班 (前2hr)</span><span class="text-white font-bold"><span id="calcHours1Val">0</span> hr</span></div><input type="range" id="calcHours1" min="0" max="10" step="0.5" value="0" oninput="calculateOvertime()"></div>
                             <div><div class="flex justify-between text-xs mb-1 text-slate-400"><span>平日加班 (第3hr起)</span><span class="text-white font-bold"><span id="calcHours2Val">0</span> hr</span></div><input type="range" id="calcHours2" min="0" max="10" step="0.5" value="0" oninput="calculateOvertime()"></div>
                         </div>
                         <div class="mt-6 pt-4 border-t border-slate-700 text-center"><p class="text-xs text-slate-400 uppercase tracking-widest">預估加班費</p><div class="text-3xl font-bold text-brand-gold mt-1">$<span id="calcTotal">0</span></div></div>
                     </div>
-
+                    
                     <div class="glass-panel p-5 text-sm space-y-3 fade-in-up">
                         <h4 class="font-bold text-slate-700 border-b pb-2">假別權益速查 (勞基法)</h4>
                         <div class="flex justify-between items-center"><span class="text-slate-500"><i class="fa-solid fa-plane-departure text-blue-400 w-5"></i>特休</span><span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded font-bold">全薪 (工資照給)</span></div>
-                        <div class="flex justify-between items-center"><span class="text-slate-500"><i class="fa-solid fa-ring text-purple-400 w-5"></i>婚假</span><span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded font-bold">全薪 (8天)</span></div>
-                        <div class="flex justify-between items-center"><span class="text-slate-500"><i class="fa-solid fa-ribbon text-slate-400 w-5"></i>喪假</span><span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded font-bold">全薪 (依親等)</span></div>
                         <div class="flex justify-between items-center"><span class="text-slate-500"><i class="fa-solid fa-notes-medical text-orange-400 w-5"></i>病假</span><span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded font-bold">半薪 (30天內)</span></div>
-                        <div class="flex justify-between items-center"><span class="text-slate-500"><i class="fa-solid fa-person-dress text-pink-400 w-5"></i>生理假</span><span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded font-bold">半薪 (1日/月)</span></div>
                         <div class="flex justify-between items-center"><span class="text-slate-500"><i class="fa-solid fa-briefcase text-red-400 w-5"></i>事假</span><span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded font-bold">無薪 (扣全額)</span></div>
                     </div>
                 </div>
@@ -163,6 +186,31 @@
 
         <section id="adminView" class="hidden-section w-full fade-in-up">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <div class="lg:col-span-3 glass-panel p-6 border-t-4 border-slate-700">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-clock-rotate-left text-slate-700"></i> 考勤打卡紀錄
+                        </h2>
+                        <button onclick="exportAttendance()" class="bg-green-600 hover:bg-green-500 text-white text-xs px-3 py-2 rounded flex items-center gap-1 shadow">
+                            <i class="fa-solid fa-file-excel"></i> 匯出 Excel
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto max-h-60 overflow-y-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-100 text-slate-600 sticky top-0">
+                                <tr>
+                                    <th class="p-2">姓名</th>
+                                    <th class="p-2">類型</th>
+                                    <th class="p-2">日期/時間</th>
+                                    <th class="p-2">地點</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <div class="lg:col-span-2 glass-panel p-6 border-t-4 border-blue-600">
                     <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-clipboard-check text-blue-600"></i> 請假審核中心 <span id="pendingCountBadge" class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full hidden">0</span></h2>
                     <div class="overflow-x-auto"><table class="w-full text-left text-sm"><tbody id="approvalTableBody" class="divide-y divide-slate-100"></tbody></table></div>
@@ -193,7 +241,7 @@
         import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics.js";
 
-        // Firebase Config
+        // Config
         const firebaseConfig = {
             apiKey: "AIzaSyCcSH0HQutt6rYcFWjCKOpTSWkBDeinyvw",
             authDomain: "homego-system.firebaseapp.com",
@@ -212,22 +260,31 @@
 
         let employees = {};
         let requests = {};
+        let attendance = {};
         let bulletin = { title: "歡迎", content: "資料讀取中...", date: "" };
         let currentUserId = null;
+
+        // 時鐘
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clockTime').innerText = now.toLocaleTimeString();
+        }, 1000);
 
         // --- Firebase Listener ---
         onValue(ref(db), (snapshot) => {
             const data = snapshot.val() || {};
             employees = data.employees || {};
             requests = data.requests || {};
+            attendance = data.attendance || {};
             bulletin = data.bulletin || { title: "尚無公告", content: "", date: "" };
             
-            console.log("🔥 Firebase Data Synced");
+            console.log("🔥 Data Synced");
             updateEmpSelect();
             renderBulletin();
             if (currentUserId) loadEmployeeDashboard();
             renderAdminTable();
             renderApprovalQueue();
+            renderAttendanceLog();
             
             const select = document.getElementById('empSelect');
             select.disabled = false;
@@ -237,7 +294,7 @@
             }
         });
 
-        // --- Functions ---
+        // --- View Logic ---
         window.switchView = (view) => {
             document.getElementById('employeeView').classList.add('hidden-section');
             document.getElementById('adminView').classList.add('hidden-section');
@@ -286,13 +343,102 @@
                 document.getElementById('loginSection').classList.add('hidden-section');
                 document.getElementById('employeeView').classList.remove('hidden-section');
                 
-                // 初始化影響提示
-                window.updateImpactInfo();
+                // 確保登入後立即更新薪資與影響
                 window.calculateOvertime();
+                window.updateImpactInfo();
             }
         };
 
-        // --- 新增：薪資影響計算邏輯 ---
+        // --- GPS Punch In/Out ---
+        window.handlePunch = (type) => {
+            if (!currentUserId) return;
+            const emp = employees[currentUserId];
+            
+            if (!navigator.geolocation) {
+                alert("❌ 您的瀏覽器不支援地理定位");
+                return;
+            }
+
+            alert(`📍 正在讀取 GPS 位置，請稍候...`);
+
+            navigator.geolocation.getCurrentPosition((position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const now = new Date();
+                const timestamp = now.getTime();
+                const dateStr = now.toLocaleDateString();
+                const timeStr = now.toLocaleTimeString();
+
+                const newRef = push(ref(db, 'attendance'));
+                set(newRef, {
+                    id: newRef.key,
+                    empId: currentUserId,
+                    empName: emp.name,
+                    type: type, 
+                    timestamp: timestamp,
+                    dateStr: dateStr,
+                    timeStr: timeStr,
+                    location: `${lat}, ${lng}`,
+                    mapLink: `https://www.google.com/maps?q=${lat},${lng}`
+                });
+
+                alert(`✅ ${type}打卡成功！\n時間：${timeStr}\n位置已紀錄。`);
+
+            }, (error) => {
+                alert(`❌ 打卡失敗：請允許瀏覽器讀取位置權限。\n(錯誤代碼: ${error.code})`);
+            });
+        };
+
+        // --- Admin: Render Attendance Log ---
+        function renderAttendanceLog() {
+            const tbody = document.getElementById('attendanceTableBody');
+            tbody.innerHTML = '';
+            const logs = Object.values(attendance).sort((a,b) => b.timestamp - a.timestamp);
+            
+            logs.forEach(log => {
+                const colorClass = log.type === '上班' ? 'text-blue-600' : 'text-orange-600';
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 border-b">
+                        <td class="p-2 font-bold text-slate-700">${log.empName}</td>
+                        <td class="p-2 font-bold ${colorClass}">${log.type}</td>
+                        <td class="p-2 text-slate-500">${log.dateStr}<br>${log.timeStr}</td>
+                        <td class="p-2">
+                            <a href="${log.mapLink}" target="_blank" class="text-blue-500 hover:text-blue-700 underline text-xs">
+                                <i class="fa-solid fa-map-location-dot"></i> 查看
+                            </a>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        window.exportAttendance = () => {
+            const logs = Object.values(attendance).sort((a,b) => b.timestamp - a.timestamp);
+            if (logs.length === 0) return alert("尚無打卡紀錄可匯出");
+
+            let csvContent = "\uFEFF姓名,類型,日期,時間,Google地圖連結\n";
+            logs.forEach(log => {
+                const row = [
+                    log.empName,
+                    log.type,
+                    log.dateStr,
+                    log.timeStr,
+                    log.mapLink
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `考勤紀錄_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        // --- Leave Impact Logic (勞基法權益核心) ---
         window.updateImpactInfo = () => {
             const type = document.getElementById('leaveType').value;
             const days = parseFloat(document.getElementById('leaveDays').value) || 0;
@@ -304,23 +450,18 @@
             const desc = document.getElementById('impactDesc');
             const amount = document.getElementById('impactAmount');
 
-            // 重置樣式
+            // 移除舊樣式
             card.classList.remove('impact-full', 'impact-half', 'impact-none');
-
             let deduction = 0;
 
             switch(type) {
-                case '特休':
-                case '婚假':
-                case '喪假':
-                case '補休':
+                case '特休': case '婚假': case '喪假': case '補休':
                     card.classList.add('impact-full');
                     title.innerText = "全薪 (工資照給)";
                     desc.innerText = "依勞基法規定，此假別期間工資照給，不扣發薪資。";
                     deduction = 0;
                     break;
-                case '病假':
-                case '生理假':
+                case '病假': case '生理假':
                     card.classList.add('impact-half');
                     title.innerText = "半薪 (發給一半工資)";
                     desc.innerText = "依勞基法規定，普通傷病/生理假期間，工資折半發給。";
@@ -364,7 +505,6 @@
         window.processRequest = (reqId, action) => {
             const req = requests[reqId];
             if (!req) return;
-
             if (action === 'approve') {
                 if(!confirm(`確認批准 ${req.empName} 的請假？`)) return;
                 if (req.type === '特休') {
@@ -486,12 +626,9 @@
         window.calculateOvertime = () => {
             const salary = parseInt(document.getElementById('monthlySalary').value) || 0;
             const hourlyRate = Math.round(salary / 240);
-            const dailyRate = Math.round(salary / 30);
-            document.getElementById('displayHourlyRate').innerText = hourlyRate;
-            document.getElementById('displayDailyRate').innerText = dailyRate;
-            
             const h1 = parseFloat(document.getElementById('calcHours1').value);
             const h2 = parseFloat(document.getElementById('calcHours2').value);
+            document.getElementById('displayHourlyRate').innerText = hourlyRate;
             document.getElementById('calcHours1Val').innerText = h1;
             document.getElementById('calcHours2Val').innerText = h2;
             document.getElementById('calcTotal').innerText = Math.round((h1 * hourlyRate * 1.34) + (h2 * hourlyRate * 1.67)).toLocaleString();
