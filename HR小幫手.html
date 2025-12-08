@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宏國地政|易丞地政 - 員工指揮艙</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .serif { font-family: 'Noto Serif TC', serif; }
+        
+        /* 品牌視覺系統：宏國地政風格 (深藍 + 金) */
+        .brand-bg { background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); } 
+        .text-brand-gold { color: #facc15; }
+        .bg-brand-gold { background-color: #facc15; }
+        .border-brand-gold { border-color: #facc15; }
+        
+        /* 玻璃擬態與卡片 */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        /* 狀態標籤樣式 */
+        .status-badge { padding: 2px 8px; border-radius: 9999px; font-size: 0.75rem; font-weight: bold; }
+        .status-pending { background-color: #fef3c7; color: #d97706; } /* 黃色 */
+        .status-approved { background-color: #dcfce7; color: #166534; } /* 綠色 */
+        .status-rejected { background-color: #fee2e2; color: #991b1b; } /* 紅色 */
+
+        /* 現代化輸入框 */
+        .input-modern {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+        }
+        .input-modern:focus {
+            background: #fff;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            outline: none;
+        }
+
+        /* 滑桿 */
+        input[type=range] { -webkit-appearance: none; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 16px; width: 16px;
+            border-radius: 50%; background: #facc15; cursor: pointer;
+            margin-top: -6px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer;
+            background: #475569; border-radius: 2px;
+        }
+
+        .hidden-section { display: none; }
+        .fade-in-up { animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(20px); }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <header class="brand-bg text-white sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white text-blue-900 rounded-lg flex items-center justify-center font-bold text-lg serif shadow-lg">宏</div>
+                <div>
+                    <h1 class="text-base md:text-lg font-bold tracking-wider serif">宏國地政 | 易丞地政</h1>
+                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">HR System & Employee Center</p>
+                </div>
+            </div>
+            <div class="flex bg-blue-900/50 rounded-full p-1">
+                <button onclick="switchView('employee')" id="btnEmp" class="px-4 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all bg-white text-blue-900 shadow-sm">同仁專區</button>
+                <button onclick="checkAdminLogin()" id="btnAdm" class="px-4 py-1.5 rounded-full text-xs md:text-sm font-medium text-blue-200 hover:text-white transition-all">管理後台</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow p-4 md:p-6 max-w-7xl mx-auto w-full">
+
+        <section id="employeeView" class="w-full space-y-6">
+            
+            <div id="loginSection" class="glass-panel p-10 text-center max-w-lg mx-auto mt-12 fade-in-up">
+                <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 text-2xl">
+                    <i class="fa-solid fa-user-tie"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">歡迎回來，夥伴</h2>
+                <p class="text-slate-500 mb-6 text-sm">請選擇您的姓名以存取個人資料與申請權限</p>
+                <div class="relative">
+                    <select id="empSelect" onchange="loadEmployeeDashboard()" class="w-full p-3 pl-4 text-lg input-modern cursor-pointer text-center font-bold text-slate-700">
+                        <option value="">-- 請選擇您的姓名 --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="dashboardSection" class="hidden-section space-y-6">
+                
+                <div class="brand-bg rounded-2xl p-6 text-white relative overflow-hidden shadow-xl fade-in-up" style="animation-delay: 0.1s;">
+                    <div class="absolute right-0 top-0 w-64 h-64 bg-yellow-400 opacity-5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
+                    <div class="relative z-10 flex flex-col md:flex-row items-start gap-4">
+                        <div class="bg-white/10 p-3 rounded-xl backdrop-blur-sm shrink-0">
+                            <i class="fa-solid fa-bullhorn text-brand-gold text-xl"></i>
+                        </div>
+                        <div class="w-full">
+                            <div class="flex justify-between items-start">
+                                <h3 id="displayBulletinTitle" class="font-bold text-lg text-brand-gold mb-1">...</h3>
+                                <span id="displayBulletinDate" class="text-[10px] bg-black/20 px-2 py-1 rounded text-slate-300">--/--</span>
+                            </div>
+                            <p id="displayBulletinContent" class="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <div class="lg:col-span-2 space-y-6">
+                        
+                        <div class="glass-panel p-6 flex flex-col sm:flex-row justify-between items-center bg-gradient-to-r from-white to-blue-50/30 fade-in-up" style="animation-delay: 0.2s;">
+                            <div class="flex items-center gap-4 w-full sm:w-auto">
+                                <div class="w-14 h-14 bg-slate-800 text-white rounded-full flex items-center justify-center text-xl shadow-lg">
+                                    <span id="dashboardAvatar">👤</span>
+                                </div>
+                                <div>
+                                    <h2 id="dashboardName" class="text-xl font-bold text-slate-800">...</h2>
+                                    <div class="text-slate-500 text-xs mt-1 flex gap-2">
+                                        <span class="bg-slate-100 px-2 py-0.5 rounded">年資 <span id="dashboardYears">--</span> 年</span>
+                                        <span class="bg-slate-100 px-2 py-0.5 rounded">額度 <span id="dashboardTotal">--</span> 天</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-4 sm:mt-0 text-center w-full sm:w-auto bg-white border border-blue-100 px-6 py-3 rounded-xl shadow-sm">
+                                <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">目前剩餘 (Balance)</p>
+                                <div id="dashboardRemaining" class="text-3xl font-black text-blue-600 font-mono">0.0</div>
+                            </div>
+                        </div>
+
+                        <div class="glass-panel p-6 border-t-4 border-brand-gold fade-in-up" style="animation-delay: 0.3s;">
+                            <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                <i class="fa-solid fa-file-signature text-brand-gold"></i> 提交請假申請
+                            </h3>
+                            <form id="leaveForm" onsubmit="handleLeaveSubmit(event)" class="space-y-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">假別類形</label>
+                                        <select id="leaveType" required onchange="updateLinePreview()" class="w-full p-2.5 input-modern">
+                                            <option value="特休">特休 (Annual Leave)</option>
+                                            <option value="病假">病假 (Sick Leave)</option>
+                                            <option value="事假">事假 (Personal Leave)</option>
+                                            <option value="補休">補休 (Compensatory)</option>
+                                            <option value="婚假">婚假 (Marriage)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">請假日期</label>
+                                        <input type="date" id="leaveDate" required onchange="updateLinePreview()" class="w-full p-2.5 input-modern">
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">天數 (0.5 為單位)</label>
+                                        <input type="number" id="leaveDays" min="0.5" step="0.5" value="1" required onchange="updateLinePreview()" class="w-full p-2.5 input-modern">
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">請假事由</label>
+                                        <input type="text" id="leaveReason" required oninput="updateLinePreview()" class="w-full p-2.5 input-modern" placeholder="例：處理私人事務">
+                                    </div>
+                                </div>
+
+                                <div class="bg-green-50 rounded-xl p-4 border border-green-100 mt-2">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-xs font-bold text-green-700"><i class="fa-brands fa-line"></i> 訊息預覽</span>
+                                        <span class="text-[10px] text-green-600 bg-white px-2 rounded-full border border-green-200">將傳送至群組</span>
+                                    </div>
+                                    <div id="linePreviewText" class="text-sm font-mono text-slate-600 bg-white p-3 rounded border border-green-100 mb-3 whitespace-pre-wrap">...</div>
+                                    
+                                    <button type="submit" class="w-full bg-[#06c755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-lg shadow-lg shadow-green-500/20 transition active:scale-95 flex justify-center items-center gap-2">
+                                        <span>送出申請並通知 LINE</span>
+                                        <i class="fa-solid fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="glass-panel p-6 fade-in-up" style="animation-delay: 0.4s;">
+                            <h3 class="font-bold text-slate-700 mb-4 text-sm uppercase tracking-wider">最近申請紀錄</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="text-xs text-slate-400 border-b">
+                                        <tr>
+                                            <th class="pb-2">日期</th>
+                                            <th class="pb-2">假別</th>
+                                            <th class="pb-2">天數</th>
+                                            <th class="pb-2">狀態</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="myRequestsTable" class="divide-y divide-slate-100">
+                                        </tbody>
+                                </table>
+                                <p id="noRequestMsg" class="text-center text-slate-400 text-xs mt-4 hidden">尚無申請紀錄</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6 lg:col-span-1">
+                        
+                        <div class="glass-panel p-6 bg-slate-900 text-white fade-in-up" style="animation-delay: 0.5s;">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="font-bold flex items-center gap-2"><i class="fa-solid fa-calculator text-brand-gold"></i> 加班費試算</h3>
+                                <span class="text-[10px] bg-slate-700 px-2 py-1 rounded">僅供參考</span>
+                            </div>
+                            
+                            <div class="space-y-5">
+                                <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                                    <label class="block text-xs text-slate-400 mb-1">您的月薪 (Monthly Salary)</label>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-slate-500">$</span>
+                                        <input type="number" id="monthlySalary" value="30000" class="bg-transparent text-white font-bold text-lg w-full outline-none placeholder-slate-600" placeholder="輸入金額" oninput="calculateOvertime()">
+                                    </div>
+                                    <div class="text-[10px] text-brand-gold mt-1 text-right">
+                                        時薪約: $<span id="calcHourlyRate">125</span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1 text-slate-400">
+                                        <span>平日加班 (前2hr)</span>
+                                        <span class="text-white font-bold"><span id="calcHours1Val">0</span> hr</span>
+                                    </div>
+                                    <input type="range" id="calcHours1" min="0" max="10" step="0.5" value="0" oninput="calculateOvertime()">
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1 text-slate-400">
+                                        <span>平日加班 (第3hr起)</span>
+                                        <span class="text-white font-bold"><span id="calcHours2Val">0</span> hr</span>
+                                    </div>
+                                    <input type="range" id="calcHours2" min="0" max="10" step="0.5" value="0" oninput="calculateOvertime()">
+                                </div>
+                            </div>
+
+                            <div class="mt-6 pt-4 border-t border-slate-700 text-center">
+                                <p class="text-xs text-slate-400 uppercase tracking-widest">預估加班費</p>
+                                <div class="text-3xl font-bold text-brand-gold mt-1">$<span id="calcTotal">0</span></div>
+                            </div>
+                        </div>
+
+                        <div class="glass-panel p-5 text-sm space-y-3 fade-in-up" style="animation-delay: 0.6s;">
+                            <h4 class="font-bold text-slate-700 border-b pb-2">權益速查表</h4>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-500"><i class="fa-solid fa-ring text-purple-400 w-5"></i>婚假</span>
+                                <span class="text-xs bg-slate-100 px-2 py-1 rounded font-bold text-slate-700">8 天 (全薪)</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-500"><i class="fa-solid fa-notes-medical text-red-400 w-5"></i>病假</span>
+                                <span class="text-xs bg-slate-100 px-2 py-1 rounded font-bold text-slate-700">30 天 (半薪)</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-500"><i class="fa-solid fa-person-dress text-pink-400 w-5"></i>生理假</span>
+                                <span class="text-xs bg-slate-100 px-2 py-1 rounded font-bold text-slate-700">1 天/月 (半薪)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="adminView" class="hidden-section w-full fade-in-up">
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <div class="lg:col-span-2 glass-panel p-6 border-t-4 border-blue-600">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-clipboard-check text-blue-600"></i> 請假審核中心
+                        <span id="pendingCountBadge" class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full hidden">0</span>
+                    </h2>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-slate-500 font-bold border-b">
+                                <tr>
+                                    <th class="p-3">申請人</th>
+                                    <th class="p-3">日期/假別</th>
+                                    <th class="p-3">事由</th>
+                                    <th class="p-3 text-right">審核操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="approvalTableBody" class="divide-y divide-slate-100">
+                                </tbody>
+                        </table>
+                        <div id="noPendingMsg" class="text-center py-8 text-slate-400">
+                            <i class="fa-regular fa-circle-check text-4xl mb-2 text-slate-200"></i>
+                            <p>太棒了！目前沒有待審核的申請。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-1 glass-panel p-6 border-t-4 border-brand-gold">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-bullhorn text-brand-gold mr-2"></i>公告發布</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500">標題</label>
+                            <input type="text" id="adminBulletinTitle" class="w-full p-2 input-modern" placeholder="輸入標題">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500">內容</label>
+                            <textarea id="adminBulletinContent" rows="4" class="w-full p-2 input-modern" placeholder="輸入內文..."></textarea>
+                        </div>
+                        <button onclick="saveBulletin()" class="w-full bg-slate-800 text-white p-2 rounded hover:bg-slate-700 transition font-bold shadow-md">
+                            立即發布更新
+                        </button>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-3 glass-panel p-6">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-users mr-2"></i>員工資料庫</h2>
+                    
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col md:flex-row gap-4 items-end mb-4">
+                        <div class="w-full md:w-1/4">
+                            <label class="text-xs font-bold text-slate-500">姓名</label>
+                            <input type="text" id="newAdminName" class="w-full p-2 input-modern">
+                        </div>
+                        <div class="w-full md:w-1/4">
+                            <label class="text-xs font-bold text-slate-500">性別</label>
+                            <select id="newAdminGender" class="w-full p-2 input-modern">
+                                <option value="M">男</option>
+                                <option value="F">女</option>
+                            </select>
+                        </div>
+                        <div class="w-full md:w-1/4">
+                            <label class="text-xs font-bold text-slate-500">到職日</label>
+                            <input type="date" id="newAdminDate" class="w-full p-2 input-modern">
+                        </div>
+                        <button onclick="addEmployee()" class="w-full md:w-auto bg-blue-600 text-white p-2 px-6 rounded hover:bg-blue-500 transition font-bold shadow">
+                            新增
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-100 text-slate-600 uppercase font-bold">
+                                <tr>
+                                    <th class="p-3 w-12"></th>
+                                    <th class="p-3">姓名</th>
+                                    <th class="p-3">到職日 (年資)</th>
+                                    <th class="p-3 text-center">總額</th>
+                                    <th class="p-3 text-center">已用</th>
+                                    <th class="p-3 text-center">剩餘</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminTableBody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-900 text-slate-500 py-6 text-center text-xs mt-auto border-t border-slate-800">
+        <p>© 2024 宏國地政 | 易丞地政 - Internal System</p>
+    </footer>
+
+    <script>
+        const ADMIN_PASSWORD = "8888"; 
+        
+        // --- 資料庫初始化 (雙資料表: Employees, Requests) ---
+        let employees = JSON.parse(localStorage.getItem('homego_hr_data')) || [];
+        // request 結構: { id, empId, empName, type, date, days, reason, status: 'pending'|'approved'|'rejected', timestamp }
+        let requests = JSON.parse(localStorage.getItem('homego_requests')) || []; 
+        let bulletin = JSON.parse(localStorage.getItem('homego_bulletin')) || {
+            title: "系統上線公告",
+            content: "歡迎使用新版員工系統。現在請假申請送出後，需等待管理員審核通過才會扣假喔！",
+            date: new Date().toLocaleDateString()
+        };
+
+        let currentUserId = null;
+        document.getElementById('leaveDate').valueAsDate = new Date();
+
+        window.onload = function() {
+            updateEmpSelect();
+            renderBulletin();
+        }
+
+        // --- 1. 視圖切換 ---
+        function switchView(viewName) {
+            document.getElementById('employeeView').classList.add('hidden-section');
+            document.getElementById('adminView').classList.add('hidden-section');
+            
+            // 按鈕狀態切換
+            const btnEmp = document.getElementById('btnEmp');
+            const btnAdm = document.getElementById('btnAdm');
+
+            if (viewName === 'employee') {
+                document.getElementById('employeeView').classList.remove('hidden-section');
+                document.getElementById('dashboardSection').classList.add('hidden-section');
+                document.getElementById('loginSection').classList.remove('hidden-section');
+                document.getElementById('empSelect').value = "";
+                renderBulletin(); 
+                
+                btnEmp.classList.replace('text-blue-200', 'text-blue-900');
+                btnEmp.classList.replace('hover:text-white', 'bg-white');
+                btnAdm.classList.replace('text-blue-900', 'text-blue-200');
+                btnAdm.classList.replace('bg-white', 'hover:text-white');
+
+            } else if (viewName === 'admin') {
+                document.getElementById('adminView').classList.remove('hidden-section');
+                renderAdminTable();
+                renderApprovalQueue(); // 載入審核清單
+                loadAdminBulletin();
+                
+                btnAdm.classList.replace('text-blue-200', 'text-blue-900');
+                btnAdm.classList.replace('hover:text-white', 'bg-white');
+                btnEmp.classList.replace('text-blue-900', 'text-blue-200');
+                btnEmp.classList.replace('bg-white', 'hover:text-white');
+            }
+        }
+
+        function checkAdminLogin() {
+            let pass = prompt("🔐 請輸入管理員密碼：");
+            if (pass === ADMIN_PASSWORD) switchView('admin');
+            else if (pass !== null) alert("🚫 密碼錯誤");
+        }
+
+        // --- 2. 核心邏輯：計算與資料 ---
+        function calculateLeave(joinDate) {
+            const now = new Date();
+            const start = new Date(joinDate);
+            const diffTime = now - start;
+            if (diffTime < 0) return { years: "0.0", days: 0 };
+            
+            const years = diffTime / (1000 * 60 * 60 * 24 * 365.25);
+            let days = 0;
+            
+            if (years >= 0.5 && years < 1) days = 3;
+            else if (years >= 1 && years < 2) days = 7;
+            else if (years >= 2 && years < 3) days = 10;
+            else if (years >= 3 && years < 5) days = 14;
+            else if (years >= 5 && years < 10) days = 15;
+            else if (years >= 10) {
+                days = 15 + Math.floor(years - 10);
+                if (days > 30) days = 30;
+            }
+            return { years: years.toFixed(1), days: days };
+        }
+
+        function saveData() {
+            localStorage.setItem('homego_hr_data', JSON.stringify(employees));
+            localStorage.setItem('homego_requests', JSON.stringify(requests));
+            localStorage.setItem('homego_bulletin', JSON.stringify(bulletin));
+        }
+
+        // --- 3. 同仁前台邏輯 ---
+        function updateEmpSelect() {
+            const select = document.getElementById('empSelect');
+            select.innerHTML = '<option value="">-- 請選擇您的姓名 --</option>';
+            employees.forEach(emp => {
+                const option = document.createElement('option');
+                option.value = emp.id;
+                option.innerText = emp.name;
+                select.appendChild(option);
+            });
+        }
+
+        function loadEmployeeDashboard() {
+            const id = parseInt(document.getElementById('empSelect').value);
+            if (!id) return;
+            currentUserId = id;
+            const emp = employees.find(e => e.id === id);
+            
+            if (emp) {
+                const calc = calculateLeave(emp.joinDate);
+                const remaining = calc.days - emp.usedLeave;
+
+                document.getElementById('dashboardName').innerText = emp.name;
+                document.getElementById('dashboardAvatar').innerText = emp.gender === 'F' ? '👩‍💼' : '👨‍💼';
+                document.getElementById('dashboardYears').innerText = calc.years;
+                document.getElementById('dashboardTotal').innerText = calc.days;
+                
+                const remEl = document.getElementById('dashboardRemaining');
+                remEl.innerText = remaining;
+                remEl.className = remaining < 0 ? "text-3xl font-black text-red-500 font-mono" : "text-3xl font-black text-blue-600 font-mono";
+
+                document.getElementById('loginSection').classList.add('hidden-section');
+                document.getElementById('dashboardSection').classList.remove('hidden-section');
+                
+                updateLinePreview();
+                renderMyRequests(); // 顯示個人的申請紀錄
+                calculateOvertime(); 
+            }
+        }
+
+        function renderMyRequests() {
+            const tbody = document.getElementById('myRequestsTable');
+            const noMsg = document.getElementById('noRequestMsg');
+            tbody.innerHTML = '';
+            
+            // 篩選出該員工的申請紀錄 (最新的在上面)
+            const myReqs = requests.filter(r => r.empId === currentUserId).sort((a,b) => b.timestamp - a.timestamp);
+
+            if (myReqs.length === 0) {
+                noMsg.classList.remove('hidden');
+            } else {
+                noMsg.classList.add('hidden');
+                myReqs.forEach(req => {
+                    let badgeClass = '';
+                    let badgeText = '';
+                    if (req.status === 'pending') { badgeClass = 'status-pending'; badgeText = '待審核'; }
+                    else if (req.status === 'approved') { badgeClass = 'status-approved'; badgeText = '已批准'; }
+                    else { badgeClass = 'status-rejected'; badgeText = '已駁回'; }
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="py-2">${req.date}</td>
+                            <td class="py-2">${req.type}</td>
+                            <td class="py-2 font-bold">${req.days}</td>
+                            <td class="py-2"><span class="status-badge ${badgeClass}">${badgeText}</span></td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        function updateLinePreview() {
+            if (!currentUserId) return;
+            const emp = employees.find(e => e.id === currentUserId);
+            const type = document.getElementById('leaveType').value;
+            const date = document.getElementById('leaveDate').value;
+            const days = document.getElementById('leaveDays').value;
+            const reason = document.getElementById('leaveReason').value || "(尚未填寫)";
+
+            // 調整文案：強調「已送出申請，待審核」
+            const msg = `【請假申請通知】\n👤 申請人：${emp.name}\n📅 日期：${date}\n🕒 天數：${days} 天\n🏷️ 假別：${type}\n📝 事由：${reason}\n\n(系統自動發送，請管理員至後台審核)`;
+            document.getElementById('linePreviewText').innerText = msg;
+            return msg;
+        }
+
+        function handleLeaveSubmit(e) {
+            e.preventDefault();
+            if (!currentUserId) return;
+            
+            const emp = employees.find(e => e.id === currentUserId);
+            const type = document.getElementById('leaveType').value;
+            const date = document.getElementById('leaveDate').value;
+            const days = parseFloat(document.getElementById('leaveDays').value);
+            const reason = document.getElementById('leaveReason').value;
+            const msg = updateLinePreview();
+
+            // 1. 建立申請單 (Status: pending)
+            const newRequest = {
+                id: Date.now(),
+                empId: emp.id,
+                empName: emp.name,
+                type: type,
+                date: date,
+                days: days,
+                reason: reason,
+                status: 'pending',
+                timestamp: Date.now()
+            };
+
+            requests.push(newRequest);
+            saveData(); 
+
+            // 2. 更新畫面
+            alert("✅ 申請單已送出！\n\n狀態為「待審核」，請通知管理員。\n即將開啟 LINE...");
+            window.open(`https://line.me/R/msg/text/?${encodeURIComponent(msg)}`);
+            
+            loadEmployeeDashboard(); // 重新載入以更新申請列表
+            document.getElementById('leaveReason').value = '';
+        }
+
+        // --- 4. 後台邏輯：審核與管理 ---
+        function renderApprovalQueue() {
+            const tbody = document.getElementById('approvalTableBody');
+            const noMsg = document.getElementById('noPendingMsg');
+            const badge = document.getElementById('pendingCountBadge');
+            
+            tbody.innerHTML = '';
+            
+            // 篩選 Pending 的項目
+            const pendingReqs = requests.filter(r => r.status === 'pending').sort((a,b) => a.timestamp - b.timestamp);
+            
+            if (pendingReqs.length > 0) {
+                noMsg.classList.add('hidden');
+                badge.innerText = pendingReqs.length;
+                badge.classList.remove('hidden');
+
+                pendingReqs.forEach(req => {
+                    tbody.innerHTML += `
+                        <tr class="bg-white border-b hover:bg-slate-50">
+                            <td class="p-3 font-bold text-slate-700">${req.empName}</td>
+                            <td class="p-3">
+                                <div class="font-bold text-blue-900">${req.date}</div>
+                                <div class="text-xs text-slate-500">${req.type} | ${req.days} 天</div>
+                            </td>
+                            <td class="p-3 text-sm text-slate-600">${req.reason}</td>
+                            <td class="p-3 text-right space-x-2">
+                                <button onclick="processRequest(${req.id}, 'approve')" class="bg-green-100 text-green-700 px-3 py-1 rounded hover:bg-green-200 transition text-sm font-bold"><i class="fa-solid fa-check"></i> 准假</button>
+                                <button onclick="processRequest(${req.id}, 'reject')" class="bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200 transition text-sm font-bold"><i class="fa-solid fa-xmark"></i> 駁回</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                noMsg.classList.remove('hidden');
+                badge.classList.add('hidden');
+            }
+        }
+
+        function processRequest(reqId, action) {
+            const reqIndex = requests.findIndex(r => r.id === reqId);
+            if (reqIndex === -1) return;
+            
+            const req = requests[reqIndex];
+            
+            if (action === 'approve') {
+                // 1. 批准：扣除特休 (如果假別是特休)
+                if (req.type === '特休') {
+                    const empIndex = employees.findIndex(e => e.id === req.empId);
+                    if (empIndex !== -1) {
+                        employees[empIndex].usedLeave += req.days;
+                    }
+                }
+                // 2. 更新狀態
+                requests[reqIndex].status = 'approved';
+                alert(`✅ 已批准 ${req.empName} 的請假申請。`);
+            } else {
+                // 駁回：只更新狀態，不扣假
+                requests[reqIndex].status = 'rejected';
+                alert(`🚫 已駁回該申請。`);
+            }
+            
+            saveData();
+            renderApprovalQueue();
+            renderAdminTable(); // 更新員工列表的已用天數
+        }
+
+        // --- 5. 其他既有功能 (公告、薪資、員工管理) ---
+        function renderBulletin() {
+            document.getElementById('displayBulletinTitle').innerText = bulletin.title;
+            document.getElementById('displayBulletinContent').innerText = bulletin.content;
+            document.getElementById('displayBulletinDate').innerText = bulletin.date;
+        }
+
+        function loadAdminBulletin() {
+            document.getElementById('adminBulletinTitle').value = bulletin.title;
+            document.getElementById('adminBulletinContent').value = bulletin.content;
+        }
+
+        function saveBulletin() {
+            bulletin = {
+                title: document.getElementById('adminBulletinTitle').value,
+                content: document.getElementById('adminBulletinContent').value,
+                date: new Date().toLocaleDateString()
+            };
+            saveData();
+            alert("✅ 公告已發布更新！");
+        }
+
+        function calculateOvertime() {
+            const salary = parseInt(document.getElementById('monthlySalary').value) || 0;
+            const hourlyRate = Math.round(salary / 240);
+            const h1 = parseFloat(document.getElementById('calcHours1').value);
+            const h2 = parseFloat(document.getElementById('calcHours2').value);
+
+            document.getElementById('calcHourlyRate').innerText = hourlyRate;
+            document.getElementById('calcHours1Val').innerText = h1;
+            document.getElementById('calcHours2Val').innerText = h2;
+            document.getElementById('calcTotal').innerText = Math.round((h1 * hourlyRate * 1.34) + (h2 * hourlyRate * 1.67)).toLocaleString();
+        }
+
+        function addEmployee() {
+            const name = document.getElementById('newAdminName').value;
+            const gender = document.getElementById('newAdminGender').value;
+            const date = document.getElementById('newAdminDate').value;
+            if (!name || !date) return alert("資料不完整");
+            employees.push({ id: Date.now(), name, gender, joinDate: date, usedLeave: 0 });
+            saveData();
+            renderAdminTable();
+            document.getElementById('newAdminName').value = '';
+        }
+
+        function deleteEmployee(id) {
+            if(confirm("確定刪除？")) {
+                employees = employees.filter(e => e.id !== id);
+                saveData();
+                renderAdminTable();
+            }
+        }
+
+        function renderAdminTable() {
+            const tbody = document.getElementById('adminTableBody');
+            tbody.innerHTML = '';
+            employees.forEach(emp => {
+                const calc = calculateLeave(emp.joinDate);
+                const remaining = calc.days - emp.usedLeave;
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 border-b border-slate-100">
+                        <td class="p-3"><button onclick="deleteEmployee(${emp.id})" class="text-slate-300 hover:text-red-500"><i class="fa-solid fa-trash"></i></button></td>
+                        <td class="p-3 font-bold text-slate-700">${emp.name}</td>
+                        <td class="p-3 text-xs text-slate-500">${emp.joinDate}<br>${calc.years}年</td>
+                        <td class="p-3 text-center text-blue-600 font-bold">${calc.days}</td>
+                        <td class="p-3 text-center text-slate-500">${emp.usedLeave}</td>
+                        <td class="p-3 text-center font-bold ${remaining < 0 ? 'text-red-500' : 'text-green-600'}">${remaining}</td>
+                    </tr>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>
