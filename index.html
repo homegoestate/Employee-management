@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>宏國地政|易丞地政 - 智慧指揮艙 (Nexus V5.1)</title>
+    <title>宏國地政|易丞地政 - 智慧指揮艙 (Nexus V5.3)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -44,7 +44,7 @@
 
         /* Modal Overlay */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
-        .modal-content { background: white; width: 90%; max-width: 800px; max-height: 90vh; border-radius: 1rem; padding: 0; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        .modal-content { background: white; width: 95%; max-width: 900px; max-height: 90vh; border-radius: 1rem; padding: 0; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -55,7 +55,7 @@
                 <div class="w-10 h-10 bg-white text-blue-900 rounded-lg flex items-center justify-center font-bold text-lg serif shadow-lg">宏</div>
                 <div>
                     <h1 class="text-base md:text-lg font-bold tracking-wider serif">宏國地政 | 易丞地政</h1>
-                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">Nexus V5.1 (Admin Power)</p>
+                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">Nexus V5.3 (Audit & Export)</p>
                 </div>
             </div>
             <div class="flex bg-blue-900/50 rounded-full p-1">
@@ -234,6 +234,9 @@
                                 <div class="font-bold text-green-600" id="dashboardRemaining">--</div>
                             </div>
                         </div>
+                        <div class="mt-2 text-xs text-slate-500">
+                            補休餘額: <span class="font-bold text-orange-600" id="dashboardComp">0</span> 天
+                        </div>
                     </div>
                 </div>
             </div>
@@ -259,8 +262,15 @@
 
                 <div class="lg:col-span-3 glass-panel p-6 border-t-4 border-slate-700">
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-clock-rotate-left text-slate-700"></i> 考勤紀錄</h2>
-                        <button onclick="exportAttendance()" class="bg-green-600 hover:bg-green-500 text-white text-xs px-3 py-2 rounded shadow"><i class="fa-solid fa-file-excel"></i> 匯出 Excel</button>
+                        <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-clock-rotate-left text-slate-700"></i> 考勤與報表中心</h2>
+                        <div class="flex gap-2">
+                            <button onclick="exportLeaveRequests()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-2 rounded shadow flex items-center gap-1">
+                                <i class="fa-solid fa-file-invoice"></i> 匯出請假明細(含註記)
+                            </button>
+                            <button onclick="exportAttendance()" class="bg-green-600 hover:bg-green-500 text-white text-xs px-3 py-2 rounded shadow flex items-center gap-1">
+                                <i class="fa-solid fa-file-excel"></i> 匯出打卡紀錄
+                            </button>
+                        </div>
                     </div>
                     <div class="overflow-x-auto max-h-60 overflow-y-auto custom-scrollbar">
                         <table class="w-full text-left text-sm"><tbody id="attendanceTableBody" class="divide-y divide-slate-100 text-xs"></tbody></table>
@@ -298,23 +308,54 @@
         <div id="historyModal" class="modal-overlay">
             <div class="modal-content">
                 <div class="p-4 border-b bg-slate-100 flex justify-between items-center">
-                    <h3 class="font-bold text-slate-800 text-lg"><i class="fa-solid fa-history mr-2"></i> 員工紀錄校正面板</h3>
+                    <h3 class="font-bold text-slate-800 text-lg"><i class="fa-solid fa-sliders mr-2"></i> 假勤數據中控台 - <span id="modalEmpName"></span></h3>
                     <button onclick="closeHistory()" class="text-slate-500 hover:text-red-500 text-xl"><i class="fa-solid fa-times"></i></button>
                 </div>
                 <div class="p-6 overflow-y-auto flex-1 bg-slate-50">
-                    <div class="mb-6 bg-white p-4 rounded-lg border border-blue-200 shadow-sm">
-                        <h4 class="font-bold text-blue-900 mb-2 border-b pb-1">🔧 數據強制校正</h4>
-                        <div class="flex items-center gap-4">
-                            <div class="text-sm">員工：<span id="modalEmpName" class="font-bold"></span></div>
-                            <div class="flex items-center gap-2">
-                                <label class="text-xs font-bold text-slate-500">特休已用天數：</label>
-                                <input type="number" id="modalUsedLeave" class="border rounded px-2 py-1 w-20 text-center font-mono font-bold">
-                                <button onclick="saveUsedLeave()" class="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-500">儲存修正</button>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-white p-4 rounded-lg border border-blue-200 shadow-sm relative overflow-hidden">
+                            <div class="absolute top-0 right-0 bg-blue-100 text-blue-800 text-[10px] px-2 py-1 font-bold">特休 (Annual)</div>
+                            <div class="mt-2 space-y-2">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-slate-500">已使用天數</span>
+                                    <input type="number" id="adjAnnualUsed" class="border rounded w-16 text-center font-bold text-blue-700" step="0.5">
+                                </div>
+                                <div class="text-xs text-slate-400 text-right">系統自動累計</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-4 rounded-lg border border-orange-200 shadow-sm relative overflow-hidden">
+                            <div class="absolute top-0 right-0 bg-orange-100 text-orange-800 text-[10px] px-2 py-1 font-bold">補休 (Comp)</div>
+                            <div class="mt-2 space-y-2">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-slate-500">目前餘額</span>
+                                    <input type="number" id="adjCompBalance" class="border rounded w-16 text-center font-bold text-orange-700" step="0.5">
+                                </div>
+                                <div class="text-xs text-slate-400 text-right">管理者手動發放</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative overflow-hidden">
+                            <div class="absolute top-0 right-0 bg-gray-100 text-gray-800 text-[10px] px-2 py-1 font-bold">病/事假</div>
+                            <div class="mt-2 space-y-1">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-slate-500">病假已用</span>
+                                    <input type="number" id="adjSickUsed" class="border rounded w-16 text-center font-bold text-gray-700" step="0.5">
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-slate-500">事假已用</span>
+                                    <input type="number" id="adjPersonalUsed" class="border rounded w-16 text-center font-bold text-gray-700" step="0.5">
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <h4 class="font-bold text-slate-700 mb-2">📜 歷史申請紀錄 (含已批准/已駁回)</h4>
+                    <button onclick="saveAllAdjustments()" class="w-full bg-slate-800 text-white py-2 rounded mb-6 font-bold hover:bg-slate-700 shadow-md">
+                        <i class="fa-solid fa-save mr-1"></i> 儲存所有修正
+                    </button>
+
+                    <h4 class="font-bold text-slate-700 mb-2">📜 歷史申請紀錄 (點擊筆圖示可註記)</h4>
                     <div class="overflow-x-auto bg-white rounded-lg border border-slate-200">
                         <table class="w-full text-sm text-left">
                             <thead class="bg-slate-100 text-xs text-slate-500 uppercase">
@@ -323,6 +364,7 @@
                                     <th class="p-2">類型</th>
                                     <th class="p-2">內容</th>
                                     <th class="p-2">狀態</th>
+                                    <th class="p-2">管理註記</th>
                                     <th class="p-2 text-right">操作</th>
                                 </tr>
                             </thead>
@@ -361,7 +403,7 @@
         let currentDeduction = 0;
         let currentModalEmpId = null;
 
-        // --- Device Fingerprint Logic ---
+        // --- Device Fingerprint ---
         let myDeviceId = localStorage.getItem('hge_security_did');
         if (!myDeviceId) {
             myDeviceId = 'DID-' + Math.random().toString(36).substr(2, 6).toUpperCase() + '-' + Date.now().toString(36).substr(-4);
@@ -369,17 +411,16 @@
         }
         document.getElementById('myDeviceIdDisplay').innerText = myDeviceId;
 
-        // --- Clock Logic ---
+        // --- Clock ---
         setInterval(() => {
             document.getElementById('liveClock').innerText = new Date().toLocaleTimeString('zh-TW', {hour12: false});
         }, 1000);
 
-        // --- GLOBAL EXPORTS ---
+        // --- UI ---
         window.switchView = (view) => {
             document.getElementById('employeeView').classList.add('hidden-section');
             document.getElementById('adminView').classList.add('hidden-section');
             document.getElementById('loginSection').classList.add('hidden-section');
-            
             const btnEmp = document.getElementById('btnEmp');
             const btnAdm = document.getElementById('btnAdm');
 
@@ -410,7 +451,7 @@
             document.getElementById(`form-${tab}`).classList.remove('hidden-section');
         };
 
-        // --- Firebase Data Sync ---
+        // --- Firebase ---
         onValue(ref(db), (snapshot) => {
             const data = snapshot.val() || {};
             employees = data.employees || {};
@@ -424,7 +465,10 @@
                  const emp = employees[currentUserId];
                  if(emp) {
                     const calc = calculateLeave(emp.joinDate);
-                    document.getElementById('dashboardRemaining').innerText = (calc.days - (emp.usedLeave || 0)) + " 天";
+                    const used = emp.stats?.annual || emp.usedLeave || 0; 
+                    const comp = emp.stats?.comp || 0;
+                    document.getElementById('dashboardRemaining').innerText = (calc.days - used) + " 天";
+                    document.getElementById('dashboardComp').innerText = comp;
                  }
             }
             renderAdminTable();
@@ -435,16 +479,13 @@
             select.disabled = false;
         });
 
-        // --- Core Logic ---
+        // --- Auth Logic ---
         function updateEmpSelect() {
             const select = document.getElementById('empSelect');
             select.innerHTML = '';
-            
             let boundUser = null;
             Object.values(employees).forEach(emp => {
-                if (emp.devices && emp.devices.includes(myDeviceId)) {
-                    boundUser = emp;
-                }
+                if (emp.devices && emp.devices.includes(myDeviceId)) boundUser = emp;
             });
 
             if (boundUser) {
@@ -453,7 +494,6 @@
                 option.innerText = `🔒 已綁定身分：${boundUser.name}`;
                 select.appendChild(option);
                 select.value = boundUser.id;
-                
                 if (!document.getElementById('loginSection').classList.contains('hidden-section')) {
                      document.getElementById('loginStatusMsg').classList.remove('hidden');
                      setTimeout(() => loadEmployeeDashboard(boundUser.id), 800);
@@ -463,7 +503,6 @@
                 defaultOpt.value = "";
                 defaultOpt.innerText = "-- 請選擇您的姓名 (首次需綁定) --";
                 select.appendChild(defaultOpt);
-
                 Object.values(employees).forEach(emp => {
                     const option = document.createElement('option');
                     option.value = emp.id;
@@ -476,15 +515,10 @@
         window.tryBindAndLogin = () => {
             const id = document.getElementById('empSelect').value;
             if (!id) return;
-            
             const emp = employees[id];
             const currentDevices = emp.devices || [];
 
-            if (currentDevices.includes(myDeviceId)) {
-                loadEmployeeDashboard(id);
-                return;
-            }
-
+            if (currentDevices.includes(myDeviceId)) { loadEmployeeDashboard(id); return; }
             if (currentDevices.length >= 2) {
                 Swal.fire({ icon: 'error', title: '綁定失敗', text: '您的帳號已綁定 2 台裝置。請聯繫管理員解綁舊裝置。' });
                 document.getElementById('empSelect').value = "";
@@ -519,12 +553,14 @@
             
             if (emp) {
                 const calc = calculateLeave(emp.joinDate);
-                const remaining = calc.days - (emp.usedLeave || 0);
+                const used = emp.stats?.annual || emp.usedLeave || 0;
+                const comp = emp.stats?.comp || 0;
 
                 document.getElementById('dashboardName').innerText = emp.name;
                 document.getElementById('dashboardAvatar').innerText = emp.gender === 'F' ? '👩‍💼' : '👨‍💼';
                 document.getElementById('dashboardTotal').innerText = calc.days + " 天";
-                document.getElementById('dashboardRemaining').innerText = remaining + " 天";
+                document.getElementById('dashboardRemaining').innerText = (calc.days - used) + " 天";
+                document.getElementById('dashboardComp').innerText = comp;
                 
                 document.getElementById('loginSection').classList.add('hidden-section');
                 document.getElementById('loginStatusMsg').classList.add('hidden');
@@ -538,10 +574,7 @@
         window.handlePunch = (type) => {
             if (!currentUserId) return;
             const emp = employees[currentUserId];
-            if (!emp.devices || !emp.devices.includes(myDeviceId)) {
-                return Swal.fire('安全警告', '此裝置未經授權，無法進行打卡操作。', 'error');
-            }
-
+            if (!emp.devices || !emp.devices.includes(myDeviceId)) return Swal.fire('安全警告', '此裝置未經授權', 'error');
             if (!navigator.geolocation) return Swal.fire('錯誤', '不支援定位', 'error');
             
             navigator.geolocation.getCurrentPosition((position) => {
@@ -557,17 +590,16 @@
             });
         };
 
+        // --- Salary ---
         window.updateSalaryFromSlider = (val) => {
             document.getElementById('monthlySalary').value = val;
             document.getElementById('displaySalary').innerText = parseInt(val).toLocaleString();
-            calculateOvertime();
-            updateImpactInfo();
+            calculateOvertime(); updateImpactInfo();
         };
         window.updateSalaryFromInput = (val) => {
             document.getElementById('salarySlider').value = val;
             document.getElementById('displaySalary').innerText = parseInt(val).toLocaleString();
-            calculateOvertime();
-            updateImpactInfo();
+            calculateOvertime(); updateImpactInfo();
         };
 
         window.calculateOvertime = () => {
@@ -575,13 +607,10 @@
             const hourlyRate = Math.round(salary / 240);
             const h1 = parseFloat(document.getElementById('calcHours1').value);
             const h2 = parseFloat(document.getElementById('calcHours2').value);
-            
             document.getElementById('calcHours1Val').innerText = h1;
             document.getElementById('calcHours2Val').innerText = h2;
-            
             const otTotal = Math.round((h1 * hourlyRate * 1.34) + (h2 * hourlyRate * 1.67));
             document.getElementById('calcOtTotal').innerText = otTotal.toLocaleString();
-            
             const final = salary + otTotal - currentDeduction;
             document.getElementById('calcDeduction').innerText = currentDeduction.toLocaleString();
             document.getElementById('calcFinalTotal').innerText = final.toLocaleString();
@@ -614,15 +643,20 @@
             window.calculateOvertime();
         };
 
+        // --- Submissions ---
         window.handleLeaveSubmit = (e) => {
             e.preventDefault();
             if (!currentUserId) return;
-            if (!employees[currentUserId].devices.includes(myDeviceId)) return Swal.fire('錯誤', '裝置驗證失敗', 'error');
-
             const emp = employees[currentUserId];
+            // Comp Leave Check
             const type = document.getElementById('leaveType').value;
-            const date = document.getElementById('leaveDate').value;
             const days = parseFloat(document.getElementById('leaveDays').value);
+            if (type === '補休') {
+                const balance = emp.stats?.comp || 0;
+                if (balance < days) return Swal.fire('餘額不足', `補休剩餘 ${balance} 天，無法申請 ${days} 天`, 'error');
+            }
+
+            const date = document.getElementById('leaveDate').value;
             const reason = document.getElementById('leaveReason').value;
 
             push(ref(db, 'requests'), {
@@ -630,18 +664,14 @@
                 type, date, days, reason, status: 'pending', timestamp: Date.now()
             });
 
-            // Line Logic
             const msg = `【請假申請】\n👤 ${emp.name}\n📅 ${date} (${days}天)\n🏷️ ${type}\n📝 ${reason}`;
             window.open('https://line.me/R/msg/text/?' + encodeURIComponent(msg));
-            
-            Swal.fire('已送出', '申請已提交並跳轉至 LINE', 'success');
+            Swal.fire('已送出', '申請已提交', 'success');
         };
 
         window.handleCarSubmit = (e) => {
             e.preventDefault();
             if (!currentUserId) return;
-            if (!employees[currentUserId].devices.includes(myDeviceId)) return Swal.fire('錯誤', '裝置驗證失敗', 'error');
-
             const emp = employees[currentUserId];
             const date = document.getElementById('carDate').value;
             const time = document.getElementById('carTime').value;
@@ -652,13 +682,12 @@
                 date, time, location, status: 'pending', timestamp: Date.now()
             });
 
-            // Line Logic
             const msg = `【公務車預約】\n👤 ${emp.name}\n📅 ${date} ${time}\n📍 ${location}`;
             window.open('https://line.me/R/msg/text/?' + encodeURIComponent(msg));
-
-            Swal.fire('已送出', '申請已提交並跳轉至 LINE', 'success');
+            Swal.fire('已送出', '申請已提交', 'success');
         };
 
+        // --- Admin Logic (Stats Update) ---
         window.processRequest = (reqId, action) => {
             const req = requests[reqId]; 
             if (!req) return Swal.fire('錯誤', '找不到該申請紀錄', 'error');
@@ -675,12 +704,21 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     try {
-                        if (action === 'approve' && req.category === 'leave' && req.type === '特休') {
-                            if (!employees[req.empId]) {
-                                return Swal.fire('操作失敗', '找不到該員工資料 (可能已被刪除)，無法扣除特休。', 'error');
-                            }
-                            const currentUsed = employees[req.empId].usedLeave || 0;
-                            set(ref(db, `employees/${req.empId}/usedLeave`), currentUsed + req.days);
+                        if (action === 'approve' && req.category === 'leave') {
+                            const emp = employees[req.empId];
+                            if (!emp) return Swal.fire('操作失敗', '找不到該員工', 'error');
+                            
+                            const stats = emp.stats || { annual: emp.usedLeave || 0, comp: 0, sick: 0, personal: 0 };
+                            
+                            if (req.type === '特休') stats.annual = (stats.annual || 0) + req.days;
+                            if (req.type === '補休') stats.comp = (stats.comp || 0) - req.days;
+                            if (req.type === '病假') stats.sick = (stats.sick || 0) + req.days;
+                            if (req.type === '事假') stats.personal = (stats.personal || 0) + req.days;
+
+                            update(ref(db, `employees/${req.empId}`), { 
+                                stats: stats,
+                                usedLeave: stats.annual
+                            });
                         }
                         
                         update(ref(db, `requests/${reqId}`), { status: action === 'approve' ? 'approved' : 'rejected' })
@@ -699,28 +737,27 @@
             const emp = employees[empId];
             if(!emp) return;
             currentModalEmpId = empId;
-            
             document.getElementById('modalEmpName').innerText = emp.name;
-            document.getElementById('modalUsedLeave').value = emp.usedLeave || 0;
+            
+            const stats = emp.stats || { annual: emp.usedLeave || 0, comp: 0, sick: 0, personal: 0 };
+            document.getElementById('adjAnnualUsed').value = stats.annual;
+            document.getElementById('adjCompBalance').value = stats.comp;
+            document.getElementById('adjSickUsed').value = stats.sick;
+            document.getElementById('adjPersonalUsed').value = stats.personal;
             
             const tbody = document.getElementById('historyTableBody');
             tbody.innerHTML = '';
-            
             const myHistory = Object.entries(requests)
                 .map(([key, val]) => ({...val, id: key}))
                 .filter(r => r.empId === empId)
                 .sort((a,b) => b.timestamp - a.timestamp); 
             
-            if(myHistory.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400">尚無紀錄</td></tr>';
-            } else {
+            if(myHistory.length === 0) tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400">尚無紀錄</td></tr>';
+            else {
                 myHistory.forEach(req => {
-                    let statusColor = 'text-slate-500';
-                    if(req.status === 'approved') statusColor = 'text-green-600 font-bold';
-                    if(req.status === 'rejected') statusColor = 'text-red-500 font-bold';
-                    if(req.status === 'pending') statusColor = 'text-orange-500 font-bold';
-                    
+                    let statusColor = req.status === 'approved' ? 'text-green-600 font-bold' : req.status === 'rejected' ? 'text-red-500 font-bold' : 'text-orange-500 font-bold';
                     const detail = req.category === 'car' ? `公務車: ${req.location}` : `${req.type} (${req.days}天)`;
+                    const note = req.adminNote ? `<span class="bg-yellow-100 text-yellow-800 text-[10px] px-2 py-1 rounded">${req.adminNote}</span>` : '<span class="text-slate-300 text-[10px]">-</span>';
                     
                     tbody.innerHTML += `
                         <tr class="border-b hover:bg-slate-50">
@@ -728,43 +765,49 @@
                             <td class="p-2 text-xs">${req.category==='car'?'用車':'請假'}</td>
                             <td class="p-2 text-sm text-slate-700">${detail}</td>
                             <td class="p-2 text-xs ${statusColor}">${req.status}</td>
-                            <td class="p-2 text-right">
-                                <button onclick="window.deleteHistoryItem('${req.id}')" class="text-red-400 hover:text-red-600 px-2"><i class="fa-solid fa-trash"></i></button>
-                            </td>
-                        </tr>
-                    `;
+                            <td class="p-2 cursor-pointer" onclick="window.editAdminNote('${req.id}')">${note} <i class="fa-solid fa-pen text-slate-300 text-[10px] ml-1"></i></td>
+                            <td class="p-2 text-right"><button onclick="window.deleteHistoryItem('${req.id}')" class="text-red-400 hover:text-red-600 px-2"><i class="fa-solid fa-trash"></i></button></td>
+                        </tr>`;
                 });
             }
-
             document.getElementById('historyModal').style.display = 'flex';
         };
 
-        window.closeHistory = () => {
-            document.getElementById('historyModal').style.display = 'none';
+        window.closeHistory = () => { document.getElementById('historyModal').style.display = 'none'; };
+
+        window.editAdminNote = async (reqId) => {
+            const req = requests[reqId];
+            const { value: text } = await Swal.fire({
+                title: '管理員註記',
+                input: 'text',
+                inputValue: req.adminNote || '',
+                placeholder: '例如: 已補證明...',
+                showCancelButton: true
+            });
+
+            if (text !== undefined) {
+                update(ref(db, `requests/${reqId}`), { adminNote: text })
+                    .then(() => {
+                        window.openHistory(currentModalEmpId); // Refresh modal
+                    });
+            }
         };
 
-        window.saveUsedLeave = () => {
+        window.saveAllAdjustments = () => {
             if(!currentModalEmpId) return;
-            const newVal = parseFloat(document.getElementById('modalUsedLeave').value);
-            set(ref(db, `employees/${currentModalEmpId}/usedLeave`), newVal)
-                .then(() => Swal.fire('更新成功', '特休已用天數已校正', 'success'));
+            const stats = {
+                annual: parseFloat(document.getElementById('adjAnnualUsed').value) || 0,
+                comp: parseFloat(document.getElementById('adjCompBalance').value) || 0,
+                sick: parseFloat(document.getElementById('adjSickUsed').value) || 0,
+                personal: parseFloat(document.getElementById('adjPersonalUsed').value) || 0
+            };
+            update(ref(db, `employees/${currentModalEmpId}`), { stats: stats, usedLeave: stats.annual })
+                .then(() => Swal.fire('更新成功', '所有假勤數據已校正', 'success'));
         };
 
         window.deleteHistoryItem = (reqId) => {
-            Swal.fire({
-                title: '確定刪除此紀錄?',
-                text: '刪除後無法復原，請確認是否需要手動調整「特休已用天數」。',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                confirmButtonText: '刪除'
-            }).then((result) => {
-                if(result.isConfirmed) {
-                    remove(ref(db, `requests/${reqId}`))
-                        .then(() => {
-                            window.openHistory(currentModalEmpId);
-                        });
-                }
+            Swal.fire({ title: '確定刪除?', text: '刪除後不影響已扣除的額度 (需手動校正)', icon: 'warning', showCancelButton: true, confirmButtonText: '刪除' }).then((result) => {
+                if(result.isConfirmed) remove(ref(db, `requests/${reqId}`)).then(() => window.openHistory(currentModalEmpId));
             });
         };
 
@@ -783,38 +826,17 @@
             const date = document.getElementById('newAdminDate').value;
             if(!name || !date) return Swal.fire('資料不完整');
             const newRef = push(ref(db, 'employees'));
-            set(newRef, { id: newRef.key, name, gender, joinDate: date, usedLeave: 0, devices: [] });
+            set(newRef, { id: newRef.key, name, gender, joinDate: date, usedLeave: 0, devices: [], stats: {annual:0, comp:0, sick:0, personal:0} });
             document.getElementById('newAdminName').value = '';
             Swal.fire('成功', '員工已新增', 'success');
         };
 
-        window.updateEmpName = (id, newName) => {
-            if(confirm(`確定將名稱更改為 ${newName}?`)) {
-                update(ref(db, `employees/${id}`), { name: newName });
-            }
-        };
-
-        window.updateEmpDate = (id, newDate) => {
-             update(ref(db, `employees/${id}`), { joinDate: newDate })
-                .then(() => console.log('Date updated'));
-        };
-
-        window.deleteEmployee = (id) => {
-            if(confirm("確定刪除此員工?")) remove(ref(db, `employees/${id}`));
-        };
-
+        window.updateEmpName = (id, newName) => { if(confirm(`確定更改姓名為 ${newName}?`)) update(ref(db, `employees/${id}`), { name: newName }); };
+        window.updateEmpDate = (id, newDate) => { update(ref(db, `employees/${id}`), { joinDate: newDate }); };
+        window.deleteEmployee = (id) => { if(confirm("確定刪除此員工?")) remove(ref(db, `employees/${id}`)); };
         window.unbindDevice = (empId, deviceIndex) => {
             const emp = employees[empId];
-            if(!emp || !emp.devices) return;
-            
-            Swal.fire({
-                title: '確認解除綁定?',
-                text: `將移除裝置: ${emp.devices[deviceIndex]}`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                confirmButtonText: '移除'
-            }).then((result) => {
+            Swal.fire({ title: '確認解除綁定?', icon: 'warning', showCancelButton: true, confirmButtonText: '移除' }).then((result) => {
                 if (result.isConfirmed) {
                     const newDevices = [...emp.devices];
                     newDevices.splice(deviceIndex, 1);
@@ -824,44 +846,7 @@
             });
         };
 
-        // --- Render Helpers (Enhanced Admin Table) ---
-        function renderAdminTable() {
-            const tbody = document.getElementById('adminTableBody');
-            tbody.innerHTML = '';
-            Object.values(employees).forEach(emp => {
-                const devices = emp.devices || [];
-                let deviceHtml = devices.map((did, idx) => 
-                    `<span class="device-badge cursor-pointer hover:bg-red-200 hover:text-red-800" onclick="window.unbindDevice('${emp.id}', ${idx})" title="點擊解綁">📱 ${did.substr(0,4)}... <i class="fa-solid fa-xmark ml-1"></i></span>`
-                ).join(' ');
-                
-                if (devices.length === 0) deviceHtml = '<span class="text-xs text-slate-300">未綁定</span>';
-
-                const calc = calculateLeave(emp.joinDate);
-                const remaining = calc.days - (emp.usedLeave || 0);
-
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 border-b">
-                        <td class="p-3"><input type="text" value="${emp.name}" onchange="window.updateEmpName('${emp.id}', this.value)" class="border rounded px-2 py-1 w-20 text-sm font-bold text-slate-700 focus:border-blue-500 outline-none"></td>
-                        <td class="p-3">
-                            <div class="font-bold text-blue-900">${calc.years} 年</div>
-                            <input type="date" value="${emp.joinDate}" onchange="window.updateEmpDate('${emp.id}', this.value)" class="text-xs text-slate-400 bg-transparent border-none outline-none p-0 cursor-pointer hover:text-blue-500">
-                        </td>
-                        <td class="p-3">
-                            <div class="flex items-center gap-2 text-xs">
-                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">總:${calc.days}</span>
-                                <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded">用:${emp.usedLeave||0}</span>
-                                <span class="font-bold text-sm ${remaining<0?'text-red-500':'text-green-600'}">剩:${remaining}</span>
-                            </div>
-                        </td>
-                        <td class="p-3">${deviceHtml}</td>
-                        <td class="p-3 text-right space-x-1">
-                             <button onclick="window.openHistory('${emp.id}')" class="bg-white border border-slate-200 text-slate-600 text-xs px-2 py-1 rounded hover:bg-slate-50 shadow-sm" title="紀錄與校正"><i class="fa-solid fa-pen-to-square"></i></button>
-                             <button onclick="window.deleteEmployee('${emp.id}')" class="text-slate-300 hover:text-red-500 px-2" title="刪除員工"><i class="fa-solid fa-trash"></i></button>
-                        </td>
-                    </tr>`;
-            });
-        }
-
+        // --- Render Helpers ---
         function renderApprovalQueue() {
             const tbody = document.getElementById('approvalTableBody');
             const noMsg = document.getElementById('noPendingMsg');
@@ -902,6 +887,41 @@
                 noMsg.classList.remove('hidden');
                 badge.classList.add('hidden');
             }
+        }
+
+        function renderAdminTable() {
+            const tbody = document.getElementById('adminTableBody');
+            tbody.innerHTML = '';
+            Object.values(employees).forEach(emp => {
+                const devices = emp.devices || [];
+                let deviceHtml = devices.map((did, idx) => `<span class="device-badge cursor-pointer hover:bg-red-200 hover:text-red-800" onclick="window.unbindDevice('${emp.id}', ${idx})">📱 ${did.substr(0,4)}...</span>`).join(' ');
+                if (devices.length === 0) deviceHtml = '<span class="text-xs text-slate-300">未綁定</span>';
+
+                const calc = calculateLeave(emp.joinDate);
+                const stats = emp.stats || { annual: emp.usedLeave || 0, comp: 0 };
+                const remaining = calc.days - stats.annual;
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 border-b">
+                        <td class="p-3"><input type="text" value="${emp.name}" onchange="window.updateEmpName('${emp.id}', this.value)" class="border rounded px-2 py-1 w-20 text-sm font-bold text-slate-700 focus:border-blue-500 outline-none"></td>
+                        <td class="p-3">
+                            <div class="font-bold text-blue-900">${calc.years} 年</div>
+                            <input type="date" value="${emp.joinDate}" onchange="window.updateEmpDate('${emp.id}', this.value)" class="text-xs text-slate-400 bg-transparent border-none outline-none p-0 cursor-pointer hover:text-blue-500">
+                        </td>
+                        <td class="p-3">
+                            <div class="flex items-center gap-2 text-xs">
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">總:${calc.days}</span>
+                                <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded">用:${stats.annual}</span>
+                                <span class="font-bold text-sm ${remaining<0?'text-red-500':'text-green-600'}">剩:${remaining}</span>
+                            </div>
+                        </td>
+                        <td class="p-3">${deviceHtml}</td>
+                        <td class="p-3 text-right space-x-1">
+                             <button onclick="window.openHistory('${emp.id}')" class="bg-white border border-slate-200 text-slate-600 text-xs px-2 py-1 rounded hover:bg-slate-50 shadow-sm" title="紀錄與校正"><i class="fa-solid fa-pen-to-square"></i></button>
+                             <button onclick="window.deleteEmployee('${emp.id}')" class="text-slate-300 hover:text-red-500 px-2" title="刪除員工"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>`;
+            });
         }
 
         function calculateLeave(joinDate) {
@@ -947,6 +967,24 @@
              link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
              link.download = "考勤紀錄.csv";
              link.click();
+        };
+
+        // --- NEW EXPORT FUNCTION ---
+        window.exportLeaveRequests = () => {
+            const reqs = Object.values(requests).filter(r => r.category === 'leave').sort((a,b) => b.timestamp - a.timestamp);
+            if (reqs.length === 0) return Swal.fire('尚無請假資料');
+            
+            let csv = "\uFEFF姓名,日期,假別,天數,事由,狀態,管理員註記\n";
+            reqs.forEach(r => {
+                const note = r.adminNote ? r.adminNote.replace(/,/g, ' ') : ''; // Handle commas
+                const reason = r.reason ? r.reason.replace(/,/g, ' ') : '';
+                csv += `${r.empName},${r.date},${r.type},${r.days},${reason},${r.status},${note}\n`;
+            });
+            
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+            link.download = `請假明細匯出_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
         };
 
         document.getElementById('leaveDate').valueAsDate = new Date();
