@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>宏國地政|易丞地政 - 智慧指揮艙 (Nexus V4.2 Hotfix)</title>
+    <title>宏國地政|易丞地政 - 智慧指揮艙 (Nexus V5.1)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -41,6 +41,10 @@
         .tab-active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: bold; }
         .tab-inactive { color: #64748b; }
         .device-badge { font-family: monospace; font-size: 0.7rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; }
+
+        /* Modal Overlay */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .modal-content { background: white; width: 90%; max-width: 800px; max-height: 90vh; border-radius: 1rem; padding: 0; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -51,7 +55,7 @@
                 <div class="w-10 h-10 bg-white text-blue-900 rounded-lg flex items-center justify-center font-bold text-lg serif shadow-lg">宏</div>
                 <div>
                     <h1 class="text-base md:text-lg font-bold tracking-wider serif">宏國地政 | 易丞地政</h1>
-                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">Nexus V4.2 (Hotfix)</p>
+                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">Nexus V5.1 (Admin Power)</p>
                 </div>
             </div>
             <div class="flex bg-blue-900/50 rounded-full p-1">
@@ -264,7 +268,7 @@
                 </div>
 
                 <div class="lg:col-span-3 glass-panel p-6">
-                    <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-users mr-1"></i> 員工與裝置管理 <span class="text-xs text-slate-400 font-normal ml-2">(限制每人2台裝置)</span></h2>
+                    <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-users mr-1"></i> 員工全方位管理 <span class="text-xs text-slate-400 font-normal ml-2">(到職日連動年資)</span></h2>
                     
                     <div class="flex gap-2 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
                         <input type="text" id="newAdminName" placeholder="新進員工姓名" class="flex-1 p-2 input-modern">
@@ -277,9 +281,10 @@
                         <table class="w-full text-left text-sm">
                             <thead class="bg-slate-100 text-slate-600 text-xs uppercase">
                                 <tr>
-                                    <th class="p-3">姓名</th>
-                                    <th class="p-3">到職日</th>
-                                    <th class="p-3 w-1/3">已綁定裝置 (Admin可踢除)</th>
+                                    <th class="p-3">姓名 (可改)</th>
+                                    <th class="p-3">年資 / 到職日 (可改)</th>
+                                    <th class="p-3">特休概況 (總/用/剩)</th>
+                                    <th class="p-3 w-1/4">裝置</th>
                                     <th class="p-3 text-right">管理</th>
                                 </tr>
                             </thead>
@@ -289,6 +294,45 @@
                 </div>
             </div>
         </section>
+
+        <div id="historyModal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="p-4 border-b bg-slate-100 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800 text-lg"><i class="fa-solid fa-history mr-2"></i> 員工紀錄校正面板</h3>
+                    <button onclick="closeHistory()" class="text-slate-500 hover:text-red-500 text-xl"><i class="fa-solid fa-times"></i></button>
+                </div>
+                <div class="p-6 overflow-y-auto flex-1 bg-slate-50">
+                    <div class="mb-6 bg-white p-4 rounded-lg border border-blue-200 shadow-sm">
+                        <h4 class="font-bold text-blue-900 mb-2 border-b pb-1">🔧 數據強制校正</h4>
+                        <div class="flex items-center gap-4">
+                            <div class="text-sm">員工：<span id="modalEmpName" class="font-bold"></span></div>
+                            <div class="flex items-center gap-2">
+                                <label class="text-xs font-bold text-slate-500">特休已用天數：</label>
+                                <input type="number" id="modalUsedLeave" class="border rounded px-2 py-1 w-20 text-center font-mono font-bold">
+                                <button onclick="saveUsedLeave()" class="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-500">儲存修正</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h4 class="font-bold text-slate-700 mb-2">📜 歷史申請紀錄 (含已批准/已駁回)</h4>
+                    <div class="overflow-x-auto bg-white rounded-lg border border-slate-200">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-100 text-xs text-slate-500 uppercase">
+                                <tr>
+                                    <th class="p-2">日期</th>
+                                    <th class="p-2">類型</th>
+                                    <th class="p-2">內容</th>
+                                    <th class="p-2">狀態</th>
+                                    <th class="p-2 text-right">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <script type="module">
@@ -315,6 +359,7 @@
         let bulletin = { title: "歡迎", content: "資料讀取中...", date: "" };
         let currentUserId = null;
         let currentDeduction = 0;
+        let currentModalEmpId = null;
 
         // --- Device Fingerprint Logic ---
         let myDeviceId = localStorage.getItem('hge_security_did');
@@ -383,7 +428,7 @@
                  }
             }
             renderAdminTable();
-            renderApprovalQueue(); // This now uses Object.entries to fix ID issue
+            renderApprovalQueue();
             renderAttendanceLog();
             
             const select = document.getElementById('empSelect');
@@ -569,7 +614,6 @@
             window.calculateOvertime();
         };
 
-        // --- SUBMISSION with LINE JUMP ---
         window.handleLeaveSubmit = (e) => {
             e.preventDefault();
             if (!currentUserId) return;
@@ -615,16 +659,9 @@
             Swal.fire('已送出', '申請已提交並跳轉至 LINE', 'success');
         };
 
-        // --- Admin Logic (FIXED: ID MAPPING) ---
         window.processRequest = (reqId, action) => {
-            // Because we used Object.entries map, the ID is correct, 
-            // BUT requests object is still indexed by ID.
-            const req = requests[reqId];
-            
-            if (!req) {
-                console.error("Request not found:", reqId);
-                return Swal.fire('錯誤', '找不到該申請紀錄 (ID Mismatch)', 'error');
-            }
+            const req = requests[reqId]; 
+            if (!req) return Swal.fire('錯誤', '找不到該申請紀錄', 'error');
             
             const actionText = action === 'approve' ? '批准' : '駁回';
             
@@ -658,6 +695,79 @@
             });
         };
 
+        window.openHistory = (empId) => {
+            const emp = employees[empId];
+            if(!emp) return;
+            currentModalEmpId = empId;
+            
+            document.getElementById('modalEmpName').innerText = emp.name;
+            document.getElementById('modalUsedLeave').value = emp.usedLeave || 0;
+            
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+            
+            const myHistory = Object.entries(requests)
+                .map(([key, val]) => ({...val, id: key}))
+                .filter(r => r.empId === empId)
+                .sort((a,b) => b.timestamp - a.timestamp); 
+            
+            if(myHistory.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400">尚無紀錄</td></tr>';
+            } else {
+                myHistory.forEach(req => {
+                    let statusColor = 'text-slate-500';
+                    if(req.status === 'approved') statusColor = 'text-green-600 font-bold';
+                    if(req.status === 'rejected') statusColor = 'text-red-500 font-bold';
+                    if(req.status === 'pending') statusColor = 'text-orange-500 font-bold';
+                    
+                    const detail = req.category === 'car' ? `公務車: ${req.location}` : `${req.type} (${req.days}天)`;
+                    
+                    tbody.innerHTML += `
+                        <tr class="border-b hover:bg-slate-50">
+                            <td class="p-2 text-xs">${req.date}</td>
+                            <td class="p-2 text-xs">${req.category==='car'?'用車':'請假'}</td>
+                            <td class="p-2 text-sm text-slate-700">${detail}</td>
+                            <td class="p-2 text-xs ${statusColor}">${req.status}</td>
+                            <td class="p-2 text-right">
+                                <button onclick="window.deleteHistoryItem('${req.id}')" class="text-red-400 hover:text-red-600 px-2"><i class="fa-solid fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            document.getElementById('historyModal').style.display = 'flex';
+        };
+
+        window.closeHistory = () => {
+            document.getElementById('historyModal').style.display = 'none';
+        };
+
+        window.saveUsedLeave = () => {
+            if(!currentModalEmpId) return;
+            const newVal = parseFloat(document.getElementById('modalUsedLeave').value);
+            set(ref(db, `employees/${currentModalEmpId}/usedLeave`), newVal)
+                .then(() => Swal.fire('更新成功', '特休已用天數已校正', 'success'));
+        };
+
+        window.deleteHistoryItem = (reqId) => {
+            Swal.fire({
+                title: '確定刪除此紀錄?',
+                text: '刪除後無法復原，請確認是否需要手動調整「特休已用天數」。',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: '刪除'
+            }).then((result) => {
+                if(result.isConfirmed) {
+                    remove(ref(db, `requests/${reqId}`))
+                        .then(() => {
+                            window.openHistory(currentModalEmpId);
+                        });
+                }
+            });
+        };
+
         window.saveBulletin = () => {
             set(ref(db, 'bulletin'), {
                 title: document.getElementById('adminBulletinTitle').value,
@@ -682,6 +792,11 @@
             if(confirm(`確定將名稱更改為 ${newName}?`)) {
                 update(ref(db, `employees/${id}`), { name: newName });
             }
+        };
+
+        window.updateEmpDate = (id, newDate) => {
+             update(ref(db, `employees/${id}`), { joinDate: newDate })
+                .then(() => console.log('Date updated'));
         };
 
         window.deleteEmployee = (id) => {
@@ -709,16 +824,52 @@
             });
         };
 
-        // --- Render Helpers ---
+        // --- Render Helpers (Enhanced Admin Table) ---
+        function renderAdminTable() {
+            const tbody = document.getElementById('adminTableBody');
+            tbody.innerHTML = '';
+            Object.values(employees).forEach(emp => {
+                const devices = emp.devices || [];
+                let deviceHtml = devices.map((did, idx) => 
+                    `<span class="device-badge cursor-pointer hover:bg-red-200 hover:text-red-800" onclick="window.unbindDevice('${emp.id}', ${idx})" title="點擊解綁">📱 ${did.substr(0,4)}... <i class="fa-solid fa-xmark ml-1"></i></span>`
+                ).join(' ');
+                
+                if (devices.length === 0) deviceHtml = '<span class="text-xs text-slate-300">未綁定</span>';
+
+                const calc = calculateLeave(emp.joinDate);
+                const remaining = calc.days - (emp.usedLeave || 0);
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 border-b">
+                        <td class="p-3"><input type="text" value="${emp.name}" onchange="window.updateEmpName('${emp.id}', this.value)" class="border rounded px-2 py-1 w-20 text-sm font-bold text-slate-700 focus:border-blue-500 outline-none"></td>
+                        <td class="p-3">
+                            <div class="font-bold text-blue-900">${calc.years} 年</div>
+                            <input type="date" value="${emp.joinDate}" onchange="window.updateEmpDate('${emp.id}', this.value)" class="text-xs text-slate-400 bg-transparent border-none outline-none p-0 cursor-pointer hover:text-blue-500">
+                        </td>
+                        <td class="p-3">
+                            <div class="flex items-center gap-2 text-xs">
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">總:${calc.days}</span>
+                                <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded">用:${emp.usedLeave||0}</span>
+                                <span class="font-bold text-sm ${remaining<0?'text-red-500':'text-green-600'}">剩:${remaining}</span>
+                            </div>
+                        </td>
+                        <td class="p-3">${deviceHtml}</td>
+                        <td class="p-3 text-right space-x-1">
+                             <button onclick="window.openHistory('${emp.id}')" class="bg-white border border-slate-200 text-slate-600 text-xs px-2 py-1 rounded hover:bg-slate-50 shadow-sm" title="紀錄與校正"><i class="fa-solid fa-pen-to-square"></i></button>
+                             <button onclick="window.deleteEmployee('${emp.id}')" class="text-slate-300 hover:text-red-500 px-2" title="刪除員工"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>`;
+            });
+        }
+
         function renderApprovalQueue() {
             const tbody = document.getElementById('approvalTableBody');
             const noMsg = document.getElementById('noPendingMsg');
             const badge = document.getElementById('pendingCountBadge');
             tbody.innerHTML = '';
             
-            // KEY FIX: Use Object.entries to get the Firebase Key as ID
             const pendingReqs = Object.entries(requests)
-                .map(([key, val]) => ({ ...val, id: key })) // Map key to id
+                .map(([key, val]) => ({ ...val, id: key }))
                 .filter(r => r.status === 'pending')
                 .sort((a,b) => a.timestamp - b.timestamp);
             
@@ -733,7 +884,6 @@
                     const detail = isCar ? `${req.time} @ ${req.location}` : `${req.days} 天 | ${req.reason}`;
                     const rowClass = isCar ? 'border-l-4 border-l-brand-gold' : 'border-l-4 border-l-blue-500';
 
-                    // Using req.id (which is now the valid Firebase Key)
                     tbody.innerHTML += `
                         <tr class="bg-white border-b hover:bg-slate-50 ${rowClass}">
                             <td class="p-3 font-bold text-slate-700 flex items-center gap-2">${icon} ${req.empName}</td>
@@ -752,27 +902,6 @@
                 noMsg.classList.remove('hidden');
                 badge.classList.add('hidden');
             }
-        }
-
-        function renderAdminTable() {
-            const tbody = document.getElementById('adminTableBody');
-            tbody.innerHTML = '';
-            Object.values(employees).forEach(emp => {
-                const devices = emp.devices || [];
-                let deviceHtml = devices.map((did, idx) => 
-                    `<span class="device-badge cursor-pointer hover:bg-red-200 hover:text-red-800" onclick="window.unbindDevice('${emp.id}', ${idx})" title="點擊解綁">📱 ${did.substr(0,4)}... <i class="fa-solid fa-xmark ml-1"></i></span>`
-                ).join(' ');
-                
-                if (devices.length === 0) deviceHtml = '<span class="text-xs text-slate-300">未綁定</span>';
-
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 border-b">
-                        <td class="p-3"><input type="text" value="${emp.name}" onchange="window.updateEmpName('${emp.id}', this.value)" class="border rounded px-2 py-1 w-24 text-sm font-bold text-slate-700 focus:border-blue-500 outline-none"></td>
-                        <td class="p-3 text-xs text-slate-500">${emp.joinDate}</td>
-                        <td class="p-3">${deviceHtml} <span class="text-[10px] text-slate-400">(${devices.length}/2)</span></td>
-                        <td class="p-3 text-right"><button onclick="window.deleteEmployee('${emp.id}')" class="text-slate-300 hover:text-red-500"><i class="fa-solid fa-trash"></i></button></td>
-                    </tr>`;
-            });
         }
 
         function calculateLeave(joinDate) {
