@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>宏國地政|易丞地政 - 智慧指揮艙 (V3 Security)</title>
+    <title>宏國地政|易丞地政 - 智慧指揮艙 (Nexus V4.1)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -40,8 +40,6 @@
         .btn-punch:active { transform: scale(0.95); }
         .tab-active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: bold; }
         .tab-inactive { color: #64748b; }
-
-        /* Device Badge */
         .device-badge { font-family: monospace; font-size: 0.7rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; }
     </style>
 </head>
@@ -53,7 +51,7 @@
                 <div class="w-10 h-10 bg-white text-blue-900 rounded-lg flex items-center justify-center font-bold text-lg serif shadow-lg">宏</div>
                 <div>
                     <h1 class="text-base md:text-lg font-bold tracking-wider serif">宏國地政 | 易丞地政</h1>
-                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">Nexus Security V3</p>
+                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">Nexus V4.1 (Stable)</p>
                 </div>
             </div>
             <div class="flex bg-blue-900/50 rounded-full p-1">
@@ -98,12 +96,16 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-2 space-y-6">
-                    <div class="glass-panel p-6 border-l-4 border-blue-600 fade-in-up">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                    <div class="glass-panel p-6 border-l-4 border-blue-600 fade-in-up relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-blue-50 px-4 py-2 rounded-bl-xl border-b border-l border-blue-100 shadow-sm">
+                             <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider text-right">NOW</div>
+                             <div class="text-xl font-black text-blue-700 font-mono" id="liveClock">00:00:00</div>
+                        </div>
+
+                        <div class="flex justify-between items-center mb-8 mt-2">
+                            <h3 class="font-bold text-slate-800 flex items-center gap-2 text-lg">
                                 <i class="fa-solid fa-location-dot text-blue-600"></i> 定位打卡
                             </h3>
-                            <span class="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded" id="clockTime">--:--:--</span>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <button onclick="handlePunch('上班')" class="btn-punch flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl">
@@ -148,7 +150,7 @@
                                     <div class="font-bold text-lg text-red-500">$<span id="impactAmount">0</span></div>
                                 </div>
                             </div>
-                            <button type="submit" class="w-full bg-[#06c755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-lg shadow-lg transition flex justify-center items-center gap-2"><i class="fa-brands fa-line"></i> 送出假單</button>
+                            <button type="submit" class="w-full bg-[#06c755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-lg shadow-lg transition flex justify-center items-center gap-2"><i class="fa-brands fa-line"></i> 送出並通知 LINE 群組</button>
                         </form>
 
                         <form id="form-car" onsubmit="handleCarSubmit(event)" class="space-y-4 hidden-section">
@@ -160,7 +162,7 @@
                             <div class="bg-blue-50 text-blue-700 text-xs p-3 rounded">
                                 <i class="fa-solid fa-circle-info mr-1"></i> 公務車需經管理員審核。
                             </div>
-                            <button type="submit" class="w-full bg-[#06c755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-lg shadow-lg transition flex justify-center items-center gap-2"><i class="fa-brands fa-line"></i> 送出用車申請</button>
+                            <button type="submit" class="w-full bg-[#06c755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-lg shadow-lg transition flex justify-center items-center gap-2"><i class="fa-brands fa-line"></i> 送出並通知 LINE 群組</button>
                         </form>
                     </div>
 
@@ -322,7 +324,12 @@
         }
         document.getElementById('myDeviceIdDisplay').innerText = myDeviceId;
 
-        // --- UI Interactions ---
+        // --- Clock Logic ---
+        setInterval(() => {
+            document.getElementById('liveClock').innerText = new Date().toLocaleTimeString('zh-TW', {hour12: false});
+        }, 1000);
+
+        // --- GLOBAL EXPORTS (Explicitly bind to window to ensure HTML access) ---
         window.switchView = (view) => {
             document.getElementById('employeeView').classList.add('hidden-section');
             document.getElementById('adminView').classList.add('hidden-section');
@@ -334,7 +341,7 @@
             if (view === 'employee') {
                 document.getElementById('loginSection').classList.remove('hidden-section');
                 currentUserId = null;
-                updateEmpSelect(); // Re-check binding status on view switch
+                updateEmpSelect();
                 btnEmp.className = "px-4 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all bg-white text-blue-900 shadow-sm";
                 btnAdm.className = "px-4 py-1.5 rounded-full text-xs md:text-sm font-medium text-blue-200 hover:text-white transition-all";
             } else {
@@ -366,10 +373,9 @@
             attendance = data.attendance || {};
             bulletin = data.bulletin || { title: "尚無公告", content: "", date: "" };
             
-            updateEmpSelect(); // Critical: Check device binding here
+            updateEmpSelect();
             renderBulletin();
             if (currentUserId) {
-                 // Refresh dashboard data but don't reload view to avoid flicker
                  const emp = employees[currentUserId];
                  if(emp) {
                     const calc = calculateLeave(emp.joinDate);
@@ -384,12 +390,11 @@
             select.disabled = false;
         });
 
-        // --- Security & Login Logic ---
+        // --- Core Logic ---
         function updateEmpSelect() {
             const select = document.getElementById('empSelect');
             select.innerHTML = '';
             
-            // 1. Check if this device is already bound to someone
             let boundUser = null;
             Object.values(employees).forEach(emp => {
                 if (emp.devices && emp.devices.includes(myDeviceId)) {
@@ -398,20 +403,17 @@
             });
 
             if (boundUser) {
-                // Scenario: Device IS bound. Lock to this user.
                 const option = document.createElement('option');
                 option.value = boundUser.id;
                 option.innerText = `🔒 已綁定身分：${boundUser.name}`;
                 select.appendChild(option);
                 select.value = boundUser.id;
                 
-                // Auto login if on login page
                 if (!document.getElementById('loginSection').classList.contains('hidden-section')) {
                      document.getElementById('loginStatusMsg').classList.remove('hidden');
                      setTimeout(() => loadEmployeeDashboard(boundUser.id), 800);
                 }
             } else {
-                // Scenario: Device NOT bound. Show all users.
                 const defaultOpt = document.createElement('option');
                 defaultOpt.value = "";
                 defaultOpt.innerText = "-- 請選擇您的姓名 (首次需綁定) --";
@@ -433,24 +435,17 @@
             const emp = employees[id];
             const currentDevices = emp.devices || [];
 
-            // Double check: Is this device already mine? (Should be handled by updateEmpSelect, but safety first)
             if (currentDevices.includes(myDeviceId)) {
                 loadEmployeeDashboard(id);
                 return;
             }
 
-            // Check Quota
             if (currentDevices.length >= 2) {
-                Swal.fire({
-                    icon: 'error',
-                    title: '綁定失敗',
-                    text: '您的帳號已綁定 2 台裝置。請聯繫管理員解綁舊裝置。'
-                });
+                Swal.fire({ icon: 'error', title: '綁定失敗', text: '您的帳號已綁定 2 台裝置。請聯繫管理員解綁舊裝置。' });
                 document.getElementById('empSelect').value = "";
                 return;
             }
 
-            // Ask to bind
             Swal.fire({
                 title: '裝置綁定確認',
                 html: `即將綁定此裝置為 <b>${emp.name}</b> 的專用設備。<br>綁定後無法切換為其他人員。<br><br>目前已用額度: ${currentDevices.length}/2`,
@@ -498,7 +493,6 @@
         window.handlePunch = (type) => {
             if (!currentUserId) return;
             const emp = employees[currentUserId];
-            // Security Check
             if (!emp.devices || !emp.devices.includes(myDeviceId)) {
                 return Swal.fire('安全警告', '此裝置未經授權，無法進行打卡操作。', 'error');
             }
@@ -512,13 +506,12 @@
                     dateStr: now.toLocaleDateString(), timeStr: now.toLocaleTimeString(),
                     location: `${position.coords.latitude}, ${position.coords.longitude}`,
                     mapLink: `http://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`,
-                    deviceId: myDeviceId // Log device ID for audit
+                    deviceId: myDeviceId
                 });
                 Swal.fire('打卡成功', `${type} @ ${now.toLocaleTimeString()}`, 'success');
             });
         };
 
-        // --- Salary Logic ---
         window.updateSalaryFromSlider = (val) => {
             document.getElementById('monthlySalary').value = val;
             document.getElementById('displaySalary').innerText = parseInt(val).toLocaleString();
@@ -576,23 +569,28 @@
             window.calculateOvertime();
         };
 
-        // --- Submission Logic ---
+        // --- SUBMISSION with LINE JUMP ---
         window.handleLeaveSubmit = (e) => {
             e.preventDefault();
             if (!currentUserId) return;
-            // Security Check
             if (!employees[currentUserId].devices.includes(myDeviceId)) return Swal.fire('錯誤', '裝置驗證失敗', 'error');
 
             const emp = employees[currentUserId];
+            const type = document.getElementById('leaveType').value;
+            const date = document.getElementById('leaveDate').value;
+            const days = parseFloat(document.getElementById('leaveDays').value);
+            const reason = document.getElementById('leaveReason').value;
+
             push(ref(db, 'requests'), {
                 empId: currentUserId, empName: emp.name, category: 'leave',
-                type: document.getElementById('leaveType').value,
-                date: document.getElementById('leaveDate').value,
-                days: parseFloat(document.getElementById('leaveDays').value),
-                reason: document.getElementById('leaveReason').value,
-                status: 'pending', timestamp: Date.now()
+                type, date, days, reason, status: 'pending', timestamp: Date.now()
             });
-            Swal.fire('已送出', '請假申請已提交', 'success');
+
+            // Line Logic
+            const msg = `【請假申請】\n👤 ${emp.name}\n📅 ${date} (${days}天)\n🏷️ ${type}\n📝 ${reason}`;
+            window.open('https://line.me/R/msg/text/?' + encodeURIComponent(msg));
+            
+            Swal.fire('已送出', '申請已提交並跳轉至 LINE', 'success');
         };
 
         window.handleCarSubmit = (e) => {
@@ -601,26 +599,58 @@
             if (!employees[currentUserId].devices.includes(myDeviceId)) return Swal.fire('錯誤', '裝置驗證失敗', 'error');
 
             const emp = employees[currentUserId];
+            const date = document.getElementById('carDate').value;
+            const time = document.getElementById('carTime').value;
+            const location = document.getElementById('carLocation').value;
+
             push(ref(db, 'requests'), {
                 empId: currentUserId, empName: emp.name, category: 'car',
-                date: document.getElementById('carDate').value,
-                time: document.getElementById('carTime').value,
-                location: document.getElementById('carLocation').value,
-                status: 'pending', timestamp: Date.now()
+                date, time, location, status: 'pending', timestamp: Date.now()
             });
-            Swal.fire('已送出', '公務車預約已提交', 'success');
+
+            // Line Logic
+            const msg = `【公務車預約】\n👤 ${emp.name}\n📅 ${date} ${time}\n📍 ${location}`;
+            window.open('https://line.me/R/msg/text/?' + encodeURIComponent(msg));
+
+            Swal.fire('已送出', '申請已提交並跳轉至 LINE', 'success');
         };
 
-        // --- Admin Logic ---
+        // --- Admin Logic (FIXED & ROBUST) ---
         window.processRequest = (reqId, action) => {
             const req = requests[reqId];
-            if (!req) return;
+            if (!req) return Swal.fire('錯誤', '找不到該申請紀錄', 'error');
             
-            if (action === 'approve' && req.category === 'leave' && req.type === '特休') {
-                const currentUsed = employees[req.empId].usedLeave || 0;
-                set(ref(db, `employees/${req.empId}/usedLeave`), currentUsed + req.days);
-            }
-            update(ref(db, `requests/${reqId}`), { status: action === 'approve' ? 'approved' : 'rejected' });
+            const actionText = action === 'approve' ? '批准' : '駁回';
+            
+            Swal.fire({
+                title: `確認${actionText}?`,
+                text: `${req.empName} 的 ${req.category === 'car' ? '公務車' : req.type} 申請`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: action === 'approve' ? '#059669' : '#DC2626',
+                confirmButtonText: '確認執行'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    try {
+                        // Safe check for employee existence
+                        if (action === 'approve' && req.category === 'leave' && req.type === '特休') {
+                            if (!employees[req.empId]) {
+                                return Swal.fire('操作失敗', '找不到該員工資料 (可能已被刪除)，無法扣除特休。', 'error');
+                            }
+                            const currentUsed = employees[req.empId].usedLeave || 0;
+                            set(ref(db, `employees/${req.empId}/usedLeave`), currentUsed + req.days);
+                        }
+                        
+                        update(ref(db, `requests/${reqId}`), { status: action === 'approve' ? 'approved' : 'rejected' })
+                            .then(() => Swal.fire('成功', '操作已完成', 'success'))
+                            .catch(err => Swal.fire('錯誤', err.message, 'error'));
+                            
+                    } catch (e) {
+                        console.error(e);
+                        Swal.fire('系統錯誤', '執行過程發生異常', 'error');
+                    }
+                }
+            });
         };
 
         window.saveBulletin = () => {
@@ -640,6 +670,7 @@
             const newRef = push(ref(db, 'employees'));
             set(newRef, { id: newRef.key, name, gender, joinDate: date, usedLeave: 0, devices: [] });
             document.getElementById('newAdminName').value = '';
+            Swal.fire('成功', '員工已新增', 'success');
         };
 
         window.updateEmpName = (id, newName) => {
@@ -702,8 +733,8 @@
                             </td>
                             <td class="p-3 text-sm text-slate-600">${detail}</td>
                             <td class="p-3 text-right space-x-1">
-                                <button onclick="processRequest('${req.id}', 'approve')" class="text-green-600 hover:bg-green-100 p-1 rounded"><i class="fa-solid fa-check"></i></button>
-                                <button onclick="processRequest('${req.id}', 'reject')" class="text-red-600 hover:bg-red-100 p-1 rounded"><i class="fa-solid fa-xmark"></i></button>
+                                <button onclick="window.processRequest('${req.id}', 'approve')" class="text-green-600 hover:bg-green-100 p-1 rounded"><i class="fa-solid fa-check"></i></button>
+                                <button onclick="window.processRequest('${req.id}', 'reject')" class="text-red-600 hover:bg-red-100 p-1 rounded"><i class="fa-solid fa-xmark"></i></button>
                             </td>
                         </tr>`;
                 });
@@ -719,17 +750,17 @@
             Object.values(employees).forEach(emp => {
                 const devices = emp.devices || [];
                 let deviceHtml = devices.map((did, idx) => 
-                    `<span class="device-badge cursor-pointer hover:bg-red-200 hover:text-red-800" onclick="unbindDevice('${emp.id}', ${idx})" title="點擊解綁">📱 ${did.substr(0,4)}... <i class="fa-solid fa-xmark ml-1"></i></span>`
+                    `<span class="device-badge cursor-pointer hover:bg-red-200 hover:text-red-800" onclick="window.unbindDevice('${emp.id}', ${idx})" title="點擊解綁">📱 ${did.substr(0,4)}... <i class="fa-solid fa-xmark ml-1"></i></span>`
                 ).join(' ');
                 
                 if (devices.length === 0) deviceHtml = '<span class="text-xs text-slate-300">未綁定</span>';
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50 border-b">
-                        <td class="p-3"><input type="text" value="${emp.name}" onchange="updateEmpName('${emp.id}', this.value)" class="border rounded px-2 py-1 w-24 text-sm font-bold text-slate-700 focus:border-blue-500 outline-none"></td>
+                        <td class="p-3"><input type="text" value="${emp.name}" onchange="window.updateEmpName('${emp.id}', this.value)" class="border rounded px-2 py-1 w-24 text-sm font-bold text-slate-700 focus:border-blue-500 outline-none"></td>
                         <td class="p-3 text-xs text-slate-500">${emp.joinDate}</td>
                         <td class="p-3">${deviceHtml} <span class="text-[10px] text-slate-400">(${devices.length}/2)</span></td>
-                        <td class="p-3 text-right"><button onclick="deleteEmployee('${emp.id}')" class="text-slate-300 hover:text-red-500"><i class="fa-solid fa-trash"></i></button></td>
+                        <td class="p-3 text-right"><button onclick="window.deleteEmployee('${emp.id}')" class="text-slate-300 hover:text-red-500"><i class="fa-solid fa-trash"></i></button></td>
                     </tr>`;
             });
         }
