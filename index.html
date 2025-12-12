@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>宏國地政|易丞地政 - 智慧指揮艙 (Nexus V5.3)</title>
+    <title>宏國地政|易丞地政 - 智慧指揮艙 (Nexus V5.4 Secure)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -55,7 +55,7 @@
                 <div class="w-10 h-10 bg-white text-blue-900 rounded-lg flex items-center justify-center font-bold text-lg serif shadow-lg">宏</div>
                 <div>
                     <h1 class="text-base md:text-lg font-bold tracking-wider serif">宏國地政 | 易丞地政</h1>
-                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">Nexus V5.3 (Audit & Export)</p>
+                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">Nexus V5.4 (Secure Core)</p>
                 </div>
             </div>
             <div class="flex bg-blue-900/50 rounded-full p-1">
@@ -67,9 +67,9 @@
 
     <main class="flex-grow p-4 md:p-6 max-w-7xl mx-auto w-full">
         <section id="loginSection" class="w-full glass-panel p-10 text-center max-w-lg mx-auto mt-12 fade-in-up">
-            <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 text-2xl"><i class="fa-solid fa-mobile-screen-button"></i></div>
-            <h2 class="text-2xl font-bold text-slate-800 mb-2">裝置驗證系統</h2>
-            <p class="text-slate-500 mb-4 text-sm">系統將自動識別您的裝置權限</p>
+            <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 text-2xl"><i class="fa-solid fa-shield-halved"></i></div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">安全連線系統</h2>
+            <p class="text-slate-500 mb-4 text-sm" id="authStatusText">正在建立加密通道...</p>
             
             <div class="bg-slate-100 p-2 rounded mb-6 text-xs text-slate-400 font-mono">
                 本機 ID: <span id="myDeviceIdDisplay">偵測中...</span>
@@ -378,8 +378,10 @@
     </main>
 
     <script type="module">
+        // Nexus Update: Import Auth functions
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCcSH0HQutt6rYcFWjCKOpTSWkBDeinyvw",
@@ -393,6 +395,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        const auth = getAuth(app); // Initialize Auth
         const ADMIN_PASSWORD = "8888";
 
         let employees = {};
@@ -402,6 +405,17 @@
         let currentUserId = null;
         let currentDeduction = 0;
         let currentModalEmpId = null;
+
+        // --- Nexus Security: Auto Sign-in ---
+        signInAnonymously(auth)
+            .then(() => {
+                console.log("Nexus Security: Secure Channel Established.");
+                document.getElementById('authStatusText').innerText = "安全連線建立完成，系統就緒";
+            })
+            .catch((error) => {
+                console.error("Nexus Security Alert:", error);
+                document.getElementById('authStatusText').innerText = "連線異常，請重新整理";
+            });
 
         // --- Device Fingerprint ---
         let myDeviceId = localStorage.getItem('hge_security_did');
