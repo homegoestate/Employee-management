@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>宏國地政|易丞地政 - 智慧指揮艙 (Nexus V5.3)</title>
+    <title>宏國地政|易丞地政 - 智慧指揮艙 (Nexus V5.4)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -45,6 +45,12 @@
         /* Modal Overlay */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
         .modal-content { background: white; width: 95%; max-width: 900px; max-height: 90vh; border-radius: 1rem; padding: 0; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        
+        /* Custom Scrollbar for feeds */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -55,7 +61,7 @@
                 <div class="w-10 h-10 bg-white text-blue-900 rounded-lg flex items-center justify-center font-bold text-lg serif shadow-lg">宏</div>
                 <div>
                     <h1 class="text-base md:text-lg font-bold tracking-wider serif">宏國地政 | 易丞地政</h1>
-                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">Nexus V5.3 (Audit & Export)</p>
+                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">Nexus V5.4 (Sync & Split)</p>
                 </div>
             </div>
             <div class="flex bg-blue-900/50 rounded-full p-1">
@@ -85,15 +91,32 @@
         </section>
 
         <section id="employeeView" class="w-full space-y-6 hidden-section">
-            <div class="brand-bg rounded-2xl p-6 text-white relative overflow-hidden shadow-xl fade-in-up">
-                <div class="relative z-10 flex flex-col md:flex-row items-start gap-4">
-                    <div class="bg-white/10 p-3 rounded-xl backdrop-blur-sm shrink-0"><i class="fa-solid fa-bullhorn text-brand-gold text-xl"></i></div>
-                    <div class="w-full">
-                        <div class="flex justify-between items-start">
-                            <h3 id="displayBulletinTitle" class="font-bold text-lg text-brand-gold mb-1">...</h3>
-                            <span id="displayBulletinDate" class="text-[10px] bg-black/20 px-2 py-1 rounded text-slate-300">--/--</span>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in-up">
+                <div class="lg:col-span-2 brand-bg rounded-2xl p-6 text-white relative overflow-hidden shadow-xl flex flex-col justify-center">
+                    <div class="absolute top-0 right-0 bg-white/10 px-3 py-1 rounded-bl-lg text-[10px] font-bold tracking-widest uppercase text-blue-200">Official Notice</div>
+                    <div class="relative z-10 flex flex-col md:flex-row items-start gap-4">
+                        <div class="bg-white/10 p-3 rounded-xl backdrop-blur-sm shrink-0"><i class="fa-solid fa-bullhorn text-brand-gold text-2xl"></i></div>
+                        <div class="w-full">
+                            <div class="flex justify-between items-start">
+                                <h3 id="displayBulletinTitle" class="font-bold text-xl text-brand-gold mb-2">...</h3>
+                            </div>
+                            <p id="displayBulletinContent" class="text-slate-100 text-sm leading-relaxed whitespace-pre-wrap opacity-90">...</p>
+                            <div class="mt-4 text-[10px] text-blue-300 border-t border-blue-800 pt-2 flex justify-between">
+                                <span><i class="fa-solid fa-user-tie mr-1"></i> 管理處發布</span>
+                                <span id="displayBulletinDate">--/--</span>
+                            </div>
                         </div>
-                        <p id="displayBulletinContent" class="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">...</p>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-1 glass-panel p-0 overflow-hidden flex flex-col h-full border-t-4 border-green-500">
+                    <div class="p-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-700 text-sm"><i class="fa-solid fa-rss text-green-600 mr-2"></i> 團隊即時動態</h3>
+                        <span class="text-[10px] bg-green-100 text-green-800 px-2 py-0.5 rounded-full">Approved</span>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-0 custom-scrollbar max-h-[160px] lg:max-h-full" id="activityFeed">
+                        <div class="p-4 text-center text-xs text-slate-400">目前沒有即將發生的動態</div>
                     </div>
                 </div>
             </div>
@@ -254,10 +277,13 @@
                 </div>
 
                 <div class="lg:col-span-1 glass-panel p-6 border-t-4 border-brand-gold">
-                    <h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-bullhorn text-brand-gold mr-2"></i> 公告管理</h2>
+                    <h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-bullhorn text-brand-gold mr-2"></i> 置頂公告管理</h2>
                     <input type="text" id="adminBulletinTitle" class="w-full p-2 mb-2 input-modern" placeholder="標題">
                     <textarea id="adminBulletinContent" rows="4" class="w-full p-2 mb-2 input-modern" placeholder="內容"></textarea>
-                    <button onclick="saveBulletin()" class="w-full bg-slate-800 text-white p-2 rounded font-bold hover:bg-slate-700">更新發布</button>
+                    <button onclick="saveBulletin()" class="w-full bg-slate-800 text-white p-2 rounded font-bold hover:bg-slate-700">更新置頂發布</button>
+                    <div class="mt-4 text-xs text-slate-400 p-2 bg-slate-50 rounded">
+                        <i class="fa-solid fa-info-circle mr-1"></i> 請假/用車資訊將自動顯示於「動態牆」，無需在此發布。
+                    </div>
                 </div>
 
                 <div class="lg:col-span-3 glass-panel p-6 border-t-4 border-slate-700">
@@ -355,7 +381,7 @@
                         <i class="fa-solid fa-save mr-1"></i> 儲存所有修正
                     </button>
 
-                    <h4 class="font-bold text-slate-700 mb-2">📜 歷史申請紀錄 (點擊筆圖示可註記)</h4>
+                    <h4 class="font-bold text-slate-700 mb-2">📜 歷史申請紀錄</h4>
                     <div class="overflow-x-auto bg-white rounded-lg border border-slate-200">
                         <table class="w-full text-sm text-left">
                             <thead class="bg-slate-100 text-xs text-slate-500 uppercase">
@@ -364,7 +390,8 @@
                                     <th class="p-2">類型</th>
                                     <th class="p-2">內容</th>
                                     <th class="p-2">狀態</th>
-                                    <th class="p-2">管理註記</th>
+                                    <th class="p-2">日曆</th>
+                                    <th class="p-2">註記</th>
                                     <th class="p-2 text-right">操作</th>
                                 </tr>
                             </thead>
@@ -461,6 +488,7 @@
             
             updateEmpSelect();
             renderBulletin();
+            renderActivityFeed(); // New Feed
             if (currentUserId) {
                  const emp = employees[currentUserId];
                  if(emp) {
@@ -478,6 +506,34 @@
             const select = document.getElementById('empSelect');
             select.disabled = false;
         });
+
+        // --- Google Calendar Helper ---
+        window.openGoogleCalendar = (reqId) => {
+            const req = requests[reqId];
+            if(!req) return;
+            
+            let title = "", details = "", start = "", end = "";
+            
+            if(req.category === 'car') {
+                title = `公務車: ${req.empName}`;
+                details = `用途: ${req.location}`;
+                start = `${req.date}T${req.time}:00`;
+                // Assume 2 hours for car default
+                let d = new Date(`${req.date}T${req.time}:00`);
+                d.setHours(d.getHours() + 2);
+                end = d.toISOString().replace(/-|:|\.\d\d\d/g,"").slice(0,15);
+                start = start.replace(/-|:/g,"");
+            } else {
+                title = `${req.empName} - ${req.type}`;
+                details = `事由: ${req.reason}`;
+                // Full day event logic roughly
+                start = req.date.replace(/-|:/g,"");
+                end = start; // GCal handles single day well
+            }
+
+            const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${start}/${end}&details=${encodeURIComponent(details)}&location=${encodeURIComponent('公司')}`;
+            window.open(url, '_blank');
+        };
 
         // --- Auth Logic ---
         function updateEmpSelect() {
@@ -722,7 +778,22 @@
                         }
                         
                         update(ref(db, `requests/${reqId}`), { status: action === 'approve' ? 'approved' : 'rejected' })
-                            .then(() => Swal.fire('成功', '操作已完成', 'success'))
+                            .then(() => {
+                                if(action === 'approve') {
+                                    Swal.fire({
+                                        title: '批准成功',
+                                        text: '是否要同步加入 Google 日曆?',
+                                        icon: 'success',
+                                        showCancelButton: true,
+                                        confirmButtonText: '加入日曆',
+                                        cancelButtonText: '跳過'
+                                    }).then((res) => {
+                                        if(res.isConfirmed) window.openGoogleCalendar(reqId);
+                                    });
+                                } else {
+                                    Swal.fire('成功', '操作已完成', 'success');
+                                }
+                            })
                             .catch(err => Swal.fire('錯誤', err.message, 'error'));
                             
                     } catch (e) {
@@ -752,19 +823,25 @@
                 .filter(r => r.empId === empId)
                 .sort((a,b) => b.timestamp - a.timestamp); 
             
-            if(myHistory.length === 0) tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400">尚無紀錄</td></tr>';
+            if(myHistory.length === 0) tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">尚無紀錄</td></tr>';
             else {
                 myHistory.forEach(req => {
                     let statusColor = req.status === 'approved' ? 'text-green-600 font-bold' : req.status === 'rejected' ? 'text-red-500 font-bold' : 'text-orange-500 font-bold';
                     const detail = req.category === 'car' ? `公務車: ${req.location}` : `${req.type} (${req.days}天)`;
                     const note = req.adminNote ? `<span class="bg-yellow-100 text-yellow-800 text-[10px] px-2 py-1 rounded">${req.adminNote}</span>` : '<span class="text-slate-300 text-[10px]">-</span>';
                     
+                    // Calendar button for approved
+                    const calBtn = req.status === 'approved' ? 
+                        `<button onclick="window.openGoogleCalendar('${req.id}')" class="text-blue-500 hover:text-blue-700"><i class="fa-regular fa-calendar-plus"></i></button>` : 
+                        '<span class="text-slate-200">-</span>';
+
                     tbody.innerHTML += `
                         <tr class="border-b hover:bg-slate-50">
                             <td class="p-2 text-xs">${req.date}</td>
                             <td class="p-2 text-xs">${req.category==='car'?'用車':'請假'}</td>
                             <td class="p-2 text-sm text-slate-700">${detail}</td>
                             <td class="p-2 text-xs ${statusColor}">${req.status}</td>
+                            <td class="p-2 text-center">${calBtn}</td>
                             <td class="p-2 cursor-pointer" onclick="window.editAdminNote('${req.id}')">${note} <i class="fa-solid fa-pen text-slate-300 text-[10px] ml-1"></i></td>
                             <td class="p-2 text-right"><button onclick="window.deleteHistoryItem('${req.id}')" class="text-red-400 hover:text-red-600 px-2"><i class="fa-solid fa-trash"></i></button></td>
                         </tr>`;
@@ -817,7 +894,7 @@
                 content: document.getElementById('adminBulletinContent').value,
                 date: new Date().toLocaleDateString()
             });
-            Swal.fire('成功', '公告已更新', 'success');
+            Swal.fire('成功', '置頂公告已更新', 'success');
         };
 
         window.addEmployee = () => {
@@ -943,6 +1020,47 @@
             document.getElementById('displayBulletinContent').innerText = bulletin.content;
             document.getElementById('displayBulletinDate').innerText = bulletin.date;
         }
+        
+        // --- NEW: Activity Feed Logic ---
+        function renderActivityFeed() {
+            const feedContainer = document.getElementById('activityFeed');
+            const now = new Date();
+            // Get all approved requests
+            const activeReqs = Object.values(requests)
+                .filter(r => r.status === 'approved')
+                .filter(r => new Date(r.date) >= new Date(now.setHours(0,0,0,0))) // Only today or future
+                .sort((a,b) => new Date(a.date) - new Date(b.date)) // Sort by date asc
+                .slice(0, 10); // Limit to next 10
+
+            if (activeReqs.length === 0) {
+                feedContainer.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">未來 7 天內無請假或用車紀錄</div>';
+                return;
+            }
+
+            feedContainer.innerHTML = '';
+            activeReqs.forEach(r => {
+                const isCar = r.category === 'car';
+                const icon = isCar ? 'fa-car' : 'fa-user-clock';
+                const colorClass = isCar ? 'text-brand-gold' : 'text-blue-500';
+                const bgClass = isCar ? 'bg-yellow-50' : 'bg-blue-50';
+                const desc = isCar ? `${r.time} 去 ${r.location}` : `${r.type} (${r.days}天)`;
+
+                feedContainer.innerHTML += `
+                    <div class="p-3 border-b border-slate-100 flex items-start gap-3 hover:bg-slate-50 transition">
+                        <div class="w-8 h-8 rounded-full ${bgClass} flex items-center justify-center shrink-0">
+                            <i class="fa-solid ${icon} ${colorClass} text-xs"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-slate-700 flex items-center gap-1">
+                                ${r.empName}
+                                <span class="text-[10px] font-normal text-slate-400 bg-slate-100 px-1 rounded">${r.date.slice(5)}</span>
+                            </div>
+                            <div class="text-xs text-slate-500 mt-0.5">${desc}</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
 
         function renderAttendanceLog() {
             const tbody = document.getElementById('attendanceTableBody');
@@ -969,7 +1087,6 @@
              link.click();
         };
 
-        // --- NEW EXPORT FUNCTION ---
         window.exportLeaveRequests = () => {
             const reqs = Object.values(requests).filter(r => r.category === 'leave').sort((a,b) => b.timestamp - a.timestamp);
             if (reqs.length === 0) return Swal.fire('尚無請假資料');
