@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>宏國地政|易丞地政 - 智慧指揮艙 (Nexus V5.7)</title>
+    <title>宏國地政|易丞地政 - 智慧指揮艙 (Nexus V5.11 Celebration)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -51,6 +51,14 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* LSA Badge */
+        .lsa-badge { font-size: 0.65rem; background-color: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; border: 1px solid #bae6fd; display: inline-block; margin-top: 4px; }
+        
+        /* Status Tags */
+        .tag-late { background-color: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; border: 1px solid #fecaca; }
+        .tag-ot { background-color: #f3e8ff; color: #6b21a8; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; border: 1px solid #e9d5ff; }
+        .tag-ok { background-color: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; border: 1px solid #bbf7d0; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -61,7 +69,7 @@
                 <div class="w-10 h-10 bg-white text-blue-900 rounded-lg flex items-center justify-center font-bold text-lg serif shadow-lg">宏</div>
                 <div>
                     <h1 class="text-base md:text-lg font-bold tracking-wider serif">宏國地政 | 易丞地政</h1>
-                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">Nexus V5.7 (Work Log)</p>
+                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">Nexus V5.11 (Celebration)</p>
                 </div>
             </div>
             <div class="flex bg-blue-900/50 rounded-full p-1">
@@ -124,9 +132,10 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-2 space-y-6">
                     <div class="glass-panel p-6 border-l-4 border-blue-600 fade-in-up relative overflow-hidden">
-                        <div class="absolute top-0 right-0 bg-blue-50 px-4 py-2 rounded-bl-xl border-b border-l border-blue-100 shadow-sm">
-                             <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider text-right">NOW</div>
+                        <div class="absolute top-0 right-0 bg-blue-50 px-4 py-2 rounded-bl-xl border-b border-l border-blue-100 shadow-sm text-right">
+                             <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">標準: 08:30 - 18:00</div>
                              <div class="text-xl font-black text-blue-700 font-mono" id="liveClock">00:00:00</div>
+                             <div id="clockStatusBadge" class="text-[10px] font-bold text-slate-400 mt-1">檢測中...</div>
                         </div>
 
                         <div class="flex justify-between items-center mb-8 mt-2">
@@ -137,9 +146,11 @@
                         <div class="grid grid-cols-2 gap-4">
                             <button onclick="handlePunch('上班')" class="btn-punch flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl">
                                 <i class="fa-solid fa-sun text-2xl mb-2"></i><span class="font-bold">上班打卡</span>
+                                <span class="text-[10px] opacity-70 mt-1">遲到基準: 08:30</span>
                             </button>
                             <button onclick="handlePunch('下班')" class="btn-punch flex flex-col items-center justify-center p-4 bg-gradient-to-br from-orange-400 to-red-500 text-white rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-xl">
                                 <i class="fa-solid fa-moon text-2xl mb-2"></i><span class="font-bold">下班打卡</span>
+                                <span class="text-[10px] opacity-70 mt-1">加班起始: 18:00</span>
                             </button>
                         </div>
                     </div>
@@ -256,26 +267,54 @@
                         </div>
                     </div>
                     
-                    <div class="glass-panel p-6 flex flex-col items-center text-center fade-in-up">
+                    <div class="glass-panel p-6 flex flex-col items-center text-center fade-in-up relative group">
+                        <div class="absolute top-3 right-3 text-slate-300 hover:text-blue-500 cursor-pointer" onclick="toggleLegalInfo()" title="查看勞基法規定">
+                            <i class="fa-solid fa-scale-balanced"></i>
+                        </div>
+
                         <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-2xl mb-2"><span id="dashboardAvatar">👤</span></div>
                         <h2 id="dashboardName" class="text-xl font-bold text-slate-800">...</h2>
-                        <div class="text-xs text-slate-500 mt-1">
+                        
+                        <div class="flex flex-col items-center gap-1 mt-1">
+                            <div class="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                                <i class="fa-regular fa-calendar-check mr-1"></i> 入職：<span id="dashboardJoinDate">--</span>
+                            </div>
                             <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-[10px] font-bold">
                                 <i class="fa-solid fa-check-circle"></i> 裝置已鎖定
                             </span>
                         </div>
+
                         <div class="mt-4 w-full grid grid-cols-2 gap-2 text-center">
-                            <div class="bg-blue-50 p-2 rounded">
-                                <div class="text-[10px] text-slate-400 uppercase">特休額度</div>
+                            <div class="bg-blue-50 p-2 rounded relative">
+                                <div class="absolute -top-2 -left-1 bg-amber-400 text-white text-[9px] px-1 rounded shadow">週年制</div>
+                                <div class="text-[10px] text-slate-400 uppercase mt-1">特休額度 (依勞基法)</div>
                                 <div class="font-bold text-blue-800" id="dashboardTotal">--</div>
+                                <div class="lsa-badge" id="dashboardRule">計算中...</div>
                             </div>
                             <div class="bg-green-50 p-2 rounded">
-                                <div class="text-[10px] text-slate-400 uppercase">特休剩餘</div>
+                                <div class="text-[10px] text-slate-400 uppercase mt-1">特休剩餘</div>
                                 <div class="font-bold text-green-600" id="dashboardRemaining">--</div>
                             </div>
                         </div>
+                        <div class="mt-2 text-[10px] text-slate-400">
+                             ※ 採「週年制」：於個人到職日滿週年時自動重置額度。
+                        </div>
                         <div class="mt-2 text-xs text-slate-500">
                             補休餘額: <span class="font-bold text-orange-600" id="dashboardComp">0</span> 天
+                        </div>
+
+                        <div id="legalInfoCard" class="hidden absolute inset-0 bg-white/95 backdrop-blur z-20 rounded-xl p-4 flex flex-col justify-center text-left border border-blue-200">
+                            <h4 class="font-bold text-blue-800 mb-2 border-b pb-1">📜 勞基法第38條 (特休)</h4>
+                            <ul class="text-xs space-y-1 text-slate-600 list-disc pl-4">
+                                <li>6個月以上1年未滿：3日</li>
+                                <li>1年以上2年未滿：7日</li>
+                                <li>2年以上3年未滿：10日</li>
+                                <li>3年以上5年未滿：14日</li>
+                                <li>5年以上10年未滿：15日</li>
+                                <li>10年以上：每一年加給1日，上限30日</li>
+                            </ul>
+                            <div class="mt-2 text-[10px] text-red-500">* 本系統採「週年制」，於到職日結算。</div>
+                            <button onclick="toggleLegalInfo()" class="mt-4 w-full bg-slate-100 text-slate-500 text-xs py-1 rounded hover:bg-slate-200">關閉說明</button>
                         </div>
                     </div>
                 </div>
@@ -316,17 +355,40 @@
                         </div>
                     </div>
                     <div class="overflow-x-auto max-h-60 overflow-y-auto custom-scrollbar">
-                        <table class="w-full text-left text-sm"><tbody id="attendanceTableBody" class="divide-y divide-slate-100 text-xs"></tbody></table>
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-100 text-slate-500 text-xs">
+                                <tr>
+                                    <th class="p-2">姓名</th>
+                                    <th class="p-2">類型</th>
+                                    <th class="p-2">時間</th>
+                                    <th class="p-2">狀態</th>
+                                    <th class="p-2">定位</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
+                        </table>
                     </div>
                 </div>
 
                 <div class="lg:col-span-3 glass-panel p-6">
-                    <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-users mr-1"></i> 員工全方位管理 <span class="text-xs text-slate-400 font-normal ml-2">(到職日連動年資)</span></h2>
+                    <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-users mr-1"></i> 員工全方位管理 
+                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded ml-2 font-normal">
+                            <i class="fa-solid fa-scale-balanced mr-1"></i> 符合勞基法週年制
+                        </span>
+                    </h2>
                     
-                    <div class="flex gap-2 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
-                        <input type="text" id="newAdminName" placeholder="新進員工姓名" class="flex-1 p-2 input-modern">
-                        <select id="newAdminGender" class="w-24 p-2 input-modern"><option value="M">男</option><option value="F">女</option></select>
-                        <input type="date" id="newAdminDate" class="w-40 p-2 input-modern">
+                    <div class="flex flex-wrap gap-2 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <input type="text" id="newAdminName" placeholder="新進員工姓名" class="flex-1 min-w-[120px] p-2 input-modern">
+                        <select id="newAdminGender" class="w-20 p-2 input-modern"><option value="M">男</option><option value="F">女</option></select>
+                        <div class="flex items-center gap-1">
+                            <span class="text-xs text-slate-500">到職:</span>
+                            <input type="date" id="newAdminDate" class="w-36 p-2 input-modern">
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="text-xs text-slate-500">生日:</span>
+                            <input type="date" id="newAdminBirthday" class="w-36 p-2 input-modern">
+                        </div>
                         <button onclick="addEmployee()" class="bg-blue-600 text-white px-4 rounded font-bold hover:bg-blue-500">新增</button>
                     </div>
 
@@ -335,7 +397,7 @@
                             <thead class="bg-slate-100 text-slate-600 text-xs uppercase">
                                 <tr>
                                     <th class="p-3">姓名 (可改)</th>
-                                    <th class="p-3">年資 / 到職日 (可改)</th>
+                                    <th class="p-3">資料 (到職/生日)</th>
                                     <th class="p-3">特休概況 (總/用/剩)</th>
                                     <th class="p-3 w-1/4">裝置</th>
                                     <th class="p-3 text-right">管理</th>
@@ -398,7 +460,7 @@
                         <i class="fa-solid fa-save mr-1"></i> 儲存所有修正
                     </button>
 
-                    <h4 class="font-bold text-slate-700 mb-2">📜 歷史申請紀錄</h4>
+                    <h4 class="font-bold text-slate-700 mb-2">📜 歷史申請紀錄 (特休會特別標示)</h4>
                     <div class="overflow-x-auto bg-white rounded-lg border border-slate-200">
                         <table class="w-full text-sm text-left">
                             <thead class="bg-slate-100 text-xs text-slate-500 uppercase">
@@ -459,10 +521,49 @@
         }
         document.getElementById('myDeviceIdDisplay').innerText = myDeviceId;
 
-        // --- Clock ---
-        setInterval(() => {
-            document.getElementById('liveClock').innerText = new Date().toLocaleTimeString('zh-TW', {hour12: false});
-        }, 1000);
+        // --- Clock & Smart Notification Logic ---
+        const WORK_START = "08:30";
+        const WORK_END = "18:00";
+
+        function updateClockStatus() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('zh-TW', {hour12: false});
+            document.getElementById('liveClock').innerText = timeStr;
+
+            // Simple comparison logic
+            const timeVal = now.getHours() * 60 + now.getMinutes();
+            const startVal = 8 * 60 + 30; // 08:30 = 510
+            const endVal = 18 * 60;       // 18:00 = 1080
+
+            const badge = document.getElementById('clockStatusBadge');
+            
+            // Logic for visual feedback
+            if (timeVal < startVal) {
+                badge.className = "text-[10px] font-bold text-green-600 mt-1";
+                badge.innerText = "早安！準時打卡";
+            } else if (timeVal >= startVal && timeVal < endVal) {
+                // Working hours
+                badge.className = "text-[10px] font-bold text-orange-600 mt-1";
+                badge.innerText = "上班時間 (遲到判定中)";
+            } else {
+                badge.className = "text-[10px] font-bold text-purple-600 mt-1";
+                badge.innerText = "下班時間 (加班判定中)";
+            }
+        }
+
+        setInterval(updateClockStatus, 1000);
+
+        // --- Legal Info Toggle ---
+        window.toggleLegalInfo = () => {
+            const card = document.getElementById('legalInfoCard');
+            if(card.classList.contains('hidden')) {
+                card.classList.remove('hidden');
+                card.classList.add('flex');
+            } else {
+                card.classList.add('hidden');
+                card.classList.remove('flex');
+            }
+        };
 
         // --- UI ---
         window.switchView = (view) => {
@@ -520,17 +621,21 @@
             // Sync Task Options
             const dbTasks = data.settings?.taskTypes || [];
             if (dbTasks.length === 0) {
-                 // Initialize defaults if empty
                  set(ref(db, 'settings/taskTypes'), DEFAULT_TASKS);
                  taskOptions = DEFAULT_TASKS;
             } else {
                  taskOptions = dbTasks;
             }
-            renderLogForm(); // Re-render log form with new options
+            renderLogForm(); 
             
+            // Check for Birthdays and Auto-Publish (if not done today)
+            checkBirthdayEvents();
+
             updateEmpSelect();
             renderBulletin();
             renderActivityFeed();
+            
+            // Update dashboard real-time if logged in
             if (currentUserId) {
                  const emp = employees[currentUserId];
                  if(emp) {
@@ -538,7 +643,10 @@
                     const used = emp.stats?.annual || emp.usedLeave || 0; 
                     const comp = emp.stats?.comp || 0;
                     document.getElementById('dashboardRemaining').innerText = (calc.days - used) + " 天";
+                    document.getElementById('dashboardTotal').innerText = calc.days + " 天";
+                    document.getElementById('dashboardRule').innerText = calc.rule; // LSA Rule
                     document.getElementById('dashboardComp').innerText = comp;
+                    document.getElementById('dashboardJoinDate').innerText = emp.joinDate;
                  }
             }
             renderAdminTable();
@@ -549,15 +657,46 @@
             select.disabled = false;
         });
 
-        // --- Work Log Logic (New) ---
+        // --- Birthday Auto-Notice Logic ---
+        function checkBirthdayEvents() {
+            const today = new Date();
+            // Format today as MM-DD
+            const todayStr = (today.getMonth() + 1).toString().padStart(2, '0') + '-' + today.getDate().toString().padStart(2, '0');
+            
+            let birthdayBoys = [];
+
+            Object.values(employees).forEach(emp => {
+                if(emp.birthday && emp.birthday.slice(5) === todayStr) {
+                    birthdayBoys.push(emp.name);
+                }
+            });
+
+            if(birthdayBoys.length > 0) {
+                const title = "🎂 生日快樂！";
+                // Only update DB if the bulletin date is NOT today (means it hasn't been updated for today's news yet)
+                // This prevents overwriting if admin manually changed it back later today
+                const todayFullStr = today.toLocaleDateString();
+
+                if(bulletin.date !== todayFullStr) {
+                     const names = birthdayBoys.join(' & ');
+                     const content = `今天是 ${names} 的生日！\n祝福工作順利，身體健康！\n大家別忘了送上祝福唷～ 🎉`;
+                     
+                     // Auto-publish to Firebase
+                     set(ref(db, 'bulletin'), {
+                        title: title,
+                        content: content,
+                        date: todayFullStr
+                     });
+                }
+            }
+        }
+
+        // --- Work Log Logic ---
         function renderLogForm() {
             const container = document.getElementById('logEntriesContainer');
             if(!container) return;
             
-            // Only render if empty to preserve user input during sync, or simplistic re-render
-            // For simplicity, we just rebuild options if select exists, or build full if empty
             if (container.children.length > 1 && container.querySelector('select')) {
-                // Update options in existing selects
                 const selects = container.querySelectorAll('select');
                 selects.forEach(sel => {
                     const currentVal = sel.value;
@@ -635,12 +774,12 @@
 
             let msg = `【工作日誌】${emp.name}\n📅 日期：${date}\n------------------\n`;
             msg += entries.join('\n');
-            msg += `\n------------------\n(Nexus V5.7 生成)`;
+            msg += `\n------------------\n(Nexus V5.11 生成)`;
 
             window.open('https://line.me/R/msg/text/?' + encodeURIComponent(msg));
         };
 
-        // --- Google Calendar Helper (MOBILE FIX) ---
+        // --- Google Calendar Helper ---
         window.getGoogleCalendarUrl = (reqId) => {
             const req = requests[reqId];
             if(!req) return '#';
@@ -746,7 +885,9 @@
                 document.getElementById('dashboardAvatar').innerText = emp.gender === 'F' ? '👩‍💼' : '👨‍💼';
                 document.getElementById('dashboardTotal').innerText = calc.days + " 天";
                 document.getElementById('dashboardRemaining').innerText = (calc.days - used) + " 天";
+                document.getElementById('dashboardRule').innerText = calc.rule; // LSA Rule
                 document.getElementById('dashboardComp').innerText = comp;
+                document.getElementById('dashboardJoinDate').innerText = emp.joinDate;
                 
                 document.getElementById('loginSection').classList.add('hidden-section');
                 document.getElementById('loginStatusMsg').classList.add('hidden');
@@ -765,14 +906,41 @@
             
             navigator.geolocation.getCurrentPosition((position) => {
                 const now = new Date();
+                
+                // Attendance Logic (08:30 - 18:00)
+                let status = "正常";
+                const nowMinutes = now.getHours() * 60 + now.getMinutes();
+                const startLimit = 8 * 60 + 30; // 510
+                const endLimit = 18 * 60;       // 1080
+
+                if (type === '上班' && nowMinutes > startLimit) status = "遲到";
+                if (type === '下班' && nowMinutes > endLimit) status = "加班";
+
                 push(ref(db, 'attendance'), {
                     empId: currentUserId, empName: emp.name, type: type, timestamp: now.getTime(),
                     dateStr: now.toLocaleDateString(), timeStr: now.toLocaleTimeString(),
                     location: `${position.coords.latitude}, ${position.coords.longitude}`,
                     mapLink: `http://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`,
-                    deviceId: myDeviceId
+                    deviceId: myDeviceId,
+                    status: status // Added status
                 });
-                Swal.fire('打卡成功', `${type} @ ${now.toLocaleTimeString()}`, 'success');
+                
+                // Notification Alert (Visual)
+                let alertTitle = '打卡成功';
+                let alertIcon = 'success';
+                let alertText = `${type} @ ${now.toLocaleTimeString()}`;
+
+                if (status === '遲到') {
+                    alertTitle = '打卡成功 (遲到)';
+                    alertIcon = 'warning';
+                    alertText += '\n已記錄遲到狀態';
+                } else if (status === '加班') {
+                    alertTitle = '打卡成功 (加班)';
+                    alertIcon = 'info';
+                    alertText += '\n辛苦了！已記錄加班狀態';
+                }
+
+                Swal.fire(alertTitle, alertText, alertIcon);
             });
         };
 
@@ -834,12 +1002,19 @@
             e.preventDefault();
             if (!currentUserId) return;
             const emp = employees[currentUserId];
-            // Comp Leave Check
             const type = document.getElementById('leaveType').value;
             const days = parseFloat(document.getElementById('leaveDays').value);
+            
+            // Check Balances
             if (type === '補休') {
                 const balance = emp.stats?.comp || 0;
                 if (balance < days) return Swal.fire('餘額不足', `補休剩餘 ${balance} 天，無法申請 ${days} 天`, 'error');
+            }
+            if (type === '特休') {
+                const calc = calculateLeave(emp.joinDate);
+                const used = emp.stats?.annual || emp.usedLeave || 0;
+                const remaining = calc.days - used;
+                if (remaining < days) return Swal.fire('餘額不足', `特休剩餘 ${remaining} 天，無法申請 ${days} 天`, 'error');
             }
 
             const date = document.getElementById('leaveDate').value;
@@ -873,7 +1048,7 @@
             Swal.fire('已送出', '申請已提交', 'success');
         };
 
-        // --- Admin Logic (Stats Update) ---
+        // --- Admin Logic ---
         window.processRequest = (reqId, action) => {
             const req = requests[reqId]; 
             if (!req) return Swal.fire('錯誤', '找不到該申請紀錄', 'error');
@@ -910,7 +1085,6 @@
                         update(ref(db, `requests/${reqId}`), { status: action === 'approve' ? 'approved' : 'rejected' })
                             .then(() => {
                                 if(action === 'approve') {
-                                    // MOBILE FIX: Show DIRECT LINK instead of window.open inside promise
                                     const calUrl = window.getGoogleCalendarUrl(reqId);
                                     Swal.fire({
                                         title: '批准成功',
@@ -921,7 +1095,7 @@
                                             </a>
                                         `,
                                         icon: 'success',
-                                        showConfirmButton: false, // Hide default button
+                                        showConfirmButton: false, 
                                         showCloseButton: true
                                     });
                                 } else {
@@ -964,16 +1138,25 @@
                     const detail = req.category === 'car' ? `公務車: ${req.location}` : `${req.type} (${req.days}天)`;
                     const note = req.adminNote ? `<span class="bg-yellow-100 text-yellow-800 text-[10px] px-2 py-1 rounded">${req.adminNote}</span>` : '<span class="text-slate-300 text-[10px]">-</span>';
                     
-                    // MOBILE FIX: Use <a href> instead of <button onclick>
                     const calUrl = window.getGoogleCalendarUrl(req.id);
                     const calBtn = req.status === 'approved' ? 
                         `<a href="${calUrl}" target="_blank" class="text-blue-500 hover:text-blue-700"><i class="fa-regular fa-calendar-plus"></i></a>` : 
                         '<span class="text-slate-200">-</span>';
 
+                    // VISUAL FIX: Highlight Annual Leave
+                    let rowStyle = "";
+                    let typeBadge = req.type;
+                    if (req.type === '特休' && req.status === 'approved') {
+                        rowStyle = "bg-blue-50";
+                        typeBadge = `<span class="text-blue-600 font-black"><i class="fa-solid fa-star text-[10px] mr-1"></i>特休</span>`;
+                    } else if (req.category === 'car') {
+                        typeBadge = `用車`;
+                    }
+
                     tbody.innerHTML += `
-                        <tr class="border-b hover:bg-slate-50">
+                        <tr class="border-b hover:bg-slate-50 ${rowStyle}">
                             <td class="p-2 text-xs">${req.date}</td>
-                            <td class="p-2 text-xs">${req.category==='car'?'用車':'請假'}</td>
+                            <td class="p-2 text-xs">${typeBadge}</td>
                             <td class="p-2 text-sm text-slate-700">${detail}</td>
                             <td class="p-2 text-xs ${statusColor}">${req.status}</td>
                             <td class="p-2 text-center">${calBtn}</td>
@@ -1000,7 +1183,7 @@
             if (text !== undefined) {
                 update(ref(db, `requests/${reqId}`), { adminNote: text })
                     .then(() => {
-                        window.openHistory(currentModalEmpId); // Refresh modal
+                        window.openHistory(currentModalEmpId);
                     });
             }
         };
@@ -1036,15 +1219,28 @@
             const name = document.getElementById('newAdminName').value;
             const gender = document.getElementById('newAdminGender').value;
             const date = document.getElementById('newAdminDate').value;
+            const birthday = document.getElementById('newAdminBirthday').value; // Get Birthday
+            
             if(!name || !date) return Swal.fire('資料不完整');
+            
             const newRef = push(ref(db, 'employees'));
-            set(newRef, { id: newRef.key, name, gender, joinDate: date, usedLeave: 0, devices: [], stats: {annual:0, comp:0, sick:0, personal:0} });
+            set(newRef, { 
+                id: newRef.key, 
+                name, 
+                gender, 
+                joinDate: date, 
+                birthday: birthday, // Save Birthday
+                usedLeave: 0, 
+                devices: [], 
+                stats: {annual:0, comp:0, sick:0, personal:0} 
+            });
             document.getElementById('newAdminName').value = '';
             Swal.fire('成功', '員工已新增', 'success');
         };
 
         window.updateEmpName = (id, newName) => { if(confirm(`確定更改姓名為 ${newName}?`)) update(ref(db, `employees/${id}`), { name: newName }); };
         window.updateEmpDate = (id, newDate) => { update(ref(db, `employees/${id}`), { joinDate: newDate }); };
+        window.updateEmpBirthday = (id, newDate) => { update(ref(db, `employees/${id}`), { birthday: newDate }); }; // New function
         window.deleteEmployee = (id) => { if(confirm("確定刪除此員工?")) remove(ref(db, `employees/${id}`)); };
         window.unbindDevice = (empId, deviceIndex) => {
             const emp = employees[empId];
@@ -1117,8 +1313,16 @@
                     <tr class="hover:bg-slate-50 border-b">
                         <td class="p-3"><input type="text" value="${emp.name}" onchange="window.updateEmpName('${emp.id}', this.value)" class="border rounded px-2 py-1 w-20 text-sm font-bold text-slate-700 focus:border-blue-500 outline-none"></td>
                         <td class="p-3">
-                            <div class="font-bold text-blue-900">${calc.years} 年</div>
-                            <input type="date" value="${emp.joinDate}" onchange="window.updateEmpDate('${emp.id}', this.value)" class="text-xs text-slate-400 bg-transparent border-none outline-none p-0 cursor-pointer hover:text-blue-500">
+                            <div class="flex flex-col gap-1">
+                                <div class="flex items-center gap-1 text-xs">
+                                    <span class="text-slate-400">到職:</span>
+                                    <input type="date" value="${emp.joinDate}" onchange="window.updateEmpDate('${emp.id}', this.value)" class="text-xs text-slate-600 bg-transparent border-none outline-none p-0 cursor-pointer hover:text-blue-500">
+                                </div>
+                                <div class="flex items-center gap-1 text-xs">
+                                    <span class="text-slate-400">生日:</span>
+                                    <input type="date" value="${emp.birthday || ''}" onchange="window.updateEmpBirthday('${emp.id}', this.value)" class="text-xs text-slate-600 bg-transparent border-none outline-none p-0 cursor-pointer hover:text-blue-500">
+                                </div>
+                            </div>
                         </td>
                         <td class="p-3">
                             <div class="flex items-center gap-2 text-xs">
@@ -1136,18 +1340,40 @@
             });
         }
 
+        // --- CORE: Labor Standards Act Calculation (Article 38) ---
         function calculateLeave(joinDate) {
             const now = new Date();
             const start = new Date(joinDate);
+            // Precise year calculation (including leap years)
             const years = (now - start) / (1000 * 60 * 60 * 24 * 365.25);
             let days = 0;
-            if (years >= 0.5 && years < 1) days = 3;
-            else if (years >= 1 && years < 2) days = 7;
-            else if (years >= 2 && years < 3) days = 10;
-            else if (years >= 3 && years < 5) days = 14;
-            else if (years >= 5 && years < 10) days = 15;
-            else if (years >= 10) days = Math.min(30, 15 + Math.floor(years - 10));
-            return { years: years.toFixed(1), days: days };
+            let rule = "";
+
+            if (years < 0.5) { 
+                days = 0; 
+                rule = "未滿半年 (0天)";
+            } else if (years >= 0.5 && years < 1) { 
+                days = 3; 
+                rule = "滿半年未滿一年 (3天)";
+            } else if (years >= 1 && years < 2) { 
+                days = 7; 
+                rule = "滿1年 (7天)";
+            } else if (years >= 2 && years < 3) { 
+                days = 10; 
+                rule = "滿2年 (10天)";
+            } else if (years >= 3 && years < 5) { 
+                days = 14; 
+                rule = "滿3年 (14天)";
+            } else if (years >= 5 && years < 10) { 
+                days = 15; 
+                rule = "滿5年 (15天)";
+            } else if (years >= 10) { 
+                // Article 38: 15 days + 1 day for every year over 10, max 30
+                days = Math.min(30, 15 + Math.floor(years - 10));
+                rule = `滿${Math.floor(years)}年 (${days}天)`;
+            }
+            
+            return { years: years.toFixed(1), days: days, rule: rule };
         }
 
         function renderBulletin() {
@@ -1156,16 +1382,14 @@
             document.getElementById('displayBulletinDate').innerText = bulletin.date;
         }
         
-        // --- NEW: Activity Feed Logic ---
         function renderActivityFeed() {
             const feedContainer = document.getElementById('activityFeed');
             const now = new Date();
-            // Get all approved requests
             const activeReqs = Object.values(requests)
                 .filter(r => r.status === 'approved')
-                .filter(r => new Date(r.date) >= new Date(now.setHours(0,0,0,0))) // Only today or future
-                .sort((a,b) => new Date(a.date) - new Date(b.date)) // Sort by date asc
-                .slice(0, 10); // Limit to next 10
+                .filter(r => new Date(r.date) >= new Date(now.setHours(0,0,0,0))) 
+                .sort((a,b) => new Date(a.date) - new Date(b.date)) 
+                .slice(0, 10); 
 
             if (activeReqs.length === 0) {
                 feedContainer.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">未來 7 天內無請假或用車紀錄</div>';
@@ -1201,11 +1425,21 @@
             const tbody = document.getElementById('attendanceTableBody');
             tbody.innerHTML = '';
             Object.values(attendance).sort((a,b) => b.timestamp - a.timestamp).forEach(log => {
+                let statusBadge = '<span class="tag-ok">正常</span>';
+                if(log.status === '遲到') statusBadge = '<span class="tag-late">遲到</span>';
+                if(log.status === '加班') statusBadge = '<span class="tag-ot">加班</span>';
+                // Backward compatibility for old records
+                if(!log.status) {
+                     if(log.type === '上班' && parseInt(log.timeStr.replace(':','')) > 830) statusBadge = '<span class="tag-late">遲到</span>';
+                     else if(log.type === '下班' && parseInt(log.timeStr.replace(':','')) > 1800) statusBadge = '<span class="tag-ot">加班</span>';
+                }
+
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50 border-b">
                         <td class="p-2 font-bold text-slate-700">${log.empName}</td>
                         <td class="p-2 ${log.type==='上班'?'text-blue-600':'text-orange-600'}">${log.type}</td>
                         <td class="p-2 text-slate-500">${log.dateStr} ${log.timeStr}</td>
+                        <td class="p-2">${statusBadge}</td>
                         <td class="p-2"><a href="${log.mapLink}" target="_blank" class="text-blue-500"><i class="fa-solid fa-map-location-dot"></i></a></td>
                     </tr>`;
             });
@@ -1214,8 +1448,8 @@
         window.exportAttendance = () => {
              const logs = Object.values(attendance).sort((a,b) => b.timestamp - a.timestamp);
              if (logs.length === 0) return Swal.fire('尚無資料');
-             let csv = "\uFEFF姓名,類型,日期,時間,地圖\n";
-             logs.forEach(l => csv += `${l.empName},${l.type},${l.dateStr},${l.timeStr},${l.mapLink}\n`);
+             let csv = "\uFEFF姓名,類型,日期,時間,狀態,地圖\n";
+             logs.forEach(l => csv += `${l.empName},${l.type},${l.dateStr},${l.timeStr},${l.status || ''},${l.mapLink}\n`);
              const link = document.createElement("a");
              link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
              link.download = "考勤紀錄.csv";
@@ -1228,7 +1462,7 @@
             
             let csv = "\uFEFF姓名,日期,假別,天數,事由,狀態,管理員註記\n";
             reqs.forEach(r => {
-                const note = r.adminNote ? r.adminNote.replace(/,/g, ' ') : ''; // Handle commas
+                const note = r.adminNote ? r.adminNote.replace(/,/g, ' ') : ''; 
                 const reason = r.reason ? r.reason.replace(/,/g, ' ') : '';
                 csv += `${r.empName},${r.date},${r.type},${r.days},${reason},${r.status},${note}\n`;
             });
