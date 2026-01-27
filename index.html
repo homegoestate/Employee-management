@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>宏國地政|易丞地政 - 智慧指揮艙 (Nexus V5.15 Identity)</title>
+    <title>宏國地政|易丞地政 - 智慧指揮艙 (Nexus V5.17 Time-Sync)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -22,14 +22,8 @@
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         
         /* 薪資拉條 */
-        input[type=range] {
-            -webkit-appearance: none; width: 100%; height: 6px; border-radius: 5px;
-            background: #cbd5e1; outline: none; margin: 10px 0;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; 
-            background: #2563eb; cursor: pointer; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-        }
+        input[type=range] { -webkit-appearance: none; width: 100%; height: 6px; border-radius: 5px; background: #cbd5e1; outline: none; margin: 10px 0; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #2563eb; cursor: pointer; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
 
         .impact-card { transition: all 0.3s ease; border-left: 4px solid; background-color: white; border: 1px solid #e2e8f0; }
         .impact-full { border-left-color: #22c55e; background-color: #f0fdf4; } 
@@ -60,6 +54,10 @@
         .avatar-hover-container:active { transform: scale(0.95); }
         .avatar-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); border-radius: 9999px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; }
         .avatar-hover-container:hover .avatar-overlay { opacity: 1; }
+
+        /* Leave Type Toggle */
+        .leave-mode-btn { border: 1px solid #cbd5e1; color: #64748b; background: white; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; flex: 1; transition: all 0.2s; }
+        .leave-mode-active { background-color: #eff6ff; border-color: #2563eb; color: #2563eb; font-weight: bold; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -70,7 +68,7 @@
                 <div class="w-10 h-10 bg-white text-blue-900 rounded-lg flex items-center justify-center font-bold text-lg serif shadow-lg">宏</div>
                 <div>
                     <h1 class="text-base md:text-lg font-bold tracking-wider serif">宏國地政 | 易丞地政</h1>
-                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">Nexus V5.15 (Identity)</p>
+                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">Nexus V5.17 (Time-Sync)</p>
                 </div>
             </div>
             <div class="flex bg-blue-900/50 rounded-full p-1">
@@ -165,6 +163,15 @@
                         </div>
 
                         <form id="form-leave" onsubmit="handleLeaveSubmit(event)" class="space-y-4">
+                            <div class="flex gap-2 mb-2">
+                                <button type="button" id="btnModeDay" class="leave-mode-btn leave-mode-active" onclick="switchLeaveMode('day')">
+                                    <i class="fa-regular fa-calendar mr-1"></i> 全天單位
+                                </button>
+                                <button type="button" id="btnModeTime" class="leave-mode-btn" onclick="switchLeaveMode('time')">
+                                    <i class="fa-regular fa-clock mr-1"></i> 小時 (區間)
+                                </button>
+                            </div>
+
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-xs font-bold text-slate-500 mb-1">假別</label>
@@ -177,7 +184,27 @@
                                     </select>
                                 </div>
                                 <div><label class="block text-xs font-bold text-slate-500 mb-1">日期</label><input type="date" id="leaveDate" class="w-full p-2.5 input-modern"></div>
-                                <div class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">天數 (以 0.125 為單位，即 1 小時)</label><input type="number" id="leaveDays" min="0.125" step="0.125" value="1" class="w-full p-2.5 input-modern" oninput="updateImpactInfo()"></div>
+                                
+                                <div id="inputDayMode" class="md:col-span-2">
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">天數</label>
+                                    <input type="number" id="leaveDays" min="0.5" step="0.5" value="1" class="w-full p-2.5 input-modern" oninput="updateImpactInfo()">
+                                </div>
+
+                                <div id="inputTimeMode" class="hidden md:col-span-2 grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">開始時間</label>
+                                        <input type="time" id="leaveStartTime" class="w-full p-2.5 input-modern" onchange="calcTimeDiff()">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">結束時間</label>
+                                        <input type="time" id="leaveEndTime" class="w-full p-2.5 input-modern" onchange="calcTimeDiff()">
+                                    </div>
+                                    <div class="col-span-2 text-xs text-blue-600 bg-blue-50 p-2 rounded text-center">
+                                        預計時數: <span id="timeDiffDisplay" class="font-bold">0</span> 小時 
+                                        <span class="text-slate-400 ml-1">(自動換算天數)</span>
+                                    </div>
+                                </div>
+
                                 <div class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">事由</label><input type="text" id="leaveReason" class="w-full p-2.5 input-modern" placeholder="例：處理私人事務"></div>
                             </div>
                             
@@ -287,10 +314,12 @@
                         <h2 id="dashboardName" class="text-xl font-bold text-slate-800">...</h2>
                         
                         <div class="flex flex-col items-center gap-1 mt-1">
-                            <div class="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                                <i class="fa-regular fa-calendar-check mr-1"></i> 入職：<span id="dashboardJoinDate">--</span>
+                            <div class="text-xs font-mono text-slate-500 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 shadow-sm">
+                                <i class="fa-regular fa-calendar-check mr-1"></i> 
+                                入職：<span id="dashboardJoinDate" class="font-bold">--</span>
+                                <span id="dashboardTenure" class="ml-2 bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-bold">--</span>
                             </div>
-                            <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                            <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-[10px] font-bold mt-1">
                                 <i class="fa-solid fa-check-circle"></i> 裝置已鎖定
                             </span>
                         </div>
@@ -520,6 +549,7 @@
         let currentUserId = null;
         let currentDeduction = 0;
         let currentModalEmpId = null;
+        let leaveMode = 'day'; // 'day' or 'time'
 
         const DEFAULT_TASKS = ["地政過戶", "貸款", "結案資料整理", "過水電", "用印", "對保", "塗銷"];
 
@@ -646,7 +676,11 @@
                     document.getElementById('dashboardTotal').innerText = calc.days + " 天";
                     document.getElementById('dashboardRule').innerText = calc.rule;
                     document.getElementById('dashboardComp').innerText = comp;
-                    document.getElementById('dashboardJoinDate').innerText = emp.joinDate;
+                    
+                    // UPDATED: Bind Join Date & Tenure correctly
+                    const tenure = calculateTenure(emp.joinDate);
+                    document.getElementById('dashboardJoinDate').innerText = emp.joinDate || "未設定";
+                    document.getElementById('dashboardTenure').innerText = tenure;
                     
                     // Render Avatar
                     const avatarImg = document.getElementById('dashboardAvatarImg');
@@ -718,6 +752,47 @@
             reader.readAsDataURL(file);
         };
 
+        // --- Leave Time Calculation Logic (NEW) ---
+        window.switchLeaveMode = (mode) => {
+            leaveMode = mode;
+            if(mode === 'day') {
+                document.getElementById('btnModeDay').classList.add('leave-mode-active');
+                document.getElementById('btnModeTime').classList.remove('leave-mode-active');
+                document.getElementById('inputDayMode').classList.remove('hidden');
+                document.getElementById('inputTimeMode').classList.add('hidden');
+                document.getElementById('leaveDays').value = 1; 
+            } else {
+                document.getElementById('btnModeDay').classList.remove('leave-mode-active');
+                document.getElementById('btnModeTime').classList.add('leave-mode-active');
+                document.getElementById('inputDayMode').classList.add('hidden');
+                document.getElementById('inputTimeMode').classList.remove('hidden');
+                document.getElementById('inputTimeMode').classList.add('grid');
+                window.calcTimeDiff();
+            }
+            window.updateImpactInfo();
+        };
+
+        window.calcTimeDiff = () => {
+            const start = document.getElementById('leaveStartTime').value;
+            const end = document.getElementById('leaveEndTime').value;
+            if(!start || !end) return;
+
+            const startDate = new Date(`2000-01-01T${start}`);
+            const endDate = new Date(`2000-01-01T${end}`);
+            let diffMs = endDate - startDate;
+            if(diffMs < 0) diffMs = 0; // handle overnight or error
+
+            const diffHours = diffMs / (1000 * 60 * 60);
+            document.getElementById('timeDiffDisplay').innerText = diffHours.toFixed(2);
+            
+            // Convert to Days (assuming 8hr work day for calculation consistency)
+            // Storing exact hours is better, but to keep system simple, we store "days equivalent"
+            // 1 hour = 0.125 days
+            const days = diffHours / 8;
+            document.getElementById('leaveDays').value = days.toFixed(4); // precise for calculation
+            window.updateImpactInfo();
+        };
+
         // --- Work Log (LINE ONLY) ---
         function renderLogForm() {
             const container = document.getElementById('logEntriesContainer');
@@ -762,7 +837,7 @@
 
             let msg = `【工作日誌】${emp.name}\n📅 日期：${date}\n------------------\n`;
             msg += entries.join('\n');
-            msg += `\n------------------\n(Nexus V5.15 生成)`;
+            msg += `\n------------------\n(Nexus V5.17 生成)`;
 
             window.open('https://line.me/R/msg/text/?' + encodeURIComponent(msg));
         };
@@ -780,8 +855,14 @@
             } else {
                 title = `請假: ${req.empName} (${req.type})`;
                 details = `原因: ${req.reason}`;
-                start = req.date.replace(/-|:/g,"");
-                end = start;
+                // Handle new Time Range logic in calendar
+                if (req.timeStart && req.timeEnd) {
+                    start = `${req.date}T${req.timeStart.replace(':','')}:00`.replace(/-|:/g,"");
+                    end = `${req.date}T${req.timeEnd.replace(':','')}:00`.replace(/-|:/g,"");
+                } else {
+                    start = req.date.replace(/-|:/g,"");
+                    end = start;
+                }
             }
             return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${start}/${end}&details=${encodeURIComponent(details)}`;
         };
@@ -923,12 +1004,26 @@
             const days = parseFloat(document.getElementById('leaveDays').value);
             const date = document.getElementById('leaveDate').value;
             const reason = document.getElementById('leaveReason').value;
+            
+            // Collect Time Range Data
+            let timeStart = null;
+            let timeEnd = null;
+            let timeStr = "";
+            
+            if(leaveMode === 'time') {
+                timeStart = document.getElementById('leaveStartTime').value;
+                timeEnd = document.getElementById('leaveEndTime').value;
+                if(!timeStart || !timeEnd) return Swal.fire('請填寫時間', '小時模式需填寫開始與結束時間', 'warning');
+                timeStr = `(${timeStart} ~ ${timeEnd})`;
+            }
 
             push(ref(db, 'requests'), {
                 empId: currentUserId, empName: employees[currentUserId].name, category: 'leave',
-                type, date, days, reason, status: 'pending', timestamp: Date.now()
+                type, date, days, reason, 
+                timeStart, timeEnd, // Save specific times
+                status: 'pending', timestamp: Date.now()
             });
-            const msg = `【請假申請】\n👤 ${employees[currentUserId].name}\n📅 ${date} (${days}天)\n🏷️ ${type}\n📝 ${reason}`;
+            const msg = `【請假申請】\n👤 ${employees[currentUserId].name}\n📅 ${date} ${timeStr}\n⏳ 共 ${days} 天 (或時數換算)\n🏷️ ${type}\n📝 ${reason}`;
             window.open('https://line.me/R/msg/text/?' + encodeURIComponent(msg));
             Swal.fire('已送出', '申請已提交', 'success');
         };
@@ -1005,7 +1100,7 @@
                     <tr class="border-b text-xs">
                         <td class="p-2">${r.date}</td>
                         <td class="p-2">${r.category==='car'?'用車':r.type}</td>
-                        <td class="p-2">${r.category==='car'?r.location:r.days+'天'}</td>
+                        <td class="p-2">${r.category==='car'?r.location:(r.timeStart ? r.days.toFixed(2)+'天' : r.days+'天')}</td>
                         <td class="p-2 font-bold ${r.status==='approved'?'text-green-600':'text-orange-500'}">${r.status}</td>
                         <td class="p-2 text-center">${calBtn}</td>
                         <td class="p-2">--</td>
@@ -1065,11 +1160,12 @@
             document.getElementById('pendingCountBadge').classList.toggle('hidden', pending.length===0);
             document.getElementById('noPendingMsg').classList.toggle('hidden', pending.length>0);
             pending.forEach(r => {
+                const detail = r.category==='car' ? r.location : (r.timeStart ? `${r.timeStart}~${r.timeEnd} (${r.days.toFixed(2)}天)` : `${r.days}天`);
                 tbody.innerHTML += `
                     <tr class="bg-white border-b">
                         <td class="p-3 font-bold">${r.empName}</td>
                         <td class="p-3">${r.category==='car'?'公務車':r.type}<br><span class="text-[10px] text-slate-400">${r.date}</span></td>
-                        <td class="p-3 text-xs">${r.category==='car'?r.location:r.days+'天 | '+r.reason}</td>
+                        <td class="p-3 text-xs">${detail} | ${r.reason||''}</td>
                         <td class="p-3 text-right">
                             <button onclick="processRequest('${r.id}','approve')" class="text-green-600 mx-1"><i class="fa-solid fa-check"></i></button>
                             <button onclick="processRequest('${r.id}','reject')" class="text-red-600 mx-1"><i class="fa-solid fa-xmark"></i></button>
@@ -1080,17 +1176,21 @@
 
         // UPDATED: Calculate Tenure
         function calculateTenure(dateString) {
+            if(!dateString) return "未設定";
             const now = new Date();
             const join = new Date(dateString);
             let months = (now.getFullYear() - join.getFullYear()) * 12;
             months -= join.getMonth();
             months += now.getMonth();
-            if (now.getDate() < join.getDate()) months--; // incomplete month
-            
+            if (now.getDate() < join.getDate()) months--; 
+            if (months < 0) return "即將到職";
             const y = Math.floor(months / 12);
             const m = months % 12;
             if (y === 0 && m === 0) return "未滿月";
-            return `${y > 0 ? y + '年 ' : ''}${m}個月`;
+            let result = "";
+            if (y > 0) result += `${y}年 `;
+            if (m > 0) result += `${m}個月`;
+            return result.trim();
         }
 
         // FIXED: Admin Table Rendering matching Screenshot
@@ -1108,18 +1208,23 @@
                     ? `<img src="${emp.avatar}" class="w-8 h-8 rounded-full border border-slate-200 object-cover mr-2 inline-block">` 
                     : `<div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs mr-2 inline-block">👤</div>`;
 
+                // Layout matching Image 1
                 tbody.innerHTML += `
                     <tr class="border-b text-sm">
-                        <td class="p-3 font-bold flex items-center">
+                        <td class="p-3 font-bold text-slate-800 flex items-center">
                             ${avatarHTML}
                             ${emp.name}
                         </td>
-                        <td class="p-3 text-xs">
-                            <div class="flex items-center gap-1 mb-1">
-                                <span class="text-slate-400">到職:</span> ${emp.joinDate}
-                                <span class="bg-slate-200 text-slate-600 text-[10px] px-1.5 py-0.5 rounded ml-1 font-bold">${tenure}</span>
+                        <td class="p-3">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-slate-400 text-xs">到職:</span> 
+                                <span class="font-medium text-slate-700">${emp.joinDate || '--'}</span>
+                                <span class="bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded font-bold">${tenure}</span>
                             </div>
-                            <div><span class="text-slate-400">生日:</span> ${emp.birthday||'-'}</div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-slate-400 text-xs">生日:</span> 
+                                <span class="text-slate-600">${emp.birthday || '--'}</span>
+                            </div>
                         </td>
                         <td class="p-3">總:${calc.days} | 用:${stats.annual} | 剩:${calc.days-stats.annual}</td>
                         <td class="p-3">${devs || '未綁定'}</td>
