@@ -2,14 +2,17 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>宏國地政|易丞地政 - 智慧指揮艙 (Nexus V5.28 Sync-Layout)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>宏國地政|易丞地政 - 智慧指揮艙 (Nexus V5.30 Admin-Edit)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        
+        /* [Feature 2] 畫面固定與防破圖核心設定 */
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; color: #1e293b; overflow-x: hidden; width: 100%; }
+        
         .serif { font-family: 'Noto Serif TC', serif; }
         .brand-bg { background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); } 
         .text-brand-gold { color: #facc15; }
@@ -19,9 +22,11 @@
         .hidden-section { display: none; }
         .fade-in-up { animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(20px); }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
         /* 薪資拉條 */
         input[type=range] { -webkit-appearance: none; width: 100%; height: 6px; border-radius: 5px; background: #cbd5e1; outline: none; margin: 10px 0; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #2563eb; cursor: pointer; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+        
         .impact-card { transition: all 0.3s ease; border-left: 4px solid; background-color: white; border: 1px solid #e2e8f0; }
         .impact-full { border-left-color: #22c55e; background-color: #f0fdf4; } 
         .impact-half { border-left-color: #f97316; background-color: #fff7ed; } 
@@ -32,10 +37,13 @@
         .device-badge { font-family: monospace; font-size: 0.7rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
         .modal-content { background: white; width: 95%; max-width: 900px; max-height: 90vh; border-radius: 1rem; padding: 0; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        
+        /* 捲軸優化 */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
         .lsa-badge { font-size: 0.65rem; background-color: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; border: 1px solid #bae6fd; display: inline-block; margin-top: 4px; }
         .avatar-hover-container { position: relative; cursor: pointer; transition: transform 0.2s; }
         .avatar-hover-container:active { transform: scale(0.95); }
@@ -49,6 +57,9 @@
         .calendar-header { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 0.8rem; font-weight: bold; color: #64748b; padding-bottom: 8px; }
         .cal-today { border: 2px solid #3b82f6; background-color: #eff6ff; }
         .cal-past { background-color: #f8fafc; color: #94a3b8; }
+
+        /* [Feature 2] 表格強制不換行 (防破圖關鍵) */
+        .table-fixed-layout th, .table-fixed-layout td { white-space: nowrap; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -59,7 +70,7 @@
                 <div class="w-10 h-10 bg-white text-blue-900 rounded-lg flex items-center justify-center font-bold text-lg serif shadow-lg">宏</div>
                 <div>
                     <h1 class="text-base md:text-lg font-bold tracking-wider serif">宏國地政 | 易丞地政</h1>
-                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">Nexus V5.28 Sync-Layout</p>
+                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">Nexus V5.30 Admin-Edit</p>
                 </div>
             </div>
             <div class="flex bg-blue-900/50 rounded-full p-1">
@@ -69,7 +80,7 @@
         </div>
     </header>
 
-    <main class="flex-grow p-4 md:p-6 max-w-7xl mx-auto w-full">
+    <main class="flex-grow p-4 md:p-6 max-w-7xl mx-auto w-full overflow-x-hidden">
         <section id="loginSection" class="w-full glass-panel p-10 text-center max-w-lg mx-auto mt-12 fade-in-up">
             <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 text-2xl"><i class="fa-solid fa-shield-halved"></i></div>
             <h2 class="text-2xl font-bold text-slate-800 mb-2">身分驗證系統</h2>
@@ -142,7 +153,7 @@
                         <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-calendar-check text-indigo-600"></i> 我的考勤行事曆</h3><div class="flex items-center gap-2 text-sm"><button onclick="changeEmpMonth(-1)" class="bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600"><i class="fa-solid fa-chevron-left"></i></button><span id="empCalTitle" class="font-bold text-slate-700 min-w-[80px] text-center">--/--</span><button onclick="changeEmpMonth(1)" class="bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600"><i class="fa-solid fa-chevron-right"></i></button></div></div>
                         <div class="calendar-header"><div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div></div><div id="empCalendarGrid" class="calendar-grid"><div class="p-4 text-center text-slate-400 col-span-7">載入中...</div></div>
                     </div>
-                    <div class="glass-panel p-6 fade-in-up"><h3 class="font-bold text-slate-700 mb-4 text-sm uppercase tracking-wider">最近申請紀錄</h3><div class="overflow-x-auto"><table class="w-full text-sm text-left"><tbody id="myRequestsTable" class="divide-y divide-slate-100"></tbody></table></div></div>
+                    <div class="glass-panel p-6 fade-in-up"><h3 class="font-bold text-slate-700 mb-4 text-sm uppercase tracking-wider">最近申請紀錄</h3><div class="overflow-x-auto"><table class="w-full text-sm text-left table-fixed-layout"><tbody id="myRequestsTable" class="divide-y divide-slate-100"></tbody></table></div></div>
                 </div>
                 <div class="space-y-6 lg:col-span-1">
                     <div class="glass-panel p-6 bg-slate-900 text-white fade-in-up">
@@ -178,7 +189,7 @@
                             <button onclick="exportAttendance()" class="bg-green-600 hover:bg-green-500 text-white text-xs px-3 py-2 rounded shadow flex items-center gap-1"><i class="fa-solid fa-file-excel"></i> 匯出打卡</button>
                         </div>
                     </div>
-                    <div class="overflow-x-auto max-h-60 overflow-y-auto custom-scrollbar"><table class="w-full text-left text-sm"><thead class="bg-slate-100 text-slate-500 text-xs"><tr><th class="p-2">姓名</th><th class="p-2">類型</th><th class="p-2">時間</th><th class="p-2">狀態</th><th class="p-2">定位</th></tr></thead><tbody id="attendanceTableBody" class="divide-y divide-slate-100 text-xs"></tbody></table></div>
+                    <div class="overflow-x-auto max-h-60 overflow-y-auto custom-scrollbar"><table class="w-full text-left text-sm table-fixed-layout"><thead class="bg-slate-100 text-slate-500 text-xs"><tr><th class="p-2">姓名</th><th class="p-2">類型</th><th class="p-2">時間</th><th class="p-2">狀態</th><th class="p-2 text-right">編輯</th></tr></thead><tbody id="attendanceTableBody" class="divide-y divide-slate-100 text-xs"></tbody></table></div>
                 </div>
 
                 <div class="lg:col-span-3 glass-panel p-6 border-t-4 border-purple-500 mb-6">
@@ -194,17 +205,43 @@
                     <div id="calendarGrid" class="calendar-grid"><div class="p-4 text-center text-slate-400 text-sm col-span-7">載入中...</div></div>
                 </div>
 
-                <div class="lg:col-span-2 glass-panel p-6 border-t-4 border-blue-600"><h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-clipboard-check text-blue-600"></i> 申請審核中心 <span id="pendingCountBadge" class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full hidden">0</span></h2><div class="overflow-x-auto"><table class="w-full text-left text-sm"><tbody id="approvalTableBody" class="divide-y divide-slate-100"></tbody></table></div><div id="noPendingMsg" class="text-center py-8 text-slate-400"><i class="fa-regular fa-circle-check text-4xl mb-2 text-slate-200"></i><p>目前沒有待審核的申請</p></div></div>
+                <div class="lg:col-span-2 glass-panel p-6 border-t-4 border-blue-600"><h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-clipboard-check text-blue-600"></i> 申請審核中心 <span id="pendingCountBadge" class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full hidden">0</span></h2><div class="overflow-x-auto"><table class="w-full text-left text-sm table-fixed-layout"><tbody id="approvalTableBody" class="divide-y divide-slate-100"></tbody></table></div><div id="noPendingMsg" class="text-center py-8 text-slate-400"><i class="fa-regular fa-circle-check text-4xl mb-2 text-slate-200"></i><p>目前沒有待審核的申請</p></div></div>
                 <div class="lg:col-span-1 glass-panel p-6 border-t-4 border-brand-gold"><h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-bullhorn text-brand-gold mr-2"></i> 置頂公告管理</h2><input type="text" id="adminBulletinTitle" class="w-full p-2 mb-2 input-modern" placeholder="標題"><textarea id="adminBulletinContent" rows="4" class="w-full p-2 mb-2 input-modern" placeholder="內容"></textarea><button onclick="saveBulletin()" class="w-full bg-slate-800 text-white p-2 rounded font-bold hover:bg-slate-700">更新置頂發布</button></div>
                 
-                <div class="lg:col-span-3 glass-panel p-6"><h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-users mr-1"></i> 員工全方位管理</h2><div class="flex flex-wrap gap-2 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-200"><input type="text" id="newAdminName" placeholder="新進員工姓名" class="flex-1 min-w-[120px] p-2 input-modern"><select id="newAdminGender" class="w-20 p-2 input-modern"><option value="M">男</option><option value="F">女</option></select><div class="flex items-center gap-1"><span class="text-xs text-slate-500">到職:</span><input type="date" id="newAdminDate" class="w-36 p-2 input-modern"></div><div class="flex items-center gap-1"><span class="text-xs text-slate-500">生日:</span><input type="date" id="newAdminBirthday" class="w-36 p-2 input-modern"></div><button onclick="addEmployee()" class="bg-blue-600 text-white px-4 rounded font-bold hover:bg-blue-500">新增</button></div><div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-100 text-slate-600 text-xs uppercase"><tr><th class="p-3">姓名</th><th class="p-3">資料</th><th class="p-3">特休</th><th class="p-3 w-1/4">裝置</th><th class="p-3 text-right">管理</th></tr></thead><tbody id="adminTableBody" class="divide-y divide-slate-100"></tbody></table></div></div>
+                <div class="lg:col-span-3 glass-panel p-6"><h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-users mr-1"></i> 員工全方位管理</h2><div class="flex flex-wrap gap-2 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-200"><input type="text" id="newAdminName" placeholder="新進員工姓名" class="flex-1 min-w-[120px] p-2 input-modern"><select id="newAdminGender" class="w-20 p-2 input-modern"><option value="M">男</option><option value="F">女</option></select><div class="flex items-center gap-1"><span class="text-xs text-slate-500">到職:</span><input type="date" id="newAdminDate" class="w-36 p-2 input-modern"></div><div class="flex items-center gap-1"><span class="text-xs text-slate-500">生日:</span><input type="date" id="newAdminBirthday" class="w-36 p-2 input-modern"></div><button onclick="addEmployee()" class="bg-blue-600 text-white px-4 rounded font-bold hover:bg-blue-500">新增</button></div><div class="overflow-x-auto"><table class="w-full text-left text-sm table-fixed-layout"><thead class="bg-slate-100 text-slate-600 text-xs uppercase"><tr><th class="p-3">姓名</th><th class="p-3">資料</th><th class="p-3">特休</th><th class="p-3 w-1/4">裝置</th><th class="p-3 text-right">管理</th></tr></thead><tbody id="adminTableBody" class="divide-y divide-slate-100"></tbody></table></div></div>
                 <div class="lg:col-span-3 glass-panel p-6 border-t-4 border-indigo-600 mb-6"><h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-gear text-indigo-600"></i> 全域薪資規則 (預設基準)</h2><div class="grid grid-cols-1 md:grid-cols-3 gap-6"><div class="space-y-3"><h3 class="font-bold text-sm text-slate-600 border-b pb-1">💰 基本參數</h3><div><label class="block text-xs font-bold text-slate-500 mb-1">預設底薪</label><input type="number" id="settingBaseSalary" class="w-full p-2 input-modern" value="30000"></div><div><label class="block text-xs font-bold text-slate-500 mb-1">月工時</label><input type="number" id="settingWorkHours" class="w-full p-2 input-modern" value="240"></div></div><div class="space-y-3"><h3 class="font-bold text-sm text-slate-600 border-b pb-1">🔥 加班費倍率</h3><div class="flex gap-2"><div class="flex-1"><label class="block text-xs font-bold text-slate-500 mb-1">前2小時</label><input type="number" id="settingOtRate1" class="w-full p-2 input-modern bg-slate-100" value="1.34" step="0.01"></div><div class="flex-1"><label class="block text-xs font-bold text-slate-500 mb-1">第3小時起</label><input type="number" id="settingOtRate2" class="w-full p-2 input-modern bg-slate-100" value="1.67" step="0.01"></div></div></div><div class="space-y-3"><h3 class="font-bold text-sm text-slate-600 border-b pb-1">⏰ 遲到扣款</h3><div class="flex gap-2"><div class="flex-1"><label class="block text-xs font-bold text-slate-500 mb-1">寬限(分)</label><input type="number" id="settingLateBuffer" class="w-full p-2 input-modern" value="10"></div><div class="flex-1"><label class="block text-xs font-bold text-slate-500 mb-1">每分扣薪</label><input type="number" id="settingLatePenalty" class="w-full p-2 input-modern" value="0"></div></div><div class="text-[10px] text-slate-500 mt-1">* 設為 0 則依時薪比例扣款</div><button onclick="saveSalarySettings()" class="w-full bg-indigo-600 text-white py-2 rounded font-bold hover:bg-indigo-500 shadow mt-2"><i class="fa-solid fa-save mr-1"></i> 儲存規則</button></div></div></div>
             </div>
         </section>
 
-        <div id="historyModal" class="modal-overlay"><div class="modal-content"><div class="p-4 border-b bg-slate-100 flex justify-between items-center"><h3 class="font-bold text-slate-800 text-lg">假勤數據中控</h3><button onclick="closeHistory()" class="text-slate-500 hover:text-red-500 text-xl"><i class="fa-solid fa-times"></i></button></div><div class="p-6 overflow-y-auto flex-1 bg-slate-50"><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="bg-white p-4 rounded-lg border border-blue-200 shadow-sm relative"><div class="absolute top-0 right-0 bg-blue-100 text-blue-800 text-[10px] px-2 py-1 font-bold">特休 (Annual)</div><div class="mt-2 space-y-2"><div class="flex justify-between items-center text-sm"><span class="text-slate-500">已使用</span><input type="number" id="adjAnnualUsed" class="border rounded w-16 text-center font-bold text-blue-700" step="0.125"></div></div></div><div class="bg-white p-4 rounded-lg border border-orange-200 shadow-sm relative"><div class="absolute top-0 right-0 bg-orange-100 text-orange-800 text-[10px] px-2 py-1 font-bold">補休 (Comp)</div><div class="mt-2 space-y-2"><div class="flex justify-between items-center text-sm"><span class="text-slate-500">餘額</span><input type="number" id="adjCompBalance" class="border rounded w-16 text-center font-bold text-orange-700" step="0.125"></div></div></div><div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative"><div class="absolute top-0 right-0 bg-gray-100 text-gray-800 text-[10px] px-2 py-1 font-bold">病/事假</div><div class="mt-2 space-y-1"><div class="flex justify-between items-center text-sm"><span class="text-slate-500">病假</span><input type="number" id="adjSickUsed" class="border rounded w-16 text-center font-bold text-gray-700" step="0.125"></div><div class="flex justify-between items-center text-sm"><span class="text-slate-500">事假</span><input type="number" id="adjPersonalUsed" class="border rounded w-16 text-center font-bold text-gray-700" step="0.125"></div></div></div></div><button onclick="saveAllAdjustments()" class="w-full bg-slate-800 text-white py-2 rounded mb-6 font-bold hover:bg-slate-700 shadow-md">儲存修正</button><h4 class="font-bold text-slate-700 mb-2">📜 申請紀錄</h4><div class="overflow-x-auto bg-white rounded-lg border border-slate-200"><table class="w-full text-sm text-left"><tbody id="historyTableBody" class="divide-y divide-slate-100"></tbody></table></div></div></div></div>
+        <div id="historyModal" class="modal-overlay"><div class="modal-content"><div class="p-4 border-b bg-slate-100 flex justify-between items-center"><h3 class="font-bold text-slate-800 text-lg">假勤數據中控</h3><button onclick="closeHistory()" class="text-slate-500 hover:text-red-500 text-xl"><i class="fa-solid fa-times"></i></button></div><div class="p-6 overflow-y-auto flex-1 bg-slate-50"><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="bg-white p-4 rounded-lg border border-blue-200 shadow-sm relative"><div class="absolute top-0 right-0 bg-blue-100 text-blue-800 text-[10px] px-2 py-1 font-bold">特休 (Annual)</div><div class="mt-2 space-y-2"><div class="flex justify-between items-center text-sm"><span class="text-slate-500">已使用</span><input type="number" id="adjAnnualUsed" class="border rounded w-16 text-center font-bold text-blue-700" step="0.125"></div></div></div><div class="bg-white p-4 rounded-lg border border-orange-200 shadow-sm relative"><div class="absolute top-0 right-0 bg-orange-100 text-orange-800 text-[10px] px-2 py-1 font-bold">補休 (Comp)</div><div class="mt-2 space-y-2"><div class="flex justify-between items-center text-sm"><span class="text-slate-500">餘額</span><input type="number" id="adjCompBalance" class="border rounded w-16 text-center font-bold text-orange-700" step="0.125"></div></div></div><div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative"><div class="absolute top-0 right-0 bg-gray-100 text-gray-800 text-[10px] px-2 py-1 font-bold">病/事假</div><div class="mt-2 space-y-1"><div class="flex justify-between items-center text-sm"><span class="text-slate-500">病假</span><input type="number" id="adjSickUsed" class="border rounded w-16 text-center font-bold text-gray-700" step="0.125"></div><div class="flex justify-between items-center text-sm"><span class="text-slate-500">事假</span><input type="number" id="adjPersonalUsed" class="border rounded w-16 text-center font-bold text-gray-700" step="0.125"></div></div></div></div><button onclick="saveAllAdjustments()" class="w-full bg-slate-800 text-white py-2 rounded mb-6 font-bold hover:bg-slate-700 shadow-md">儲存修正</button><h4 class="font-bold text-slate-700 mb-2">📜 申請紀錄</h4><div class="overflow-x-auto bg-white rounded-lg border border-slate-200"><table class="w-full text-sm text-left table-fixed-layout"><tbody id="historyTableBody" class="divide-y divide-slate-100"></tbody></table></div></div></div></div>
         <div id="salaryModal" class="modal-overlay"><div class="modal-content max-w-lg"><div class="p-4 border-b bg-indigo-600 text-white flex justify-between items-center"><h3 class="font-bold">個別薪資設定</h3><button onclick="closeSalaryModal()" class="text-white hover:text-red-300"><i class="fa-solid fa-times"></i></button></div><div class="p-6 space-y-4 bg-white"><input type="hidden" id="salaryEmpId"><div class="bg-yellow-50 p-3 rounded text-xs text-yellow-800 border border-yellow-200"><i class="fa-solid fa-circle-exclamation mr-1"></i> 設定此處將會「覆蓋」全域預設值。</div><div><label class="block text-xs font-bold text-slate-500 mb-1">底薪</label><input type="number" id="indBaseSalary" class="w-full p-2 input-modern" placeholder="預設: 30000"></div><div><label class="block text-xs font-bold text-slate-500 mb-1">月工時</label><input type="number" id="indWorkHours" class="w-full p-2 input-modern" placeholder="預設: 240"></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-slate-500 mb-1">加班倍率1</label><input type="number" id="indOtRate1" class="w-full p-2 input-modern" placeholder="預設: 1.34"></div><div><label class="block text-xs font-bold text-slate-500 mb-1">加班倍率2</label><input type="number" id="indOtRate2" class="w-full p-2 input-modern" placeholder="預設: 1.67"></div></div><button onclick="saveIndividualSalary()" class="w-full bg-indigo-600 text-white py-2 rounded font-bold hover:bg-indigo-500 shadow mt-2">儲存個人設定</button></div></div></div>
-        <div id="editRequestModal" class="modal-overlay"><div class="modal-content max-w-md"><div class="p-4 border-b bg-slate-800 text-white flex justify-between items-center"><h3 class="font-bold">修改申請</h3><button onclick="closeEditModal()" class="text-white hover:text-red-300"><i class="fa-solid fa-times"></i></button></div><div class="p-6 space-y-4 bg-white"><input type="hidden" id="editReqId"><div><label class="block text-xs font-bold text-slate-500 mb-1">申請人</label><input type="text" id="editEmpName" class="w-full p-2 bg-slate-100 rounded text-slate-500" disabled></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-slate-500 mb-1">類型</label><select id="editType" class="w-full p-2 input-modern border rounded"><option value="特休">特休</option><option value="病假">病假</option><option value="事假">事假</option><option value="補休">補休</option><option value="公務車">公務車</option></select></div><div><label class="block text-xs font-bold text-slate-500 mb-1">日期</label><input type="date" id="editDate" class="w-full p-2 input-modern border rounded"></div></div><div><label class="block text-xs font-bold text-slate-500 mb-1">天數</label><input type="number" id="editDays" step="0.125" class="w-full p-2 input-modern border rounded"></div><div><label class="block text-xs font-bold text-slate-500 mb-1">事由</label><input type="text" id="editReason" class="w-full p-2 input-modern border rounded"></div><button onclick="saveEditedRequest()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-500 shadow mt-2">儲存變更</button></div></div></div>
+        
+        <div id="adminEditModal" class="modal-overlay">
+            <div class="modal-content max-w-sm">
+                <div class="p-4 border-b bg-slate-800 text-white flex justify-between items-center">
+                    <h3 class="font-bold"><i class="fa-solid fa-pen-to-square mr-2"></i> 修改考勤狀態</h3>
+                    <button onclick="closeAdminEdit()" class="text-white hover:text-red-300"><i class="fa-solid fa-times"></i></button>
+                </div>
+                <div class="p-6 space-y-4 bg-white">
+                    <input type="hidden" id="editAttKey">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">狀態 (Status)</label>
+                        <select id="editAttStatus" class="w-full p-2 input-modern border rounded">
+                            <option value="正常">🟢 正常 (Normal)</option>
+                            <option value="遲到">🔴 遲到 (Late)</option>
+                            <option value="早退">🟠 早退 (Early)</option>
+                            <option value="加班">🟣 加班 (Overtime)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">時間 (Time)</label>
+                        <input type="text" id="editAttTime" class="w-full p-2 input-modern border rounded" placeholder="例如 08:25:00">
+                    </div>
+                    <button onclick="saveAdminEdit()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-500 shadow-lg mt-2">儲存修正</button>
+                    <button onclick="deleteAttendance()" class="w-full bg-red-50 text-red-600 py-2 rounded font-bold text-xs hover:bg-red-100 border border-red-200 mt-2">刪除此紀錄</button>
+                </div>
+            </div>
+        </div>
 
     </main>
 
@@ -228,7 +265,7 @@
         let leaveMode = 'day';
         let currentCalDate = new Date();
         let currentEmpCalDate = new Date();
-        let adminFilterId = 'all'; // Admin filter state
+        let adminFilterId = 'all';
 
         const DEFAULT_TASKS = ["地政過戶", "貸款", "結案資料整理", "過水電", "用印", "對保", "塗銷"];
         let taskOptions = DEFAULT_TASKS;
@@ -272,7 +309,6 @@
             document.getElementById('form-'+tab).classList.remove('hidden-section');
         };
 
-        // WebAuthn Utilities
         const bufferDecode = (value) => Uint8Array.from(atob(value), c => c.charCodeAt(0));
         const bufferEncode = (value) => btoa(String.fromCharCode.apply(null, new Uint8Array(value))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 
@@ -336,7 +372,6 @@
             document.getElementById('empSelect').disabled = false;
         });
 
-        // Strict Device Binding Logic
         window.updateEmpSelect = () => { 
             const select = document.getElementById('empSelect');
             const container = document.getElementById('userSelectContainer');
@@ -380,23 +415,20 @@
             if(targetId) { currentUserId = targetId; document.getElementById('loginSection').classList.add('hidden-section'); document.getElementById('employeeView').classList.remove('hidden-section'); renderEmployeeStats(employees[currentUserId]); window.renderEmployeePersonalCalendar(); }
         };
 
-        // [NEW] Admin Filter Logic
         window.handleAdminFilterChange = (val) => { 
             adminFilterId = val; 
             renderAttendanceLog(); 
-            window.renderMonthCalendar(); // Trigger calendar update
+            window.renderMonthCalendar();
         };
         
         window.updateAdminFilterSelect = () => {
             const sel = document.getElementById('adminFilterSelect');
-            const currentVal = sel.value || 'all'; 
             let html = '<option value="all">👥 顯示全體員工</option>';
             Object.values(employees).forEach(emp => { html += `<option value="${emp.id}">${emp.name}</option>`; });
             sel.innerHTML = html;
-            sel.value = adminFilterId; // Restore active filter
+            sel.value = adminFilterId;
         };
 
-        // Personal Calendar Logic
         window.changeEmpMonth = (delta) => { currentEmpCalDate.setMonth(currentEmpCalDate.getMonth() + delta); window.renderEmployeePersonalCalendar(); };
         window.renderEmployeePersonalCalendar = () => {
             const grid = document.getElementById('empCalendarGrid'); const title = document.getElementById('empCalTitle'); if(!grid || !title || !currentUserId) return;
@@ -406,14 +438,22 @@
             for(let d=1; d<=daysInMonth; d++) {
                 const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; const isToday = (dateStr === todayStr); let evHtml = '';
                 const atts = Object.values(attendance).filter(a => { const aDate = new Date(a.timestamp); return a.empId === currentUserId && aDate.getFullYear()===year && aDate.getMonth()===month && aDate.getDate()===d; });
-                atts.forEach(a => { const isLate = a.status === '遲到'; const color = isLate ? 'text-red-600 bg-red-50 border-red-200' : 'text-blue-600 bg-blue-50 border-blue-200'; const timeOnly = a.timeStr.split(':')[0] + ':' + a.timeStr.split(':')[1]; evHtml += `<div class="${color} text-[9px] px-1 rounded mt-1 border truncate">${a.type} <strong>${timeOnly}</strong></div>`; });
+                atts.forEach(a => { 
+                    const isLate = a.status === '遲到'; 
+                    const isOt = a.status === '加班';
+                    let color = 'text-blue-600 bg-blue-50 border-blue-200';
+                    if (isLate) color = 'text-red-600 bg-red-50 border-red-200';
+                    if (isOt) color = 'text-purple-600 bg-purple-50 border-purple-200';
+                    
+                    const timeOnly = a.timeStr.split(':')[0] + ':' + a.timeStr.split(':')[1]; 
+                    evHtml += `<div class="${color} text-[9px] px-1 rounded mt-1 border truncate">${a.type} <strong>${timeOnly}</strong></div>`; 
+                });
                 const reqs = Object.values(requests).filter(r => r.empId === currentUserId && r.status === 'approved' && r.date === dateStr);
                 reqs.forEach(r => { evHtml += `<div class="text-slate-500 bg-slate-100 border border-slate-200 text-[9px] px-1 rounded mt-1 truncate">[${r.category==='car'?'車':r.type}]</div>`; });
                 grid.innerHTML += `<div class="calendar-cell ${isToday?'cal-today':''}"><div class="text-right font-bold text-xs text-slate-600">${d}</div><div class="overflow-y-auto max-h-[70px] custom-scrollbar">${evHtml}</div></div>`;
             }
         };
 
-        // [Admin] Calendar Logic - UPDATED for Filter
         window.changeMonth = (delta) => { currentCalDate.setMonth(currentCalDate.getMonth() + delta); window.renderMonthCalendar(); };
         window.renderMonthCalendar = () => {
             const grid = document.getElementById('calendarGrid'); const title = document.getElementById('calendarTitle'); if(!grid || !title) return;
@@ -421,7 +461,6 @@
             const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate(); const todayStr = new Date().toISOString().split('T')[0];
             for(let i=0; i<firstDay; i++) grid.innerHTML += `<div class="calendar-cell bg-slate-50"></div>`;
             
-            // Filter Data for Calendar
             let dataAtt = Object.values(attendance);
             let dataReq = Object.values(requests);
             if (adminFilterId !== 'all') {
@@ -433,7 +472,13 @@
                 const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; const isToday = (dateStr === todayStr); const isPast = (new Date(dateStr) < new Date().setHours(0,0,0,0)); let evHtml = '';
                 
                 const atts = dataAtt.filter(a => { const aDate = new Date(a.timestamp); return aDate.getFullYear()===year && aDate.getMonth()===month && aDate.getDate()===d; });
-                atts.forEach(a => { const isLate = a.status === '遲到'; const colorClass = isLate ? 'text-red-600 bg-red-50 border-red-200' : 'text-blue-600 bg-blue-50 border-blue-200'; const timeOnly = a.timeStr.split(':')[0] + ':' + a.timeStr.split(':')[1]; evHtml += `<div class="${colorClass} text-[10px] px-1 rounded mt-1 border truncate"><strong>${timeOnly}</strong> ${a.empName} <span class="opacity-75">(${a.status})</span></div>`; });
+                atts.forEach(a => { 
+                    let colorClass = 'text-blue-600 bg-blue-50 border-blue-200';
+                    if (a.status === '遲到') colorClass = 'text-red-600 bg-red-50 border-red-200';
+                    if (a.status === '加班') colorClass = 'text-purple-600 bg-purple-50 border-purple-200';
+                    const timeOnly = a.timeStr.split(':')[0] + ':' + a.timeStr.split(':')[1]; 
+                    evHtml += `<div class="${colorClass} text-[10px] px-1 rounded mt-1 border truncate"><strong>${timeOnly}</strong> ${a.empName} <span class="opacity-75">(${a.status})</span></div>`; 
+                });
                 
                 const reqs = dataReq.filter(r => r.status === 'approved' && r.date === dateStr);
                 reqs.forEach(r => { evHtml += `<div class="text-slate-500 bg-slate-100 border border-slate-200 text-[10px] px-1 rounded mt-1 truncate">[${r.category==='car'?'車':r.type}] ${r.empName}</div>`; });
@@ -442,7 +487,6 @@
             }
         };
 
-        // Export & Salary functions
         window.exportAttendance = () => { 
             const rows = [['姓名', '類型', '日期', '時間', '狀態']]; 
             let data = Object.values(attendance).sort((a,b)=>b.timestamp-a.timestamp);
@@ -481,7 +525,34 @@
         window.saveSalarySettings = () => { const s = { baseSalary: document.getElementById('settingBaseSalary').value, workHours: document.getElementById('settingWorkHours').value, otRate1: document.getElementById('settingOtRate1').value, otRate2: document.getElementById('settingOtRate2').value, lateBuffer: document.getElementById('settingLateBuffer').value, latePenalty: document.getElementById('settingLatePenalty').value }; update(ref(db, 'settings/salary'), s).then(() => Swal.fire('全域設定已儲存', '', 'success')); };
         function calculateLeave(joinDate) { if(!joinDate) return { days: 0, rule: "未設定" }; const years = (new Date() - new Date(joinDate)) / (1000*60*60*24*365.25); let d = 0; if(years<0.5) d=0; else if(years<1) d=3; else if(years<2) d=7; else if(years<3) d=10; else if(years<5) d=14; else if(years<10) d=15; else d=Math.min(30, 15+Math.floor(years-10)); return { days: d, rule: "週年制" }; }
         function calculateTenure(d) { if(!d) return "--"; const m = Math.floor((new Date() - new Date(d)) / (1000*60*60*24*30.44)); return m < 12 ? `${m}個月` : `${Math.floor(m/12)}年${m%12}月`; }
-        window.handlePunch = (t) => { if(!currentUserId) return; navigator.geolocation.getCurrentPosition(p=>{ push(ref(db,'attendance'),{empId:currentUserId,empName:employees[currentUserId].name,type:t,timestamp:Date.now(),dateStr:new Date().toLocaleDateString(),timeStr:new Date().toLocaleTimeString(),location:`${p.coords.latitude},${p.coords.longitude}`,status:"正常"}); Swal.fire('打卡成功','','success'); }); };
+        
+        // [Feature 1] Logic Updated
+        window.handlePunch = (t) => { 
+            if(!currentUserId) return; 
+            navigator.geolocation.getCurrentPosition(p=>{ 
+                const now = new Date();
+                const nowMinutes = now.getHours() * 60 + now.getMinutes();
+                let status = "正常";
+                
+                // 08:30 = 8*60 + 30 = 510
+                if (t === '上班' && nowMinutes > 510) status = "遲到";
+                // 18:00 = 18*60 = 1080
+                if (t === '下班' && nowMinutes > 1080) status = "加班";
+
+                push(ref(db,'attendance'),{
+                    empId:currentUserId,
+                    empName:employees[currentUserId].name,
+                    type:t,
+                    timestamp:now.getTime(),
+                    dateStr:now.toLocaleDateString(),
+                    timeStr:now.toLocaleTimeString(),
+                    location:`${p.coords.latitude},${p.coords.longitude}`,
+                    status: status
+                }); 
+                Swal.fire('打卡成功', `${t} (${status})`,'success'); 
+            }); 
+        };
+
         window.handleLogSubmit = (e) => { e.preventDefault(); Swal.fire('模擬發送','已開啟 LINE','success'); };
         window.renderApprovalQueue = () => { const t=document.getElementById('approvalTableBody'); t.innerHTML=''; Object.entries(requests).filter(([k,v])=>v.status==='pending').forEach(([k,r])=>{ t.innerHTML+=`<tr class="border-b"><td class="p-2">${r.empName}</td><td class="p-2">${r.type}</td><td class="p-2 text-right"><button onclick="processRequest('${k}','approve')" class="text-green-600 mr-2">✔</button><button onclick="processRequest('${k}','reject')" class="text-red-600">✘</button></td></tr>`; }); };
         window.processRequest = (k,s) => update(ref(db,`requests/${k}`),{status:s==='approve'?'approved':'rejected'}).then(()=>window.renderApprovalQueue());
@@ -492,13 +563,85 @@
         window.checkBirthdayEvents = () => {}; 
         window.renderBulletin = () => { document.getElementById('displayBulletinTitle').innerText = bulletin.title; document.getElementById('displayBulletinContent').innerText = bulletin.content; document.getElementById('displayBulletinDate').innerText = bulletin.date; };
         window.renderActivityFeed = () => { const feed = document.getElementById('activityFeed'); const approved = Object.values(requests).filter(r=>r.status==='approved' && new Date(r.date) >= new Date().setHours(0,0,0,0)).sort((a,b)=>new Date(a.date)-new Date(b.date)); if(approved.length===0) { feed.innerHTML='<div class="p-4 text-center text-xs text-slate-400">目前無動態</div>'; return; } feed.innerHTML = approved.map(r=>`<div class="p-3 border-b text-xs flex justify-between"><span><b>${r.empName}</b>: ${r.category==='car'?'用車':r.type}</span><span class="text-slate-400">${r.date.slice(5)}</span></div>`).join(''); };
+        
+        // [MODIFIED] Added Edit Logic to Attendance Table
         window.renderAttendanceLog = () => { 
             const tbody = document.getElementById('attendanceTableBody'); 
             tbody.innerHTML = '';
-            let data = Object.values(attendance).sort((a,b)=>b.timestamp-a.timestamp);
-            if(adminFilterId !== 'all') { data = data.filter(a => a.empId === adminFilterId); }
-            data.slice(0,30).forEach(l=> { tbody.innerHTML += `<tr class="border-b"><td class="p-2">${l.empName}</td><td class="p-2 ${l.type==='上班'?'text-blue-600':'text-orange-600'}">${l.type}</td><td class="p-2">${l.dateStr} ${l.timeStr}</td><td class="p-2">${l.status||'正常'}</td><td class="p-2 text-xs text-blue-400">📍</td></tr>`; }); 
+            // Change Object.values to Object.entries to get the Key
+            let data = Object.entries(attendance).sort((a,b)=>b[1].timestamp-a[1].timestamp);
+            
+            if(adminFilterId !== 'all') { 
+                data = data.filter(([k,v]) => v.empId === adminFilterId); 
+            }
+            
+            data.slice(0,30).forEach(([key, l]) => { 
+                let statusColor = "text-slate-600";
+                if(l.status === '遲到') statusColor = "text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded border border-red-100";
+                if(l.status === '加班') statusColor = "text-purple-600 font-bold bg-purple-50 px-2 py-0.5 rounded border border-purple-100";
+                
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-slate-50 transition">
+                        <td class="p-2">${l.empName}</td>
+                        <td class="p-2 ${l.type==='上班'?'text-blue-600':'text-orange-600'}">${l.type}</td>
+                        <td class="p-2">${l.dateStr} <span class="text-[10px] text-slate-400">${l.timeStr}</span></td>
+                        <td class="p-2"><span class="${statusColor}">${l.status||'正常'}</span></td>
+                        <td class="p-2 text-right">
+                            <button onclick="openAdminEdit('${key}')" class="text-slate-400 hover:text-blue-600 px-2">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                        </td>
+                    </tr>`; 
+            }); 
         };
+
+        // [NEW] Admin Edit Functions
+        window.openAdminEdit = (key) => {
+            const record = attendance[key];
+            if(!record) return;
+            document.getElementById('editAttKey').value = key;
+            document.getElementById('editAttStatus').value = record.status || '正常';
+            document.getElementById('editAttTime').value = record.timeStr;
+            document.getElementById('adminEditModal').style.display = 'flex';
+        };
+
+        window.closeAdminEdit = () => {
+            document.getElementById('adminEditModal').style.display = 'none';
+        };
+
+        window.saveAdminEdit = () => {
+            const key = document.getElementById('editAttKey').value;
+            const status = document.getElementById('editAttStatus').value;
+            const timeStr = document.getElementById('editAttTime').value;
+            
+            update(ref(db, `attendance/${key}`), {
+                status: status,
+                timeStr: timeStr
+            }).then(() => {
+                Swal.fire('修改成功', '考勤狀態已更新', 'success');
+                closeAdminEdit();
+            });
+        };
+
+        window.deleteAttendance = () => {
+            const key = document.getElementById('editAttKey').value;
+            Swal.fire({
+                title: '確定刪除?',
+                text: "此動作無法復原！",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: '刪除'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    remove(ref(db, `attendance/${key}`)).then(() => {
+                        Swal.fire('已刪除', '', 'success');
+                        closeAdminEdit();
+                    });
+                }
+            });
+        };
+
         window.renderLogForm = () => { const c = document.getElementById('logEntriesContainer'); if(!c || c.children.length > 1) return; c.innerHTML=''; ["09:00 ~ 10:00", "10:00 ~ 11:00", "11:00 ~ 12:00", "13:30 ~ 14:30", "14:30 ~ 15:30", "15:30 ~ 16:30", "16:30 ~ 17:30", "17:30 ~ 18:30"].forEach(s=>{ let o='<option value="">-- 選擇 --</option>'; taskOptions.forEach(op=>o+=`<option value="${op}">${op}</option>`); c.innerHTML+=`<div class="bg-white p-2 rounded border border-slate-200 flex flex-col md:flex-row gap-2 items-center shadow-sm"><div class="text-xs font-bold text-slate-500 w-full md:w-24 bg-slate-50 p-1.5 rounded text-center">${s}</div><select name="logTask" class="flex-1 p-1.5 text-sm border rounded w-full md:w-auto outline-none focus:border-blue-500">${o}</select><input type="text" name="logDetail" class="flex-1 p-1.5 text-sm border rounded w-full md:w-auto outline-none focus:border-blue-500" placeholder="內容"><input type="hidden" name="logTime" value="${s}"></div>`; }); };
         window.saveBulletin = () => { set(ref(db, 'bulletin'), { title: document.getElementById('adminBulletinTitle').value, content: document.getElementById('adminBulletinContent').value, date: new Date().toLocaleDateString() }); Swal.fire('公告已更新'); };
         document.getElementById('leaveDate').valueAsDate = new Date(); document.getElementById('carDate').valueAsDate = new Date(); document.getElementById('logDate').valueAsDate = new Date();
