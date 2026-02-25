@@ -86,11 +86,6 @@
             <h2 class="text-2xl font-bold text-slate-800 mb-2">身分驗證系統</h2>
             <p class="text-slate-500 mb-6 text-sm">系統已啟用裝置鎖定保護</p>
             <div class="space-y-4">
-                <button onclick="handleBiometricLogin()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg flex items-center justify-center gap-3 transition-all transform active:scale-95">
-                    <i class="fa-solid fa-fingerprint text-2xl"></i>
-                    <div class="text-left"><div class="font-bold text-lg">生物辨識登入</div><div class="text-[10px] opacity-80">FaceID / TouchID / Windows Hello</div></div>
-                </button>
-                <div class="relative flex py-2 items-center"><div class="flex-grow border-t border-slate-200"></div><span class="flex-shrink-0 mx-4 text-slate-400 text-xs">裝置綁定狀態</span><div class="flex-grow border-t border-slate-200"></div></div>
                 <div id="userSelectContainer">
                     <select id="empSelect" onchange="tryBindAndLogin()" class="w-full p-3 pl-4 text-lg input-modern cursor-pointer text-center font-bold text-slate-700 disabled:opacity-50" disabled><option value="">-- 讀取資料中 --</option></select>
                     <div class="text-[10px] text-red-400 mt-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> 注意：首次登入將自動綁定此裝置，無法更改。</div>
@@ -553,7 +548,77 @@
             }); 
         };
 
-        window.handleLogSubmit = (e) => { e.preventDefault(); Swal.fire('模擬發送','已開啟 LINE','success'); };
+        // ==========================================
+        // [NEXUS PATCH] 表單提交與 LINE 轉傳邏輯修復區塊
+        // ==========================================
+        
+        window.handleLeaveSubmit = (e) => {
+            e.preventDefault();
+            if(!currentUserId) return Swal.fire('錯誤', '請先登入', 'error');
+            const type = document.getElementById('leaveType').value;
+            const date = document.getElementById('leaveDate').value;
+            const reason = document.getElementById('leaveReason').value;
+            const days = document.getElementById('leaveDays').value;
+            if(!date || !reason) return Swal.fire('錯誤', '請填寫完整資訊', 'warning');
+
+            const empName = employees[currentUserId].name;
+            const msg = `【請假申請】\n申請人：${empName}\n假別：${type}\n日期：${date}\n天數：${days}天\n事由：${reason}`;
+
+            push(ref(db, 'requests'), {
+                empId: currentUserId, empName: empName, category: 'leave', type: type, date: date, days: days, reason: reason, status: 'pending', timestamp: Date.now()
+            }).then(() => {
+                window.open(`https://line.me/R/msg/text/?${encodeURIComponent(msg)}`, '_blank');
+                Swal.fire('成功', '已送出申請並開啟 LINE', 'success');
+                e.target.reset(); document.getElementById('leaveDate').valueAsDate = new Date();
+            });
+        };
+
+        window.handleCarSubmit = (e) => {
+            e.preventDefault();
+            if(!currentUserId) return Swal.fire('錯誤', '請先登入', 'error');
+            const date = document.getElementById('carDate').value;
+            const time = document.getElementById('carTime').value;
+            const location = document.getElementById('carLocation').value;
+            if(!date || !time || !location) return Swal.fire('錯誤', '請填寫完整資訊', 'warning');
+
+            const empName = employees[currentUserId].name;
+            const msg = `【公務車預約】\n預約人：${empName}\n日期：${date}\n時間：${time}\n地點/用途：${location}`;
+
+            push(ref(db, 'requests'), {
+                empId: currentUserId, empName: empName, category: 'car', type: '公務車', date: date, time: time, location: location, status: 'pending', timestamp: Date.now()
+            }).then(() => {
+                window.open(`https://line.me/R/msg/text/?${encodeURIComponent(msg)}`, '_blank');
+                Swal.fire('成功', '已送出預約並開啟 LINE', 'success');
+                e.target.reset(); document.getElementById('carDate').valueAsDate = new Date();
+            });
+        };
+
+        window.handleLogSubmit = (e) => {
+            e.preventDefault();
+            if(!currentUserId) return Swal.fire('錯誤', '請先登入', 'error');
+            const date = document.getElementById('logDate').value;
+            const tasks = document.getElementsByName('logTask');
+            const details = document.getElementsByName('logDetail');
+            const times = document.getElementsByName('logTime');
+            
+            let logContent = `【工作日誌匯報】\n匯報人：${employees[currentUserId].name}\n日期：${date}\n`;
+            let hasContent = false;
+            
+            for(let i=0; i<tasks.length; i++) {
+                if(tasks[i].value || details[i].value) {
+                    hasContent = true;
+                    logContent += `\n[${times[i].value}] ${tasks[i].value}\n${details[i].value}`;
+                }
+            }
+            
+            if(!hasContent) return Swal.fire('錯誤', '請至少填寫一筆日誌', 'warning');
+
+            window.open(`https://line.me/R/msg/text/?${encodeURIComponent(logContent)}`, '_blank');
+            Swal.fire('成功', '已彙整日誌並開啟 LINE', 'success');
+        };
+        // ==========================================
+
+
         window.renderApprovalQueue = () => { const t=document.getElementById('approvalTableBody'); t.innerHTML=''; Object.entries(requests).filter(([k,v])=>v.status==='pending').forEach(([k,r])=>{ t.innerHTML+=`<tr class="border-b"><td class="p-2">${r.empName}</td><td class="p-2">${r.type}</td><td class="p-2 text-right"><button onclick="processRequest('${k}','approve')" class="text-green-600 mr-2">✔</button><button onclick="processRequest('${k}','reject')" class="text-red-600">✘</button></td></tr>`; }); };
         window.processRequest = (k,s) => update(ref(db,`requests/${k}`),{status:s==='approve'?'approved':'rejected'}).then(()=>window.renderApprovalQueue());
         window.openHistory = (id) => { currentModalEmpId=id; document.getElementById('historyModal').style.display='flex'; };
