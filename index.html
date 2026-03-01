@@ -141,7 +141,20 @@
                             <div id="impactCard" class="impact-card impact-full p-4 rounded-lg flex justify-between items-center mt-2"><div><div class="font-bold text-sm text-slate-700" id="impactTitle">全薪</div><div class="text-xs text-slate-500" id="impactDesc">工資照給。</div></div><div class="text-right"><div class="text-xs text-slate-400">預估扣薪</div><div class="font-bold text-lg text-red-500">$<span id="impactAmount">0</span></div></div></div>
                             <button type="submit" class="w-full bg-[#06c755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-lg shadow-lg transition flex justify-center items-center gap-2"><i class="fa-brands fa-line"></i> 送出並通知 LINE</button>
                         </form>
-                        <form id="form-car" onsubmit="handleCarSubmit(event)" class="space-y-4 hidden-section"><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-slate-500 mb-1">預約日期</label><input type="date" id="carDate" class="w-full p-2.5 input-modern"></div><div><label class="block text-xs font-bold text-slate-500 mb-1">時間</label><input type="time" id="carTime" class="w-full p-2.5 input-modern"></div><div class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">地點 / 用途</label><input type="text" id="carLocation" class="w-full p-2.5 input-modern" placeholder="例：市政府洽公"></div></div><button type="submit" class="w-full bg-[#06c755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-lg shadow-lg transition flex justify-center items-center gap-2"><i class="fa-brands fa-line"></i> 送出並通知 LINE</button></form>
+
+                        <form id="form-car" onsubmit="handleCarSubmit(event)" class="space-y-4 hidden-section">
+                            <div class="flex justify-between items-end mb-2">
+                                <div class="w-full">
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">預約日期</label>
+                                    <input type="date" id="carDate" class="w-full p-2 input-modern">
+                                </div>
+                            </div>
+                            <div class="space-y-2" id="carEntriesContainer">
+                                <div class="text-center text-sm text-slate-400 py-4"><i class="fa-solid fa-spinner fa-spin"></i> 載入中...</div>
+                            </div>
+                            <button type="submit" class="w-full bg-[#06c755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-lg shadow-lg transition flex justify-center items-center gap-2 mt-4"><i class="fa-brands fa-line"></i> 預約送出並通知 LINE</button>
+                        </form>
+
                         <form id="form-log" onsubmit="handleLogSubmit(event)" class="space-y-4 hidden-section"><div class="flex justify-between items-end mb-2"><div class="w-2/3"><label class="block text-xs font-bold text-slate-500 mb-1">日期</label><input type="date" id="logDate" class="w-full p-2 input-modern"></div><button type="button" onclick="addNewTaskType()" class="text-xs bg-slate-800 text-white px-3 py-2 rounded hover:bg-slate-700 shadow"><i class="fa-solid fa-plus mr-1"></i></button></div><div class="space-y-2" id="logEntriesContainer"><div class="text-center text-sm text-slate-400 py-4"><i class="fa-solid fa-spinner fa-spin"></i> 載入中...</div></div><button type="submit" class="w-full bg-[#06c755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-lg shadow-lg transition flex justify-center items-center gap-2 mt-4"><i class="fa-brands fa-line"></i> 匯報 LINE</button></form>
                     </div>
                     <div class="glass-panel p-6 border-t-4 border-indigo-500 fade-in-up">
@@ -349,6 +362,7 @@
             }
 
             renderLogForm(); 
+            window.renderCarForm(); // [Nexus Edit] 新增渲染車輛表單
             
             const today = new Date();
             const todayStr = (today.getMonth()+1).toString().padStart(2,'0') + '-' + today.getDate().toString().padStart(2,'0');
@@ -573,21 +587,35 @@
             });
         };
 
+        // [Nexus Edit] 修改公務車表單邏輯，支援多區間輸入
         window.handleCarSubmit = (e) => {
             e.preventDefault();
             if(!currentUserId) return Swal.fire('錯誤', '請先登入', 'error');
             const date = document.getElementById('carDate').value;
-            const time = document.getElementById('carTime').value;
-            const location = document.getElementById('carLocation').value;
-            if(!date || !time || !location) return Swal.fire('錯誤', '請填寫完整資訊', 'warning');
+            const locations = document.getElementsByName('carLocation');
+            const times = document.getElementsByName('carTime');
+            
+            let carContent = `【公務車預約】\n預約人：${employees[currentUserId].name}\n日期：${date}\n`;
+            let hasContent = false;
+            let firstTime = "";
+            let allLocations = [];
 
-            const empName = employees[currentUserId].name;
-            const msg = `【公務車預約】\n預約人：${empName}\n日期：${date}\n時間：${time}\n地點/用途：${location}`;
+            for(let i=0; i<locations.length; i++) {
+                if(locations[i].value) {
+                    hasContent = true;
+                    carContent += `\n[${times[i].value}] ${locations[i].value}`;
+                    if(!firstTime) firstTime = times[i].value;
+                    allLocations.push(locations[i].value);
+                }
+            }
 
+            if(!hasContent) return Swal.fire('錯誤', '請至少填寫一個時段的地點/用途', 'warning');
+
+            // 確保原本的管理後台報表也能正常顯示(把所有地點串起來存入)
             push(ref(db, 'requests'), {
-                empId: currentUserId, empName: empName, category: 'car', type: '公務車', date: date, time: time, location: location, status: 'pending', timestamp: Date.now()
+                empId: currentUserId, empName: employees[currentUserId].name, category: 'car', type: '公務車', date: date, time: firstTime, location: allLocations.join(" | "), status: 'pending', timestamp: Date.now()
             }).then(() => {
-                window.open(`https://line.me/R/msg/text/?${encodeURIComponent(msg)}`, '_blank');
+                window.open(`https://line.me/R/msg/text/?${encodeURIComponent(carContent)}`, '_blank');
                 Swal.fire('成功', '已送出預約並開啟 LINE', 'success');
                 e.target.reset(); document.getElementById('carDate').valueAsDate = new Date();
             });
@@ -708,6 +736,17 @@
         };
 
         window.renderLogForm = () => { const c = document.getElementById('logEntriesContainer'); if(!c || c.children.length > 1) return; c.innerHTML=''; ["09:00 ~ 10:00", "10:00 ~ 11:00", "11:00 ~ 12:00", "13:30 ~ 14:30", "14:30 ~ 15:30", "15:30 ~ 16:30", "16:30 ~ 17:30", "17:30 ~ 18:30"].forEach(s=>{ let o='<option value="">-- 選擇 --</option>'; taskOptions.forEach(op=>o+=`<option value="${op}">${op}</option>`); c.innerHTML+=`<div class="bg-white p-2 rounded border border-slate-200 flex flex-col md:flex-row gap-2 items-center shadow-sm"><div class="text-xs font-bold text-slate-500 w-full md:w-24 bg-slate-50 p-1.5 rounded text-center">${s}</div><select name="logTask" class="flex-1 p-1.5 text-sm border rounded w-full md:w-auto outline-none focus:border-blue-500">${o}</select><input type="text" name="logDetail" class="flex-1 p-1.5 text-sm border rounded w-full md:w-auto outline-none focus:border-blue-500" placeholder="內容"><input type="hidden" name="logTime" value="${s}"></div>`; }); };
+        
+        // [Nexus Edit] 新增車輛表單動態渲染
+        window.renderCarForm = () => { 
+            const c = document.getElementById('carEntriesContainer'); 
+            if(!c || c.children.length > 1) return; 
+            c.innerHTML=''; 
+            ["08:00 ~ 09:00", "09:00 ~ 10:00", "10:00 ~ 11:00", "11:00 ~ 12:00", "13:30 ~ 14:30", "14:30 ~ 15:30", "15:30 ~ 16:30", "16:30 ~ 17:30"].forEach(s=>{ 
+                c.innerHTML+=`<div class="bg-white p-2 rounded border border-slate-200 flex flex-col md:flex-row gap-2 items-center shadow-sm"><div class="text-xs font-bold text-slate-500 w-full md:w-24 bg-slate-50 p-1.5 rounded text-center"><i class="fa-solid fa-car-side mr-1 text-slate-400"></i>${s}</div><input type="text" name="carLocation" class="flex-1 p-1.5 text-sm border rounded w-full md:w-auto outline-none focus:border-blue-500" placeholder="地點 / 用途 (留白表示不預約)"><input type="hidden" name="carTime" value="${s}"></div>`; 
+            }); 
+        };
+
         window.saveBulletin = () => { set(ref(db, 'bulletin'), { title: document.getElementById('adminBulletinTitle').value, content: document.getElementById('adminBulletinContent').value, date: new Date().toLocaleDateString() }); Swal.fire('公告已更新'); };
         document.getElementById('leaveDate').valueAsDate = new Date(); document.getElementById('carDate').valueAsDate = new Date(); document.getElementById('logDate').valueAsDate = new Date();
     </script>
