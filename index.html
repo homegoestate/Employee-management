@@ -563,7 +563,7 @@
         };
 
         // ==========================================
-        // [NEXUS PATCH] 表單提交與 LINE 轉傳邏輯修復區塊
+        // [NEXUS PATCH 2] 深度連結 (Deep Link) 行動版防擋修復
         // ==========================================
         
         window.handleLeaveSubmit = (e) => {
@@ -577,17 +577,19 @@
 
             const empName = employees[currentUserId].name;
             const msg = `【請假申請】\n申請人：${empName}\n假別：${type}\n日期：${date}\n天數：${days}天\n事由：${reason}`;
+            const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(msg)}`;
 
             push(ref(db, 'requests'), {
                 empId: currentUserId, empName: empName, category: 'leave', type: type, date: date, days: days, reason: reason, status: 'pending', timestamp: Date.now()
             }).then(() => {
-                window.open(`https://line.me/R/msg/text/?${encodeURIComponent(msg)}`, '_blank');
-                Swal.fire('成功', '已送出申請並開啟 LINE', 'success');
+                // 使用 location.href 防止手機瀏覽器阻擋
+                window.location.href = lineUrl;
+                Swal.fire({ title: '成功', text: '已送出申請。若 LINE 未自動開啟，請手動前往。', icon: 'success', timer: 2500 });
                 e.target.reset(); document.getElementById('leaveDate').valueAsDate = new Date();
             });
         };
 
-        // [Nexus Edit] 修改公務車表單邏輯，支援多區間輸入
+        // [Nexus Edit] 修改公務車表單邏輯，支援多區間輸入 + 防擋修復
         window.handleCarSubmit = (e) => {
             e.preventDefault();
             if(!currentUserId) return Swal.fire('錯誤', '請先登入', 'error');
@@ -611,12 +613,15 @@
 
             if(!hasContent) return Swal.fire('錯誤', '請至少填寫一個時段的地點/用途', 'warning');
 
+            const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(carContent)}`;
+
             // 確保原本的管理後台報表也能正常顯示(把所有地點串起來存入)
             push(ref(db, 'requests'), {
                 empId: currentUserId, empName: employees[currentUserId].name, category: 'car', type: '公務車', date: date, time: firstTime, location: allLocations.join(" | "), status: 'pending', timestamp: Date.now()
             }).then(() => {
-                window.open(`https://line.me/R/msg/text/?${encodeURIComponent(carContent)}`, '_blank');
-                Swal.fire('成功', '已送出預約並開啟 LINE', 'success');
+                // 使用 location.href 防止手機瀏覽器阻擋
+                window.location.href = lineUrl;
+                Swal.fire({ title: '成功', text: '已送出預約。若 LINE 未自動開啟，請手動前往。', icon: 'success', timer: 2500 });
                 e.target.reset(); document.getElementById('carDate').valueAsDate = new Date();
             });
         };
@@ -641,8 +646,11 @@
             
             if(!hasContent) return Swal.fire('錯誤', '請至少填寫一筆日誌', 'warning');
 
-            window.open(`https://line.me/R/msg/text/?${encodeURIComponent(logContent)}`, '_blank');
-            Swal.fire('成功', '已彙整日誌並開啟 LINE', 'success');
+            const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(logContent)}`;
+
+            // 因為日誌不存資料庫，可以直接開啟跳轉
+            window.location.href = lineUrl;
+            Swal.fire({ title: '成功', text: '已彙整日誌。若 LINE 未自動開啟，請手動前往。', icon: 'success', timer: 2500 });
         };
         // ==========================================
 
