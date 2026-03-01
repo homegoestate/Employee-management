@@ -362,7 +362,7 @@
             }
 
             renderLogForm(); 
-            window.renderCarForm(); // [Nexus Edit] 新增渲染車輛表單
+            window.renderCarForm(); 
             
             const today = new Date();
             const todayStr = (today.getMonth()+1).toString().padStart(2,'0') + '-' + today.getDate().toString().padStart(2,'0');
@@ -437,6 +437,46 @@
             sel.innerHTML = html;
             sel.value = adminFilterId;
         };
+
+        // ==========================================
+        // [NEXUS PATCH] 補回請假模式切換與時間計算功能
+        // ==========================================
+        window.switchLeaveMode = (mode) => {
+            leaveMode = mode;
+            document.getElementById('btnModeDay').classList.toggle('leave-mode-active', mode === 'day');
+            document.getElementById('btnModeTime').classList.toggle('leave-mode-active', mode === 'time');
+            document.getElementById('inputDayMode').classList.toggle('hidden', mode === 'time');
+            document.getElementById('inputTimeMode').classList.toggle('hidden', mode === 'day');
+            if (mode === 'day') {
+                document.getElementById('leaveDays').value = 1;
+                updateImpactInfo();
+            } else {
+                calcTimeDiff();
+            }
+        };
+
+        window.calcTimeDiff = () => {
+            const start = document.getElementById('leaveStartTime').value;
+            const end = document.getElementById('leaveEndTime').value;
+            if (start && end) {
+                const s = new Date(`2000-01-01T${start}`);
+                const e = new Date(`2000-01-01T${end}`);
+                let diff = (e - s) / (1000 * 60 * 60);
+                
+                // 智能扣除中午休息時間 (12:00 - 13:30)
+                if (start <= "12:00" && end >= "13:30") diff -= 1.5;
+                if (diff < 0) diff = 0;
+                
+                diff = Math.round(diff * 10) / 10;
+                document.getElementById('timeDiffDisplay').innerText = diff;
+                
+                // 自動換算天數 (以 8 小時為 1 天)
+                document.getElementById('leaveDays').value = (diff / 8).toFixed(3);
+                updateImpactInfo();
+            }
+        };
+        // ==========================================
+
 
         window.changeEmpMonth = (delta) => { currentEmpCalDate.setMonth(currentEmpCalDate.getMonth() + delta); window.renderEmployeePersonalCalendar(); };
         window.renderEmployeePersonalCalendar = () => {
@@ -563,7 +603,7 @@
         };
 
         // ==========================================
-        // [NEXUS PATCH 2] 深度連結 (Deep Link) 行動版防擋修復
+        // [NEXUS PATCH 2] 深度連結 (Deep Link) 虛擬點擊防擋修復
         // ==========================================
         
         window.handleLeaveSubmit = (e) => {
@@ -582,14 +622,21 @@
             push(ref(db, 'requests'), {
                 empId: currentUserId, empName: empName, category: 'leave', type: type, date: date, days: days, reason: reason, status: 'pending', timestamp: Date.now()
             }).then(() => {
-                // 使用 location.href 防止手機瀏覽器阻擋
-                window.location.href = lineUrl;
-                Swal.fire({ title: '成功', text: '已送出申請。若 LINE 未自動開啟，請手動前往。', icon: 'success', timer: 2500 });
                 e.target.reset(); document.getElementById('leaveDate').valueAsDate = new Date();
+                
+                // 模擬真實使用者點擊，突破手機瀏覽器封鎖
+                const a = document.createElement('a');
+                a.href = lineUrl;
+                a.target = '_top';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                // 若未跳出，0.5秒後顯示成功提示
+                setTimeout(() => Swal.fire('申請已送出', '請至 LINE 確認是否成功跳轉發送', 'success'), 500);
             });
         };
 
-        // [Nexus Edit] 修改公務車表單邏輯，支援多區間輸入 + 防擋修復
         window.handleCarSubmit = (e) => {
             e.preventDefault();
             if(!currentUserId) return Swal.fire('錯誤', '請先登入', 'error');
@@ -615,14 +662,19 @@
 
             const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(carContent)}`;
 
-            // 確保原本的管理後台報表也能正常顯示(把所有地點串起來存入)
             push(ref(db, 'requests'), {
                 empId: currentUserId, empName: employees[currentUserId].name, category: 'car', type: '公務車', date: date, time: firstTime, location: allLocations.join(" | "), status: 'pending', timestamp: Date.now()
             }).then(() => {
-                // 使用 location.href 防止手機瀏覽器阻擋
-                window.location.href = lineUrl;
-                Swal.fire({ title: '成功', text: '已送出預約。若 LINE 未自動開啟，請手動前往。', icon: 'success', timer: 2500 });
                 e.target.reset(); document.getElementById('carDate').valueAsDate = new Date();
+                
+                const a = document.createElement('a');
+                a.href = lineUrl;
+                a.target = '_top';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                setTimeout(() => Swal.fire('預約已送出', '請至 LINE 確認是否成功跳轉發送', 'success'), 500);
             });
         };
 
@@ -648,9 +700,14 @@
 
             const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(logContent)}`;
 
-            // 因為日誌不存資料庫，可以直接開啟跳轉
-            window.location.href = lineUrl;
-            Swal.fire({ title: '成功', text: '已彙整日誌。若 LINE 未自動開啟，請手動前往。', icon: 'success', timer: 2500 });
+            const a = document.createElement('a');
+            a.href = lineUrl;
+            a.target = '_top';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            setTimeout(() => Swal.fire('日誌已彙整', '請至 LINE 確認是否成功跳轉發送', 'success'), 500);
         };
         // ==========================================
 
@@ -665,11 +722,9 @@
         window.renderBulletin = () => { document.getElementById('displayBulletinTitle').innerText = bulletin.title; document.getElementById('displayBulletinContent').innerText = bulletin.content; document.getElementById('displayBulletinDate').innerText = bulletin.date; };
         window.renderActivityFeed = () => { const feed = document.getElementById('activityFeed'); const approved = Object.values(requests).filter(r=>r.status==='approved' && new Date(r.date) >= new Date().setHours(0,0,0,0)).sort((a,b)=>new Date(a.date)-new Date(b.date)); if(approved.length===0) { feed.innerHTML='<div class="p-4 text-center text-xs text-slate-400">目前無動態</div>'; return; } feed.innerHTML = approved.map(r=>`<div class="p-3 border-b text-xs flex justify-between"><span><b>${r.empName}</b>: ${r.category==='car'?'用車':r.type}</span><span class="text-slate-400">${r.date.slice(5)}</span></div>`).join(''); };
         
-        // [MODIFIED] Added Edit Logic to Attendance Table
         window.renderAttendanceLog = () => { 
             const tbody = document.getElementById('attendanceTableBody'); 
             tbody.innerHTML = '';
-            // Change Object.values to Object.entries to get the Key
             let data = Object.entries(attendance).sort((a,b)=>b[1].timestamp-a[1].timestamp);
             
             if(adminFilterId !== 'all') { 
@@ -696,7 +751,6 @@
             }); 
         };
 
-        // [NEW] Admin Edit Functions
         window.openAdminEdit = (key) => {
             const record = attendance[key];
             if(!record) return;
@@ -745,7 +799,6 @@
 
         window.renderLogForm = () => { const c = document.getElementById('logEntriesContainer'); if(!c || c.children.length > 1) return; c.innerHTML=''; ["09:00 ~ 10:00", "10:00 ~ 11:00", "11:00 ~ 12:00", "13:30 ~ 14:30", "14:30 ~ 15:30", "15:30 ~ 16:30", "16:30 ~ 17:30", "17:30 ~ 18:30"].forEach(s=>{ let o='<option value="">-- 選擇 --</option>'; taskOptions.forEach(op=>o+=`<option value="${op}">${op}</option>`); c.innerHTML+=`<div class="bg-white p-2 rounded border border-slate-200 flex flex-col md:flex-row gap-2 items-center shadow-sm"><div class="text-xs font-bold text-slate-500 w-full md:w-24 bg-slate-50 p-1.5 rounded text-center">${s}</div><select name="logTask" class="flex-1 p-1.5 text-sm border rounded w-full md:w-auto outline-none focus:border-blue-500">${o}</select><input type="text" name="logDetail" class="flex-1 p-1.5 text-sm border rounded w-full md:w-auto outline-none focus:border-blue-500" placeholder="內容"><input type="hidden" name="logTime" value="${s}"></div>`; }); };
         
-        // [Nexus Edit] 新增車輛表單動態渲染
         window.renderCarForm = () => { 
             const c = document.getElementById('carEntriesContainer'); 
             if(!c || c.children.length > 1) return; 
