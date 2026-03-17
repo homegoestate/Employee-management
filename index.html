@@ -134,7 +134,7 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div><label class="block text-xs font-bold text-slate-500 mb-1">假別</label><select id="leaveType" class="w-full p-2.5 input-modern" onchange="updateImpactInfo()"><option value="特休">特休 (全薪)</option><option value="病假">病假 (半薪)</option><option value="事假">事假 (無薪)</option><option value="補休">補休 (全薪)</option><option value="婚假">婚假 (全薪)</option></select></div>
                                 <div><label class="block text-xs font-bold text-slate-500 mb-1">日期</label><input type="date" id="leaveDate" class="w-full p-2.5 input-modern"></div>
-                                <div id="inputDayMode" class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">天數</label><input type="number" id="leaveDays" min="0.5" step="0.5" value="1" class="w-full p-2.5 input-modern" oninput="updateImpactInfo()"></div>
+                                <div id="inputDayMode" class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">天數</label><input type="number" id="leaveDays" min="0" step="any" value="1" class="w-full p-2.5 input-modern" oninput="updateImpactInfo()"></div>
                                 <div id="inputTimeMode" class="hidden md:col-span-2 grid grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-slate-500 mb-1">開始</label><input type="time" id="leaveStartTime" class="w-full p-2.5 input-modern" onchange="calcTimeDiff()"></div><div><label class="block text-xs font-bold text-slate-500 mb-1">結束</label><input type="time" id="leaveEndTime" class="w-full p-2.5 input-modern" onchange="calcTimeDiff()"></div><div class="col-span-2 text-xs text-blue-600 bg-blue-50 p-2 rounded text-center">預計: <span id="timeDiffDisplay" class="font-bold">0</span> 小時</div></div>
                                 <div class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">事由</label><input type="text" id="leaveReason" class="w-full p-2.5 input-modern" placeholder="例：處理私人事務"></div>
                             </div>
@@ -439,7 +439,7 @@
         };
 
         // ==========================================
-        // [NEXUS PATCH] 補回請假模式切換與時間計算功能
+        // [NEXUS PATCH 3] 小時制體驗與邏輯全面修復
         // ==========================================
         window.switchLeaveMode = (mode) => {
             leaveMode = mode;
@@ -447,6 +447,7 @@
             document.getElementById('btnModeTime').classList.toggle('leave-mode-active', mode === 'time');
             document.getElementById('inputDayMode').classList.toggle('hidden', mode === 'time');
             document.getElementById('inputTimeMode').classList.toggle('hidden', mode === 'day');
+            
             if (mode === 'day') {
                 document.getElementById('leaveDays').value = 1;
                 updateImpactInfo();
@@ -463,20 +464,83 @@
                 const e = new Date(`2000-01-01T${end}`);
                 let diff = (e - s) / (1000 * 60 * 60);
                 
-                // 智能扣除中午休息時間 (12:00 - 13:30)
-                if (start <= "12:00" && end >= "13:30") diff -= 1.5;
+                // 智能扣除中午休息時間 (12:00 - 13:30) 的精確算法
+                const restStart = new Date(`2000-01-01T12:00`);
+                const restEnd = new Date(`2000-01-01T13:30`);
+                const overlapStart = s > restStart ? s : restStart;
+                const overlapEnd = e < restEnd ? e : restEnd;
+                
+                // 如果區間涵蓋了休息時間，則扣除重疊的時數
+                if (overlapEnd > overlapStart) {
+                    diff -= (overlapEnd - overlapStart) / (1000 * 60 * 60);
+                }
+
                 if (diff < 0) diff = 0;
                 
                 diff = Math.round(diff * 10) / 10;
                 document.getElementById('timeDiffDisplay').innerText = diff;
                 
-                // 自動換算天數 (以 8 小時為 1 天)
-                document.getElementById('leaveDays').value = (diff / 8).toFixed(3);
+                // 自動換算天數並解除 step 限制，避免瀏覽器擋表單
+                document.getElementById('leaveDays').value = Number((diff / 8).toFixed(3));
                 updateImpactInfo();
             }
         };
-        // ==========================================
 
+        window.handleLeaveSubmit = (e) => {
+            e.preventDefault();
+            if(!currentUserId) return Swal.fire('錯誤', '請先登入', 'error');
+            const type = document.getElementById('leaveType').value;
+            const date = document.getElementById('leaveDate').value;
+            const reason = document.getElementById('leaveReason').value;
+            let days = document.getElementById('leaveDays').value;
+            
+            let timeStr = "";
+            let durationStr = `${days} 天`;
+
+            // 針對小時制，加入阻擋判斷並優化 LINE 顯示文字
+            if (leaveMode === 'time') {
+                const start = document.getElementById('leaveStartTime').value;
+                const end = document.getElementById('leaveEndTime').value;
+                if (!start || !end) return Swal.fire('錯誤', '請填寫請假起訖時間', 'warning');
+                
+                const hours = document.getElementById('timeDiffDisplay').innerText;
+                if(hours === "0" || hours === "0.0") return Swal.fire('錯誤', '請假時數不可為 0', 'warning');
+                
+                timeStr = `\n時間：${start} ~ ${end}`;
+                durationStr = `${hours} 小時 (約 ${days} 天)`;
+            }
+
+            if(!date || !reason) return Swal.fire('錯誤', '請填寫完整資訊', 'warning');
+
+            const empName = employees[currentUserId].name;
+            const msg = `【請假申請】\n申請人：${empName}\n假別：${type}\n日期：${date}${timeStr}\n長度：${durationStr}\n事由：${reason}`;
+            const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(msg)}`;
+
+            const reqData = {
+                empId: currentUserId, empName: empName, category: 'leave', type: type, date: date, days: days, reason: reason, status: 'pending', timestamp: Date.now()
+            };
+            
+            // 寫入更詳細的小時資訊到資料庫
+            if(leaveMode === 'time') {
+                reqData.time = `${document.getElementById('leaveStartTime').value} ~ ${document.getElementById('leaveEndTime').value}`;
+                reqData.hours = document.getElementById('timeDiffDisplay').innerText;
+            }
+
+            push(ref(db, 'requests'), reqData).then(() => {
+                e.target.reset(); document.getElementById('leaveDate').valueAsDate = new Date();
+                if(leaveMode === 'time') document.getElementById('timeDiffDisplay').innerText = "0";
+                
+                const a = document.createElement('a');
+                a.href = lineUrl;
+                a.target = '_top';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                setTimeout(() => Swal.fire('申請已送出', '請至 LINE 確認是否成功跳轉發送', 'success'), 500);
+            });
+        };
+        // ==========================================
 
         window.changeEmpMonth = (delta) => { currentEmpCalDate.setMonth(currentEmpCalDate.getMonth() + delta); window.renderEmployeePersonalCalendar(); };
         window.renderEmployeePersonalCalendar = () => {
@@ -602,41 +666,6 @@
             }); 
         };
 
-        // ==========================================
-        // [NEXUS PATCH 2] 深度連結 (Deep Link) 虛擬點擊防擋修復
-        // ==========================================
-        
-        window.handleLeaveSubmit = (e) => {
-            e.preventDefault();
-            if(!currentUserId) return Swal.fire('錯誤', '請先登入', 'error');
-            const type = document.getElementById('leaveType').value;
-            const date = document.getElementById('leaveDate').value;
-            const reason = document.getElementById('leaveReason').value;
-            const days = document.getElementById('leaveDays').value;
-            if(!date || !reason) return Swal.fire('錯誤', '請填寫完整資訊', 'warning');
-
-            const empName = employees[currentUserId].name;
-            const msg = `【請假申請】\n申請人：${empName}\n假別：${type}\n日期：${date}\n天數：${days}天\n事由：${reason}`;
-            const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(msg)}`;
-
-            push(ref(db, 'requests'), {
-                empId: currentUserId, empName: empName, category: 'leave', type: type, date: date, days: days, reason: reason, status: 'pending', timestamp: Date.now()
-            }).then(() => {
-                e.target.reset(); document.getElementById('leaveDate').valueAsDate = new Date();
-                
-                // 模擬真實使用者點擊，突破手機瀏覽器封鎖
-                const a = document.createElement('a');
-                a.href = lineUrl;
-                a.target = '_top';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-
-                // 若未跳出，0.5秒後顯示成功提示
-                setTimeout(() => Swal.fire('申請已送出', '請至 LINE 確認是否成功跳轉發送', 'success'), 500);
-            });
-        };
-
         window.handleCarSubmit = (e) => {
             e.preventDefault();
             if(!currentUserId) return Swal.fire('錯誤', '請先登入', 'error');
@@ -709,8 +738,6 @@
 
             setTimeout(() => Swal.fire('日誌已彙整', '請至 LINE 確認是否成功跳轉發送', 'success'), 500);
         };
-        // ==========================================
-
 
         window.renderApprovalQueue = () => { const t=document.getElementById('approvalTableBody'); t.innerHTML=''; Object.entries(requests).filter(([k,v])=>v.status==='pending').forEach(([k,r])=>{ t.innerHTML+=`<tr class="border-b"><td class="p-2">${r.empName}</td><td class="p-2">${r.type}</td><td class="p-2 text-right"><button onclick="processRequest('${k}','approve')" class="text-green-600 mr-2">✔</button><button onclick="processRequest('${k}','reject')" class="text-red-600">✘</button></td></tr>`; }); };
         window.processRequest = (k,s) => update(ref(db,`requests/${k}`),{status:s==='approve'?'approved':'rejected'}).then(()=>window.renderApprovalQueue());
