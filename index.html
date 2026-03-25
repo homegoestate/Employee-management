@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>宏國地政|易丞地政 - 智慧指揮艙 (Nexus V5.30 Admin-Edit)</title>
+    <title>宏國地政|易丞地政 - 智慧指揮艙 (Nexus V5.40 Admin-Edit)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -70,7 +70,7 @@
                 <div class="w-10 h-10 bg-white text-blue-900 rounded-lg flex items-center justify-center font-bold text-lg serif shadow-lg">宏</div>
                 <div>
                     <h1 class="text-base md:text-lg font-bold tracking-wider serif">宏國地政 | 易丞地政</h1>
-                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">Nexus V5.30 Admin-Edit</p>
+                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">Nexus V5.40 Admin-Edit</p>
                 </div>
             </div>
             <div class="flex bg-blue-900/50 rounded-full p-1">
@@ -137,7 +137,7 @@
                                 <div><label class="block text-xs font-bold text-slate-500 mb-1 text-blue-600">開始日期</label><input type="date" id="leaveDate" class="w-full p-2.5 input-modern border-blue-200" onchange="syncDatesAndCalc()"></div>
                                 <div><label class="block text-xs font-bold text-slate-500 mb-1 text-blue-600">結束日期</label><input type="date" id="leaveEndDate" class="w-full p-2.5 input-modern border-blue-200" onchange="syncDatesAndCalc()"></div>
                                 
-                                <div id="inputDayMode" class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">請假天數 <span class="font-normal text-[10px] text-slate-400">(自動濾除週末，可手動修改)</span></label><input type="number" id="leaveDays" min="0" step="any" value="1" class="w-full p-2.5 input-modern" oninput="updateImpactInfo()"></div>
+                                <div id="inputDayMode" class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">請假天數 <span class="font-normal text-[10px] text-slate-400">(自動依據行政總處日曆計算)</span></label><input type="number" id="leaveDays" min="0" step="any" value="1" class="w-full p-2.5 input-modern" oninput="updateImpactInfo()"></div>
                                 <div id="inputTimeMode" class="hidden md:col-span-2 grid grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-slate-500 mb-1">開始時間</label><input type="time" id="leaveStartTime" class="w-full p-2.5 input-modern" onchange="calcTimeDiff()"></div><div><label class="block text-xs font-bold text-slate-500 mb-1">結束時間</label><input type="time" id="leaveEndTime" class="w-full p-2.5 input-modern" onchange="calcTimeDiff()"></div><div class="col-span-2 text-xs text-blue-600 bg-blue-50 p-2 rounded text-center">預計: <span id="timeDiffDisplay" class="font-bold">0</span> 小時</div></div>
                                 <div class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">事由</label><input type="text" id="leaveReason" class="w-full p-2.5 input-modern" placeholder="例：處理私人事務"></div>
                             </div>
@@ -146,6 +146,9 @@
                         </form>
 
                         <form id="form-car" onsubmit="handleCarSubmit(event)" class="space-y-4 hidden-section">
+                            <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg text-xs text-blue-800 mb-2">
+                                <i class="fa-solid fa-circle-info mr-1"></i> 送出申請後將引導您加入 Google 行事曆；核准後將自動註記於您的每日打卡紀錄中，保障您的權益。
+                            </div>
                             <div class="flex justify-between items-end mb-2">
                                 <div class="w-full">
                                     <label class="block text-xs font-bold text-slate-500 mb-1">預約日期</label>
@@ -155,7 +158,7 @@
                             <div class="space-y-2" id="carEntriesContainer">
                                 <div class="text-center text-sm text-slate-400 py-4"><i class="fa-solid fa-spinner fa-spin"></i> 載入中...</div>
                             </div>
-                            <button type="submit" class="w-full bg-[#06c755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-lg shadow-lg transition flex justify-center items-center gap-2 mt-4"><i class="fa-brands fa-line"></i> 預約送出並通知 LINE</button>
+                            <button type="submit" class="w-full bg-[#06c755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-lg shadow-lg transition flex justify-center items-center gap-2 mt-4"><i class="fa-brands fa-line"></i> 預約送出並加入行事曆</button>
                         </form>
 
                         <form id="form-log" onsubmit="handleLogSubmit(event)" class="space-y-4 hidden-section"><div class="flex justify-between items-end mb-2"><div class="w-2/3"><label class="block text-xs font-bold text-slate-500 mb-1">日期</label><input type="date" id="logDate" class="w-full p-2 input-modern"></div><button type="button" onclick="addNewTaskType()" class="text-xs bg-slate-800 text-white px-3 py-2 rounded hover:bg-slate-700 shadow"><i class="fa-solid fa-plus mr-1"></i></button></div><div class="space-y-2" id="logEntriesContainer"><div class="text-center text-sm text-slate-400 py-4"><i class="fa-solid fa-spinner fa-spin"></i> 載入中...</div></div><button type="submit" class="w-full bg-[#06c755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-lg shadow-lg transition flex justify-center items-center gap-2 mt-4"><i class="fa-brands fa-line"></i> 匯報 LINE</button></form>
@@ -280,6 +283,23 @@
 
         const DEFAULT_TASKS = ["地政過戶", "貸款", "結案資料整理", "過水電", "用印", "對保", "塗銷"];
         let taskOptions = DEFAULT_TASKS;
+
+        // =========================================
+        // [NEXUS CONFIG] DGPA 行事曆配置 (政府人事行政總處)
+        // =========================================
+        // 您可以在此處維護每年的國定假日與補班日。這能徹底避開前端串接 API 可能遇到的 CORS 問題。
+        const dgpaConfig = {
+            // 國定假日 (不扣假) - 這裡以 2024 為例
+            holidays: [
+                '2024-01-01', '2024-02-08', '2024-02-09', '2024-02-12', '2024-02-13', '2024-02-14',
+                '2024-02-28', '2024-04-04', '2024-04-05', '2024-06-10', '2024-09-17', '2024-10-10'
+            ],
+            // 補班日 (需扣假)
+            workdays: [
+                '2024-02-17'
+            ]
+        };
+        // =========================================
 
         let myDeviceId = localStorage.getItem('hge_security_did');
         if (!myDeviceId) {
@@ -456,7 +476,7 @@
         };
 
         // =========================================
-        // [NEXUS PATCH 4] Smart Holiday Excluder (智慧濾除週末演算法)
+        // [NEXUS PATCH 4] Smart Holiday Excluder (結合 DGPA 智慧濾除演算法)
         // =========================================
         window.syncDatesAndCalc = () => {
             const startInput = document.getElementById('leaveDate');
@@ -474,12 +494,23 @@
                 let workingDays = 0;
                 let currentDate = new Date(s);
                 
-                // 逐日檢查：只要不是週日(0)與週六(6)，就計入請假天數
+                // 逐日檢查
                 while (currentDate <= e) {
                     const dayOfWeek = currentDate.getDay();
-                    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                    const dateStr = currentDate.toISOString().split('T')[0]; // YYYY-MM-DD
+                    
+                    const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+                    const isNationalHoliday = dgpaConfig.holidays.includes(dateStr);
+                    const isMakeupWorkday = dgpaConfig.workdays.includes(dateStr);
+
+                    if (isMakeupWorkday) {
+                        // 若為補班日，不論原本是否為週末，皆視為工作日，需扣假
+                        workingDays++;
+                    } else if (!isWeekend && !isNationalHoliday) {
+                        // 若非週末且非國定假日，視為正常工作日，需扣假
                         workingDays++;
                     }
+                    
                     currentDate.setDate(currentDate.getDate() + 1);
                 }
                 
@@ -586,12 +617,15 @@
                 atts.forEach(a => { 
                     const isLate = a.status === '遲到'; 
                     const isOt = a.status === '加班';
+                    const isCar = a.status === '用車紀錄';
+                    
                     let color = 'text-blue-600 bg-blue-50 border-blue-200';
                     if (isLate) color = 'text-red-600 bg-red-50 border-red-200';
                     if (isOt) color = 'text-purple-600 bg-purple-50 border-purple-200';
+                    if (isCar) color = 'text-amber-700 bg-amber-50 border-amber-300';
                     
-                    const timeOnly = a.timeStr.split(':')[0] + ':' + a.timeStr.split(':')[1]; 
-                    evHtml += `<div class="${color} text-[9px] px-1 rounded mt-1 border truncate">${a.type} <strong>${timeOnly}</strong></div>`; 
+                    const displayTime = a.timeStr.includes('~') ? a.timeStr : a.timeStr.split(':')[0] + ':' + a.timeStr.split(':')[1]; 
+                    evHtml += `<div class="${color} text-[9px] px-1 rounded mt-1 border truncate">${a.type} <strong>${displayTime}</strong></div>`; 
                 });
                 const reqs = Object.values(requests).filter(r => r.empId === currentUserId && r.status === 'approved' && r.date === dateStr);
                 reqs.forEach(r => { evHtml += `<div class="text-slate-500 bg-slate-100 border border-slate-200 text-[9px] px-1 rounded mt-1 truncate">[${r.category==='car'?'車':r.type}]</div>`; });
@@ -621,8 +655,10 @@
                     let colorClass = 'text-blue-600 bg-blue-50 border-blue-200';
                     if (a.status === '遲到') colorClass = 'text-red-600 bg-red-50 border-red-200';
                     if (a.status === '加班') colorClass = 'text-purple-600 bg-purple-50 border-purple-200';
-                    const timeOnly = a.timeStr.split(':')[0] + ':' + a.timeStr.split(':')[1]; 
-                    evHtml += `<div class="${colorClass} text-[10px] px-1 rounded mt-1 border truncate"><strong>${timeOnly}</strong> ${a.empName} <span class="opacity-75">(${a.status})</span></div>`; 
+                    if (a.status === '用車紀錄') colorClass = 'text-amber-700 bg-amber-50 border-amber-300';
+                    
+                    const displayTime = a.timeStr.includes('~') ? a.timeStr.split('~')[0].trim() : a.timeStr.split(':')[0] + ':' + a.timeStr.split(':')[1]; 
+                    evHtml += `<div class="${colorClass} text-[10px] px-1 rounded mt-1 border truncate"><strong>${displayTime}</strong> ${a.empName} <span class="opacity-75">(${a.type})</span></div>`; 
                 });
                 
                 const reqs = dataReq.filter(r => r.status === 'approved' && r.date === dateStr);
@@ -705,10 +741,13 @@
             }); 
         };
 
+        // =========================================
+        // [NEXUS PATCH] 公務車 Google Calendar 整合機制
+        // =========================================
         window.handleCarSubmit = (e) => {
             e.preventDefault();
             if(!currentUserId) return Swal.fire('錯誤', '請先登入', 'error');
-            const date = document.getElementById('carDate').value;
+            const date = document.getElementById('carDate').value; // YYYY-MM-DD
             const locations = document.getElementsByName('carLocation');
             const times = document.getElementsByName('carTime');
             
@@ -728,6 +767,21 @@
 
             if(!hasContent) return Swal.fire('錯誤', '請至少填寫一個時段的地點/用途', 'warning');
 
+            // 準備 Google Calendar URL 參數
+            const dateStr = date.replace(/-/g, '');
+            let startTimeParam = "080000";
+            let endTimeParam = "170000";
+            
+            if(firstTime) {
+                // Parse "09:00 ~ 10:00" => 090000 and 100000
+                const parts = firstTime.split('~');
+                if(parts.length === 2) {
+                    startTimeParam = parts[0].trim().replace(':', '') + '00';
+                    endTimeParam = parts[1].trim().replace(':', '') + '00';
+                }
+            }
+            
+            const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('🚗 公務車預約 - ' + employees[currentUserId].name)}&dates=${dateStr}T${startTimeParam}/${dateStr}T${endTimeParam}&details=${encodeURIComponent(carContent)}&location=${encodeURIComponent(allLocations.join(' | '))}`;
             const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(carContent)}`;
 
             push(ref(db, 'requests'), {
@@ -737,12 +791,24 @@
                 
                 const a = document.createElement('a');
                 a.href = lineUrl;
-                a.target = '_top';
+                a.target = '_blank';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
 
-                setTimeout(() => Swal.fire('預約已送出', '請至 LINE 確認是否成功跳轉發送', 'success'), 500);
+                Swal.fire({
+                    title: '預約已送出',
+                    text: '是否將此用車紀錄加入您的 Google 行事曆？',
+                    icon: 'success',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fa-brands fa-google"></i> 加入行事曆',
+                    cancelButtonText: '不用了',
+                    confirmButtonColor: '#4285F4'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.open(gcalUrl, '_blank');
+                    }
+                });
             });
         };
 
@@ -782,7 +848,7 @@
             const t = document.getElementById('approvalTableBody'); 
             t.innerHTML=''; 
             Object.entries(requests).filter(([k,v])=>v.status==='pending').forEach(([k,r])=>{ 
-                t.innerHTML+=`<tr class="border-b"><td class="p-2">${r.empName}</td><td class="p-2">${r.type}</td><td class="p-2 text-right"><button onclick="processRequest('${k}','approve')" class="text-green-600 mr-2">✔</button><button onclick="processRequest('${k}','reject')" class="text-red-600">✘</button></td></tr>`; 
+                t.innerHTML+=`<tr class="border-b"><td class="p-2">${r.empName}</td><td class="p-2">${r.category==='car'?'🚗 用車':r.type}</td><td class="p-2 text-right"><button onclick="processRequest('${k}','approve')" class="text-green-600 mr-2">✔</button><button onclick="processRequest('${k}','reject')" class="text-red-600">✘</button></td></tr>`; 
             }); 
         };
 
@@ -791,7 +857,26 @@
                 if (s === 'approve') {
                     const req = requests[k];
                     
-                    if (req.category === 'leave') {
+                    // [NEXUS PATCH] 公務車雙向資料流註記：核准後寫入打卡紀錄 (Attendance)
+                    if (req.category === 'car') {
+                        // 轉換 timestamp 使其落入申請日期內以正確顯示在日曆上
+                        const dateObj = new Date(req.date);
+                        dateObj.setHours(9, 0, 0); // 預設 9點
+
+                        push(ref(db, 'attendance'), {
+                            empId: req.empId,
+                            empName: req.empName,
+                            type: '🚗 公務車',
+                            timestamp: dateObj.getTime(),
+                            dateStr: new Date(req.date).toLocaleDateString(),
+                            timeStr: req.time || "整日", 
+                            location: req.location,
+                            status: '用車紀錄'
+                        });
+                        Swal.fire('核准成功', '公務車使用已自動註記於該員工的打卡紀錄中，避免未來罰單爭議。', 'success');
+                    }
+                    // 特休/請假 加入行事曆邏輯
+                    else if (req.category === 'leave') {
                         const title = encodeURIComponent(`[請假] ${req.empName} - ${req.type}`);
                         const details = encodeURIComponent(`事由：${req.reason}\n總計：${req.days || req.hours} ${req.time ? '小時' : '天'}\n類型：${req.type}`);
                         
@@ -862,11 +947,12 @@
                 let statusColor = "text-slate-600";
                 if(l.status === '遲到') statusColor = "text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded border border-red-100";
                 if(l.status === '加班') statusColor = "text-purple-600 font-bold bg-purple-50 px-2 py-0.5 rounded border border-purple-100";
+                if(l.status === '用車紀錄') statusColor = "text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200";
                 
                 tbody.innerHTML += `
                     <tr class="border-b hover:bg-slate-50 transition">
                         <td class="p-2">${l.empName}</td>
-                        <td class="p-2 ${l.type==='上班'?'text-blue-600':'text-orange-600'}">${l.type}</td>
+                        <td class="p-2 ${l.type==='上班'?'text-blue-600':(l.type.includes('車')?'text-amber-600':'text-orange-600')}">${l.type}</td>
                         <td class="p-2">${l.dateStr} <span class="text-[10px] text-slate-400">${l.timeStr}</span></td>
                         <td class="p-2"><span class="${statusColor}">${l.status||'正常'}</span></td>
                         <td class="p-2 text-right">
