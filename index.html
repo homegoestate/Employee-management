@@ -147,7 +147,7 @@
 
                         <form id="form-car" onsubmit="handleCarSubmit(event)" class="space-y-4 hidden-section">
                             <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg text-xs text-blue-800 mb-2">
-                                <i class="fa-solid fa-circle-info mr-1"></i> 送出申請後將發送 LINE 通知給主管。主管核准後將自動為您加入行事曆與打卡紀錄。
+                                <i class="fa-solid fa-circle-info mr-1"></i> 送出申請後將發送 LINE 通知給主管。主管核准後將自動為您寫入系統打卡紀錄。
                             </div>
                             <div class="flex justify-between items-end mb-2">
                                 <div class="w-full">
@@ -766,7 +766,7 @@
 
             if(!hasContent) return Swal.fire('錯誤', '請至少填寫一個時段的地點/用途', 'warning');
 
-            // [NEXUS MODIFIED] - 只送出通知，不加入行事曆
+            // [NEXUS 確認保留] - 只送出通知，不加入行事曆
             const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(carContent)}`;
 
             push(ref(db, 'requests'), {
@@ -866,94 +866,50 @@
         };
 
         // =========================================
-        // [NEXUS PATCH] 行事曆自動化統一處理器 (核准後發送賀卡)
+        // [NEXUS MODIFIED] 核准流程調整：保留自動寫入 Firebase，移除行事曆，保留 LINE 賀卡
         // =========================================
         window.processRequest = (k, s) => {
             update(ref(db, `requests/${k}`), { status: s === 'approve' ? 'approved' : 'rejected' }).then(() => {
                 if (s === 'approve') {
                     const req = requests[k];
-                    let gcalUrl = "";
                     let approvalLineText = "";
 
                     if (req.category === 'car') {
-                        // 1. 維持原有資料流：寫入打卡紀錄防爭議
+                        // 1. 維持原有資料流：寫入打卡紀錄防爭議 (Firebase 寫入保留)
                         const dateObj = new Date(req.date);
                         dateObj.setHours(9, 0, 0); 
                         push(ref(db, 'attendance'), {
                             empId: req.empId, empName: req.empName, type: '🚗 公務車', timestamp: dateObj.getTime(), dateStr: new Date(req.date).toLocaleDateString(), timeStr: req.time || "整日", location: req.location, status: '用車紀錄'
                         });
 
-                        // 2. 組合公務車專屬 Google Calendar 連結
-                        const dateStr = req.date.replace(/-/g, '');
-                        let startTimeParam = "080000"; let endTimeParam = "170000";
-                        if(req.time) {
-                            const parts = req.time.split('~');
-                            if(parts.length === 2) {
-                                startTimeParam = parts[0].trim().replace(':', '') + '00';
-                                endTimeParam = parts[1].trim().replace(':', '') + '00';
-                            }
-                        }
-                        gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('🚗 公務車 - ' + req.empName)}&dates=${dateStr}T${startTimeParam}/${dateStr}T${endTimeParam}&details=${encodeURIComponent('用途/地點：' + req.location)}&location=${encodeURIComponent(req.location)}`;
-                        
-                        // [NEXUS MODIFIED] 3. 組合 LINE 賀卡訊息
-                        approvalLineText = `✨🎊 【核准通過】公務車預約 🎊✨\n\n申請同仁：${req.empName}\n使用日期：${req.date}\n時段：${req.time || "全日"}\n地點：${req.location}\n\n👑 主管已核准您的用車申請，並已同步至公司行事曆！\n🚗 祝您行程順利，平安歸來！`;
+                        // 2. 組合 LINE 賀卡訊息 (移除行事曆文字)
+                        approvalLineText = `✨🎊 【核准通過】公務車預約 🎊✨\n\n申請同仁：${req.empName}\n使用日期：${req.date}\n時段：${req.time || "全日"}\n地點：${req.location}\n\n👑 主管已核准您的用車申請！\n🚗 祝您行程順利，平安歸來！`;
 
                     } else if (req.category === 'leave') {
-                        // 組合請假專屬 Google Calendar 連結
-                        const title = encodeURIComponent(`[請假] ${req.empName} - ${req.type}`);
-                        const details = encodeURIComponent(`事由：${req.reason}\n總計：${req.days || req.hours} ${req.time ? '小時' : '天'}\n類型：${req.type}`);
-                        
-                        let startDateStr = req.date.replace(/-/g, '');
-                        let endDateStr = startDateStr;
-                        
-                        if (req.endDate) {
-                            let endObj = new Date(req.endDate);
-                            endObj.setDate(endObj.getDate() + 1);
-                            endDateStr = endObj.getFullYear() + String(endObj.getMonth()+1).padStart(2,'0') + String(endObj.getDate()).padStart(2,'0');
-                        } else {
-                            let endObj = new Date(req.date);
-                            endObj.setDate(endObj.getDate() + 1);
-                            endDateStr = endObj.getFullYear() + String(endObj.getMonth()+1).padStart(2,'0') + String(endObj.getDate()).padStart(2,'0');
-                        }
-
-                        let datesParam = `${startDateStr}/${endDateStr}`;
-
-                        if (req.time && req.time.includes('~')) {
-                            let times = req.time.split('~').map(t => t.trim().replace(':', '') + '00');
-                            if(times.length === 2) {
-                                datesParam = `${startDateStr}T${times[0]}/${startDateStr}T${times[1]}`;
-                            }
-                        }
-                        gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${datesParam}&details=${details}`;
-                        
-                        // [NEXUS MODIFIED] 組合 LINE 賀卡訊息
-                        approvalLineText = `✨🎊 【假單核准通過】 🎊✨\n\n申請同仁：${req.empName}\n假別：${req.type}\n時間：${req.date} ${req.endDate ? '~ '+req.endDate : ''}\n事由：${req.reason}\n\n👑 主管已核准您的請假申請，並已排入行事曆！\n🌟 祝您有個美好的一天！`;
+                        // 組合 LINE 賀卡訊息 (移除行事曆文字)
+                        approvalLineText = `✨🎊 【假單核准通過】 🎊✨\n\n申請同仁：${req.empName}\n假別：${req.type}\n時間：${req.date} ${req.endDate && req.endDate !== req.date ? '~ '+req.endDate : ''}\n事由：${req.reason}\n\n👑 主管已核准您的請假申請！\n🌟 祝您有個美好的一天！`;
                     }
 
                     const approvalLineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(approvalLineText)}`;
 
-                    // [NEXUS MODIFIED] - 更新詢問視窗，加入發送賀卡邏輯
+                    // [NEXUS MODIFIED] - 僅詢問並跳轉 LINE 通知，移除 Google Calendar 詢問
                     Swal.fire({
                         title: '已核准',
-                        text: '資料已更新，是否將此行程加入 Google 行事曆，並透過 LINE 發送賀卡通知同仁？',
+                        text: '資料已成功更新，請點擊下方按鈕發送 LINE 通知給同仁。',
                         icon: 'success',
-                        showCancelButton: true,
-                        confirmButtonText: '<i class="fa-brands fa-google"></i> 加入行事曆並發送',
-                        cancelButtonText: '僅發送通知',
-                        confirmButtonColor: '#4285F4'
+                        confirmButtonText: '<i class="fa-brands fa-line"></i> 發送 LINE 通知',
+                        confirmButtonColor: '#06c755'
                     }).then((result) => {
-                        if (result.isConfirmed && gcalUrl) {
-                            window.open(gcalUrl, '_blank');
+                        if (result.isConfirmed) {
+                            setTimeout(() => {
+                                const a = document.createElement('a');
+                                a.href = approvalLineUrl;
+                                a.target = '_blank';
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                            }, 300); 
                         }
-                        // 無論是否加入行事曆，都會在核准後跳轉 LINE 發送賀卡
-                        setTimeout(() => {
-                            const a = document.createElement('a');
-                            a.href = approvalLineUrl;
-                            a.target = '_blank';
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                        }, 500); 
                     });
 
                 } else {
