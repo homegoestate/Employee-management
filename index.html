@@ -147,7 +147,7 @@
 
                         <form id="form-car" onsubmit="handleCarSubmit(event)" class="space-y-4 hidden-section">
                             <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg text-xs text-blue-800 mb-2">
-                                <i class="fa-solid fa-circle-info mr-1"></i> 送出申請後將引導您加入 Google 行事曆；核准後將自動註記於您的每日打卡紀錄中，保障您的權益。
+                                <i class="fa-solid fa-circle-info mr-1"></i> 送出申請後將發送 LINE 通知給主管。主管核准後將自動為您加入行事曆與打卡紀錄。
                             </div>
                             <div class="flex justify-between items-end mb-2">
                                 <div class="w-full">
@@ -158,7 +158,7 @@
                             <div class="space-y-2" id="carEntriesContainer">
                                 <div class="text-center text-sm text-slate-400 py-4"><i class="fa-solid fa-spinner fa-spin"></i> 載入中...</div>
                             </div>
-                            <button type="submit" class="w-full bg-[#06c755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-lg shadow-lg transition flex justify-center items-center gap-2 mt-4"><i class="fa-brands fa-line"></i> 預約送出並加入行事曆</button>
+                            <button type="submit" class="w-full bg-[#06c755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-lg shadow-lg transition flex justify-center items-center gap-2 mt-4"><i class="fa-brands fa-line"></i> 提出預約申請 (通知 LINE)</button>
                         </form>
 
                         <form id="form-log" onsubmit="handleLogSubmit(event)" class="space-y-4 hidden-section"><div class="flex justify-between items-end mb-2"><div class="w-2/3"><label class="block text-xs font-bold text-slate-500 mb-1">日期</label><input type="date" id="logDate" class="w-full p-2 input-modern"></div><button type="button" onclick="addNewTaskType()" class="text-xs bg-slate-800 text-white px-3 py-2 rounded hover:bg-slate-700 shadow"><i class="fa-solid fa-plus mr-1"></i></button></div><div class="space-y-2" id="logEntriesContainer"><div class="text-center text-sm text-slate-400 py-4"><i class="fa-solid fa-spinner fa-spin"></i> 載入中...</div></div><button type="submit" class="w-full bg-[#06c755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-lg shadow-lg transition flex justify-center items-center gap-2 mt-4"><i class="fa-brands fa-line"></i> 匯報 LINE</button></form>
@@ -598,7 +598,7 @@
                 
                 const a = document.createElement('a');
                 a.href = lineUrl;
-                a.target = '_top';
+                a.target = '_blank';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -750,7 +750,7 @@
             const locations = document.getElementsByName('carLocation');
             const times = document.getElementsByName('carTime');
             
-            let carContent = `【公務車預約】\n預約人：${employees[currentUserId].name}\n日期：${date}\n`;
+            let carContent = `【待審核：公務車預約】\n申請人：${employees[currentUserId].name}\n日期：${date}\n`;
             let hasContent = false;
             let firstTime = "";
             let allLocations = [];
@@ -766,19 +766,7 @@
 
             if(!hasContent) return Swal.fire('錯誤', '請至少填寫一個時段的地點/用途', 'warning');
 
-            const dateStr = date.replace(/-/g, '');
-            let startTimeParam = "080000";
-            let endTimeParam = "170000";
-            
-            if(firstTime) {
-                const parts = firstTime.split('~');
-                if(parts.length === 2) {
-                    startTimeParam = parts[0].trim().replace(':', '') + '00';
-                    endTimeParam = parts[1].trim().replace(':', '') + '00';
-                }
-            }
-            
-            const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('🚗 公務車預約 - ' + employees[currentUserId].name)}&dates=${dateStr}T${startTimeParam}/${dateStr}T${endTimeParam}&details=${encodeURIComponent(carContent)}&location=${encodeURIComponent(allLocations.join(' | '))}`;
+            // [NEXUS MODIFIED] - 只送出通知，不加入行事曆
             const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(carContent)}`;
 
             push(ref(db, 'requests'), {
@@ -786,26 +774,21 @@
             }).then(() => {
                 e.target.reset(); document.getElementById('carDate').valueAsDate = new Date();
                 
+                // 跳出提示並打開 LINE 通知主管
+                Swal.fire({
+                    title: '預約申請已送出',
+                    text: '已發送 LINE 通知，請等待主管核准。',
+                    icon: 'success',
+                    confirmButtonText: '確定',
+                    confirmButtonColor: '#4285F4'
+                });
+
                 const a = document.createElement('a');
                 a.href = lineUrl;
                 a.target = '_blank';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-
-                Swal.fire({
-                    title: '預約已送出',
-                    text: '是否將此用車紀錄加入您的 Google 行事曆？',
-                    icon: 'success',
-                    showCancelButton: true,
-                    confirmButtonText: '<i class="fa-brands fa-google"></i> 加入行事曆',
-                    cancelButtonText: '不用了',
-                    confirmButtonColor: '#4285F4'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.open(gcalUrl, '_blank');
-                    }
-                });
             });
         };
 
@@ -833,7 +816,7 @@
 
             const a = document.createElement('a');
             a.href = lineUrl;
-            a.target = '_top';
+            a.target = '_blank';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -858,7 +841,6 @@
             if(noMsg) noMsg.style.display = pendingReqs.length > 0 ? 'none' : 'block';
 
             pendingReqs.forEach(([k,r])=>{ 
-                // 將時間與事由拉出為視覺元件
                 let dateDisplay = (r.endDate && r.endDate !== r.date) ? `${r.date} ~ ${r.endDate}` : r.date;
                 let timeDisplay = r.time ? `<div class="text-[10px] text-blue-600 font-bold bg-blue-50 px-1 py-0.5 rounded mt-0.5 inline-block"><i class="fa-regular fa-clock"></i> ${r.time}</div>` : '';
                 let detailsDisplay = r.reason ? `<div class="text-[10px] text-slate-500 truncate mt-0.5" title="${r.reason}">事由: ${r.reason}</div>` : (r.location ? `<div class="text-[10px] text-slate-500 truncate mt-0.5" title="${r.location}">地點: ${r.location}</div>` : '');
@@ -884,13 +866,14 @@
         };
 
         // =========================================
-        // [NEXUS PATCH] 行事曆自動化統一處理器
+        // [NEXUS PATCH] 行事曆自動化統一處理器 (核准後發送賀卡)
         // =========================================
         window.processRequest = (k, s) => {
             update(ref(db, `requests/${k}`), { status: s === 'approve' ? 'approved' : 'rejected' }).then(() => {
                 if (s === 'approve') {
                     const req = requests[k];
                     let gcalUrl = "";
+                    let approvalLineText = "";
 
                     if (req.category === 'car') {
                         // 1. 維持原有資料流：寫入打卡紀錄防爭議
@@ -911,6 +894,9 @@
                             }
                         }
                         gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('🚗 公務車 - ' + req.empName)}&dates=${dateStr}T${startTimeParam}/${dateStr}T${endTimeParam}&details=${encodeURIComponent('用途/地點：' + req.location)}&location=${encodeURIComponent(req.location)}`;
+                        
+                        // [NEXUS MODIFIED] 3. 組合 LINE 賀卡訊息
+                        approvalLineText = `✨🎊 【核准通過】公務車預約 🎊✨\n\n申請同仁：${req.empName}\n使用日期：${req.date}\n時段：${req.time || "全日"}\n地點：${req.location}\n\n👑 主管已核准您的用車申請，並已同步至公司行事曆！\n🚗 祝您行程順利，平安歸來！`;
 
                     } else if (req.category === 'leave') {
                         // 組合請假專屬 Google Calendar 連結
@@ -922,7 +908,7 @@
                         
                         if (req.endDate) {
                             let endObj = new Date(req.endDate);
-                            endObj.setDate(endObj.getDate() + 1); // Google Calendar 全天事件的 End Date 需為隔日
+                            endObj.setDate(endObj.getDate() + 1);
                             endDateStr = endObj.getFullYear() + String(endObj.getMonth()+1).padStart(2,'0') + String(endObj.getDate()).padStart(2,'0');
                         } else {
                             let endObj = new Date(req.date);
@@ -935,26 +921,39 @@
                         if (req.time && req.time.includes('~')) {
                             let times = req.time.split('~').map(t => t.trim().replace(':', '') + '00');
                             if(times.length === 2) {
-                                // 若有具體時間，則不用跨日
                                 datesParam = `${startDateStr}T${times[0]}/${startDateStr}T${times[1]}`;
                             }
                         }
                         gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${datesParam}&details=${details}`;
+                        
+                        // [NEXUS MODIFIED] 組合 LINE 賀卡訊息
+                        approvalLineText = `✨🎊 【假單核准通過】 🎊✨\n\n申請同仁：${req.empName}\n假別：${req.type}\n時間：${req.date} ${req.endDate ? '~ '+req.endDate : ''}\n事由：${req.reason}\n\n👑 主管已核准您的請假申請，並已排入行事曆！\n🌟 祝您有個美好的一天！`;
                     }
 
-                    // 統一的詢問視窗，提供直覺跳轉
+                    const approvalLineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(approvalLineText)}`;
+
+                    // [NEXUS MODIFIED] - 更新詢問視窗，加入發送賀卡邏輯
                     Swal.fire({
                         title: '已核准',
-                        text: '資料已更新，是否將此行程加入 Google 行事曆以供備查？',
+                        text: '資料已更新，是否將此行程加入 Google 行事曆，並透過 LINE 發送賀卡通知同仁？',
                         icon: 'success',
                         showCancelButton: true,
-                        confirmButtonText: '<i class="fa-brands fa-google"></i> 加入行事曆',
-                        cancelButtonText: '關閉',
+                        confirmButtonText: '<i class="fa-brands fa-google"></i> 加入行事曆並發送',
+                        cancelButtonText: '僅發送通知',
                         confirmButtonColor: '#4285F4'
                     }).then((result) => {
                         if (result.isConfirmed && gcalUrl) {
                             window.open(gcalUrl, '_blank');
                         }
+                        // 無論是否加入行事曆，都會在核准後跳轉 LINE 發送賀卡
+                        setTimeout(() => {
+                            const a = document.createElement('a');
+                            a.href = approvalLineUrl;
+                            a.target = '_blank';
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                        }, 500); 
                     });
 
                 } else {
