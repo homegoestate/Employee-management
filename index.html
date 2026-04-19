@@ -567,9 +567,10 @@
             let title;
             if (req.category === 'car') {
                 const startTime = req.time && req.time.includes('~') ? req.time.split('~')[0].trim() : '';
-                title = `${startTime ? startTime + '借車*' : '借車*'}${req.empName}`;
+                title = `${startTime ? startTime + ' ' : ''}借車 ${req.empName}`;
             } else {
-                title = `[${req.type}] ${req.empName}`;
+                const startTime = req.time && req.time.includes('~') ? req.time.split('~')[0].trim() : '';
+                title = `${startTime ? startTime + ' ' : ''}${req.type} ${req.empName}`;
             }
             let startStr, endStr;
             const datePart = (req.date || '').replace(/-/g, '');
