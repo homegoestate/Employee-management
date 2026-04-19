@@ -564,13 +564,13 @@
         }
 
         function buildGoogleCalendarUrl(req) {
+            const startTime = req.time && req.time.includes('~') ? req.time.split('~')[0].trim() : '';
             let title;
             if (req.category === 'car') {
-                const startTime = req.time && req.time.includes('~') ? req.time.split('~')[0].trim() : '';
-                title = `${startTime ? startTime + ' ' : ''}借車 ${req.empName}`;
+                const firstLoc = req.location ? req.location.split('|')[0].trim() : '';
+                title = [startTime, '借車', req.empName, firstLoc].filter(Boolean).join(' ');
             } else {
-                const startTime = req.time && req.time.includes('~') ? req.time.split('~')[0].trim() : '';
-                title = `${startTime ? startTime + ' ' : ''}${req.type} ${req.empName}`;
+                title = [startTime, req.type, req.empName, req.reason || ''].filter(Boolean).join(' ');
             }
             let startStr, endStr;
             const datePart = (req.date || '').replace(/-/g, '');
@@ -609,21 +609,20 @@
         }
 
         function showSubmitLineDialog(msg, lineUrl) {
-            const safe = msg.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
             Swal.fire({
-                title: '申請已送出！',
-                html: `<p style="color:#64748b;font-size:13px;margin-bottom:12px;">請將以下訊息轉傳給主管</p>
-                       <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;text-align:left;font-size:12px;font-family:monospace;white-space:pre-wrap;max-height:160px;overflow-y:auto;margin-bottom:16px;">${safe}</div>
+                title: '✅ 申請已送出！',
+                html: `<p style="color:#64748b;font-size:14px;margin-bottom:16px;">請點擊下方按鈕通知主管</p>
                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                         <button id="swal-copy-btn" style="background:#f1f5f9;border:1px solid #cbd5e1;color:#374151;padding:10px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:13px;width:100%;">
+                         <button id="swal-copy-btn" style="background:#f1f5f9;border:1px solid #cbd5e1;color:#374151;padding:12px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:14px;width:100%;">
                            <i class="fa-regular fa-copy"></i> 複製訊息
                          </button>
-                         <a href="${lineUrl}" style="background:#06c755;color:white;text-decoration:none;padding:10px;border-radius:8px;font-weight:bold;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;box-sizing:border-box;">
-                   <i class="fa-brands fa-line"></i> 開啟 LINE
-                 </a>
-               </div>`,
+                         <a href="${lineUrl}" style="background:#06c755;color:white;text-decoration:none;padding:12px;border-radius:8px;font-weight:bold;font-size:14px;display:flex;align-items:center;justify-content:center;gap:6px;box-sizing:border-box;">
+                           <i class="fa-brands fa-line"></i> 傳送 LINE
+                         </a>
+                       </div>`,
                 showConfirmButton: false,
                 showCloseButton: true,
+                icon: 'success',
                 didOpen: () => {
                     document.getElementById('swal-copy-btn').onclick = () => {
                         const btn = document.getElementById('swal-copy-btn');
