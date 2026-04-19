@@ -549,6 +549,94 @@
             }
         };
 
+        // =========================================
+        // LINE & Google Calendar 輔助函式
+        // =========================================
+        function buildLeaveLineMsg(req) {
+            const timeStr = req.time ? `\n時間：${req.time}` : '';
+            const dateDisplay = (req.endDate && req.endDate !== req.date) ? `${req.date} ~ ${req.endDate}` : req.date;
+            const durationStr = req.hours ? `${req.hours} 小時 (約 ${req.days} 天)` : `${req.days} 天`;
+            return `【請假申請】\n申請人：${req.empName}\n假別：${req.type}\n日期：${dateDisplay}${timeStr}\n長度：${durationStr}\n事由：${req.reason || ''}`;
+        }
+
+        function buildCarLineMsg(req) {
+            return `【待審核：公務車預約】\n申請人：${req.empName}\n日期：${req.date}\n時段：${req.time || '全日'}\n地點：${req.location}`;
+        }
+
+        function buildGoogleCalendarUrl(req) {
+            const title = req.category === 'car'
+                ? `[公務車] ${req.empName}`
+                : `[${req.type}] ${req.empName}`;
+            let startStr, endStr;
+            const datePart = (req.date || '').replace(/-/g, '');
+            if (req.category === 'car') {
+                if (req.time && req.time.includes('~')) {
+                    const parts = req.time.split('~');
+                    const st = parts[0].trim().replace(':', '') + '00';
+                    const et = parts[1].trim().replace(':', '') + '00';
+                    startStr = `${datePart}T${st}`;
+                    endStr = `${datePart}T${et}`;
+                } else {
+                    const nd = new Date((req.date || new Date().toISOString().split('T')[0]) + 'T00:00:00');
+                    nd.setDate(nd.getDate() + 1);
+                    startStr = datePart;
+                    endStr = nd.toISOString().split('T')[0].replace(/-/g, '');
+                }
+            } else {
+                if (req.time && req.time.includes('~')) {
+                    const parts = req.time.split('~');
+                    const st = parts[0].trim().replace(':', '') + '00';
+                    const et = parts[1].trim().replace(':', '') + '00';
+                    startStr = `${datePart}T${st}`;
+                    endStr = `${datePart}T${et}`;
+                } else {
+                    const endDateStr = req.endDate || req.date;
+                    const edObj = new Date(endDateStr + 'T00:00:00');
+                    edObj.setDate(edObj.getDate() + 1);
+                    startStr = datePart;
+                    endStr = edObj.toISOString().split('T')[0].replace(/-/g, '');
+                }
+            }
+            const details = req.category === 'car'
+                ? `申請人：${req.empName}\n地點：${req.location}\n時段：${req.time || '全日'}`
+                : `申請人：${req.empName}\n假別：${req.type}\n天數：${req.days || ''} 天\n事由：${req.reason || ''}`;
+            return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startStr}/${endStr}&details=${encodeURIComponent(details)}`;
+        }
+
+        function showSubmitLineDialog(msg, lineUrl) {
+            const safe = msg.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            Swal.fire({
+                title: '申請已送出！',
+                html: `<p style="color:#64748b;font-size:13px;margin-bottom:12px;">請將以下訊息轉傳給主管</p>
+                       <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;text-align:left;font-size:12px;font-family:monospace;white-space:pre-wrap;max-height:160px;overflow-y:auto;margin-bottom:16px;">${safe}</div>
+                       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                         <button id="swal-copy-btn" style="background:#f1f5f9;border:1px solid #cbd5e1;color:#374151;padding:10px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:13px;width:100%;">
+                           <i class="fa-regular fa-copy"></i> 複製訊息
+                         </button>
+                         <button id="swal-line-btn" style="background:#06c755;color:white;border:none;padding:10px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:13px;width:100%;">
+                           <i class="fa-brands fa-line"></i> 開啟 LINE
+                         </button>
+                       </div>`,
+                showConfirmButton: false,
+                showCloseButton: true,
+                didOpen: () => {
+                    document.getElementById('swal-copy-btn').onclick = () => {
+                        const btn = document.getElementById('swal-copy-btn');
+                        const doMark = () => { if(btn) { btn.innerHTML = '<i class="fa-solid fa-check"></i> 已複製！'; btn.style.background = '#dcfce7'; btn.style.color = '#166534'; btn.style.borderColor = '#86efac'; } };
+                        navigator.clipboard ? navigator.clipboard.writeText(msg).then(doMark).catch(() => { const ta = document.createElement('textarea'); ta.value = msg; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); doMark(); }) : (() => { const ta = document.createElement('textarea'); ta.value = msg; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); doMark(); })();
+                    };
+                    document.getElementById('swal-line-btn').onclick = () => window.open(lineUrl, '_blank');
+                }
+            });
+        }
+
+        window.resendLineNotify = (reqId) => {
+            const req = requests[reqId];
+            if (!req) return;
+            const msg = req.category === 'leave' ? buildLeaveLineMsg(req) : buildCarLineMsg(req);
+            showSubmitLineDialog(msg, `https://line.me/R/msg/text/?${encodeURIComponent(msg)}`);
+        };
+
         window.handleLeaveSubmit = (e) => {
             e.preventDefault();
             if(!currentUserId) return Swal.fire('錯誤', '請先登入', 'error');
@@ -591,19 +679,11 @@
             }
 
             push(ref(db, 'requests'), reqData).then(() => {
-                e.target.reset(); 
+                e.target.reset();
                 document.getElementById('leaveDate').valueAsDate = new Date();
                 document.getElementById('leaveEndDate').valueAsDate = new Date();
                 if(leaveMode === 'time') document.getElementById('timeDiffDisplay').innerText = "0";
-                
-                const a = document.createElement('a');
-                a.href = lineUrl;
-                a.target = '_blank';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-
-                setTimeout(() => Swal.fire('申請已送出', '請至 LINE 確認是否成功跳轉發送', 'success'), 500);
+                showSubmitLineDialog(msg, lineUrl);
             });
         };
 
@@ -703,11 +783,12 @@
             if (emp.avatar) { avatarImg.src = emp.avatar; avatarImg.classList.remove('hidden'); avatarPlace.classList.add('hidden'); } else { avatarImg.classList.add('hidden'); avatarPlace.classList.remove('hidden'); }
             const calc = calculateLeave(emp.joinDate); document.getElementById('dashboardRemaining').innerText = (calc.days - (emp.stats?.annual||0)) + " 天"; document.getElementById('dashboardTotal').innerText = calc.days + " 天"; document.getElementById('dashboardJoinDate').innerText = emp.joinDate || "未設定"; document.getElementById('dashboardTenure').innerText = calculateTenure(emp.joinDate);
             
-            const tbody = document.getElementById('myRequestsTable'); 
-            const myReqs = Object.values(requests).filter(r => r.empId === emp.id).sort((a,b) => b.timestamp - a.timestamp).slice(0, 5); 
-            tbody.innerHTML = myReqs.length ? myReqs.map(r => {
+            const tbody = document.getElementById('myRequestsTable');
+            const myReqs = Object.entries(requests).filter(([k,r]) => r.empId === emp.id).sort((a,b) => b[1].timestamp - a[1].timestamp).slice(0, 5);
+            tbody.innerHTML = myReqs.length ? myReqs.map(([k, r]) => {
                 const displayDate = (r.endDate && r.endDate !== r.date) ? `${r.date.slice(5)}~${r.endDate.slice(5)}` : r.date.slice(5);
-                return `<tr class="border-b"><td class="p-2 text-xs text-slate-500">${displayDate}</td><td class="p-2 font-bold text-slate-700">${r.category==='car'?'用車':r.type}</td><td class="p-2 text-right"><span class="px-2 py-0.5 rounded text-[10px] ${r.status==='approved'?'bg-green-100 text-green-700':'bg-orange-100 text-orange-700'}">${r.status}</span></td></tr>`;
+                const notifyBtn = r.status === 'pending' ? `<button onclick="resendLineNotify('${k}')" style="color:#06c755;background:none;border:none;cursor:pointer;margin-left:4px;font-size:13px;" title="重新通知主管"><i class="fa-brands fa-line"></i></button>` : '';
+                return `<tr class="border-b"><td class="p-2 text-xs text-slate-500">${displayDate}</td><td class="p-2 font-bold text-slate-700">${r.category==='car'?'用車':r.type}</td><td class="p-2 text-right"><span class="px-2 py-0.5 rounded text-[10px] ${r.status==='approved'?'bg-green-100 text-green-700':'bg-orange-100 text-orange-700'}">${r.status}</span>${notifyBtn}</td></tr>`;
             }).join('') : '<tr><td colspan="3" class="p-4 text-center text-slate-400 text-xs">無紀錄</td></tr>';
             
             const conf = getSalaryConfig(emp.id); document.getElementById('monthlySalary').value = conf.base; document.getElementById('displaySalary').innerText = conf.base.toLocaleString(); document.getElementById('salarySlider').value = conf.base;
@@ -773,22 +854,7 @@
                 empId: currentUserId, empName: employees[currentUserId].name, category: 'car', type: '公務車', date: date, time: firstTime, location: allLocations.join(" | "), status: 'pending', timestamp: Date.now()
             }).then(() => {
                 e.target.reset(); document.getElementById('carDate').valueAsDate = new Date();
-                
-                // 跳出提示並打開 LINE 通知主管
-                Swal.fire({
-                    title: '預約申請已送出',
-                    text: '已發送 LINE 通知，請等待主管核准。',
-                    icon: 'success',
-                    confirmButtonText: '確定',
-                    confirmButtonColor: '#4285F4'
-                });
-
-                const a = document.createElement('a');
-                a.href = lineUrl;
-                a.target = '_blank';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+                showSubmitLineDialog(carContent, lineUrl);
             });
         };
 
@@ -891,24 +957,25 @@
                     }
 
                     const approvalLineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(approvalLineText)}`;
+                    const calUrl = buildGoogleCalendarUrl(req);
 
-                    // [NEXUS MODIFIED] - 僅詢問並跳轉 LINE 通知，移除 Google Calendar 詢問
                     Swal.fire({
-                        title: '已核准',
-                        text: '資料已成功更新，請點擊下方按鈕發送 LINE 通知給同仁。',
+                        title: '✅ 已核准',
+                        html: `<p style="color:#64748b;font-size:14px;margin-bottom:16px;">資料已成功儲存，請選擇通知方式：</p>
+                               <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                 <button id="swal-approval-line" style="background:#06c755;color:white;border:none;padding:12px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:14px;width:100%;">
+                                   <i class="fa-brands fa-line"></i> 傳送 LINE
+                                 </button>
+                                 <button id="swal-approval-cal" style="background:#4285F4;color:white;border:none;padding:12px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:14px;width:100%;">
+                                   <i class="fa-brands fa-google"></i> 加入行事曆
+                                 </button>
+                               </div>`,
+                        showConfirmButton: false,
+                        showCloseButton: true,
                         icon: 'success',
-                        confirmButtonText: '<i class="fa-brands fa-line"></i> 發送 LINE 通知',
-                        confirmButtonColor: '#06c755'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            setTimeout(() => {
-                                const a = document.createElement('a');
-                                a.href = approvalLineUrl;
-                                a.target = '_blank';
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                            }, 300); 
+                        didOpen: () => {
+                            document.getElementById('swal-approval-line').onclick = () => window.open(approvalLineUrl, '_blank');
+                            document.getElementById('swal-approval-cal').onclick = () => window.open(calUrl, '_blank');
                         }
                     });
 
