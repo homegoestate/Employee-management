@@ -58,7 +58,7 @@ window.APP_CONFIG = {
   "webpushVapidKey": "",
   "productionPreparedOnly": false
 };
-/* CONFIG_END */</script><style>.topbar,.topbar .who{flex-wrap:wrap}.topbar{align-items:flex-start}.history-pagination{display:flex;align-items:end;gap:8px;flex-wrap:wrap;margin:14px 0 22px}.history-pagination .field{max-width:120px}.history-pagination button{min-height:44px}.history-section{min-width:0}.history-page-summary{margin:8px 0}dialog:has(.archive-view){max-width:1050px}.legacy-directory{border-color:#83aaa0}.legacy-directory td,.archive-list td{white-space:pre-line}.archive-provenance{margin-top:20px}@media(max-width:760px){.history-pagination{gap:7px}.history-pagination button{flex:1;min-width:76px}.history-pagination .field{max-width:none;flex:1;min-width:100px}.archive-view .table-wrap{margin:0}}</style></head><body><div id="app"><div class="boot">正在載入員工工作台…<p id="bootHelp" hidden>載入時間較久，請檢查網路或重新載入。<button type="button" onclick="location.reload()">重新載入</button></p></div></div><div id="toast" role="status" aria-live="polite"></div><script>setTimeout(function(){var n=document.getElementById("bootHelp");if(n)n.hidden=false;},15000);</script>
+/* CONFIG_END */</script><style>.topbar,.topbar .who{flex-wrap:wrap}.topbar{align-items:flex-start}.login-modes{display:grid;grid-template-columns:1fr 1.3fr;gap:8px;margin:16px 0 26px}.login-modes button{padding:12px 8px;min-height:48px}.login-status{font-size:13px;color:#137a70;margin:12px 0}.login-box{padding-top:28px;padding-bottom:28px}.history-pagination{display:flex;align-items:end;gap:8px;flex-wrap:wrap;margin:14px 0 22px}.history-pagination .field{max-width:120px}.history-pagination button{min-height:44px}.history-section{min-width:0}.history-page-summary{margin:8px 0}dialog:has(.archive-view){max-width:1050px}.legacy-directory{border-color:#83aaa0}.legacy-directory td,.archive-list td{white-space:pre-line}.archive-provenance{margin-top:20px}@media(max-width:760px){.history-pagination{gap:7px}.history-pagination button{flex:1;min-width:76px}.history-pagination .field{max-width:none;flex:1;min-width:100px}.archive-view .table-wrap{margin:0}}</style></head><body><div id="app"><div class="boot">正在載入員工工作台…<p id="bootHelp" hidden>載入時間較久，請檢查網路或重新載入。<button type="button" onclick="location.reload()">重新載入</button></p></div></div><div id="toast" role="status" aria-live="polite"></div><script>setTimeout(function(){var n=document.getElementById("bootHelp");if(n)n.hidden=false;},15000);</script>
 <script>
 /* UI only: all amounts, entitlements and permissions are recalculated by the server. */
 window.HGFinance=(function(){
@@ -357,15 +357,6 @@ async function api(op,input={}){
 async function reload(){if(stateRefreshPromise)return stateRefreshPromise;stateRefreshPromise=(async()=>{const j=await api('state'),next=j.state||j.result?.state||j.result;if(!next?.user||next.release!==expectedRelease)throw new Error('工作台未取得相同版本的後端資料，已停止操作。');state=next;lastStateRefreshAt=Date.now();render();return state;})();try{return await stateRefreshPromise;}finally{stateRefreshPromise=null;}}
 async function action(data,node,beforeRender){if(node)node.disabled=true;try{const j=await api('action',data);if(j.state){state=j.state;lastStateRefreshAt=Date.now();if(beforeRender)beforeRender(j);render();}else{if(beforeRender)beforeRender(j);await reload();}notify('已儲存並重新讀取。');if(j.result?.temporaryPassword||j.temporaryPassword)showTemporary(j.result?.temporaryPassword||j.temporaryPassword);return true;}catch(e){notify(e.message,true);return false;}finally{if(node)node.disabled=false;}}
 async function downloadExport(kind,extra={}){try{const j=await api('export',{kind,...extra}),r=j.result;if(!r||typeof r.content!=='string')throw new Error('匯出資料格式不正確。');const url=URL.createObjectURL(new Blob([r.content],{type:r.mime||'text/plain;charset=utf-8'})),a=el('a');a.href=url;a.download=r.filename||kind+'.txt';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){notify(e.message,true);}}
-async function resolveLoginName_(name){
-  const alias=String(name||'').trim();
-  if(alias.includes('@'))return alias;
-  if(!/^[a-z0-9\u3400-\u9fff._-]{3,32}$/i.test(alias))throw new Error('請輸入您設定的帳號名稱或 Email。');
-  const r=await fetch(config.apiUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({op:'resolveLoginAlias',input:{alias}}),redirect:'follow'});
-  const j=await r.json();
-  if(!r.ok||!j.ok||!j.result?.email)throw new Error('帳號或密碼不正確。');
-  return j.result.email;
-}
 function ceoAccountDialog(){
   if(portalIdToken||!auth?.currentUser||!ceo()){notify('請先以您的執行長 Firebase 帳號登入。',true);return;}
   const user=auth.currentUser,linked=user.providerData.some(p=>p.providerId==='password');
@@ -463,23 +454,6 @@ function resetPasswordDialog(){
     finally{b.disabled=false;}
   })));
   dialog.dataset.authFlow='reset';
-}
-function login(error=''){
-  window.HGAssist?.clearSensitive();
-  if(config.productionPreparedOnly||location.protocol==='file:'||!config.firebase?.apiKey||!config.firebase?.authDomain||!config.firebase?.projectId||!config.firebase?.appId||!config.apiUrl){productionPreparingScreen();return;}
-  clearInterval(clockTimer);app.replaceChildren();const left=add(el('section','login-art'),el('div','eyebrow','HONGGUO × YICHENG'),el('h1','','把日常整理好，\n讓專業更專注。'),el('p','','出勤、請假、用車與薪資\n在同一個工作台，留下每一步紀錄。'));left.querySelector('h1').style.whiteSpace='pre-line';left.querySelector('p').style.whiteSpace='pre-line';
-  const box=el('div','login-box');add(box,el('div','eyebrow','CLOUD EMPLOYEE WORKSPACE'),el('h2','','宏國地政｜易丞地政'),el('p','muted','員工工作台 · 安全登入'));
-  if(!firebaseSDK||!auth){
-    if(authBooting)add(box,note('正在載入安全登入元件，請稍候…'));
-    else add(box,note('安全登入暫時無法載入，請檢查網路後重新整理；仍無法使用時請聯絡執行長。',true),button('重新載入',()=>location.reload()));
-  }
-  else if(!authReady)add(box,note('正在確認登入狀態，請稍候…'));
-  else{
-    const u=field('Email 或執行長帳號','text','',true),p=field('密碼','password','',true),err=el('p','error',error);u.input.autocomplete='username';p.input.autocomplete='current-password';const f=form([u,p],'登入工作台',async b=>{b.disabled=true;err.textContent='';try{portalIdToken=null;const email=await resolveLoginName_(u.input.value);await firebaseSDK.signInWithEmailAndPassword(auth,email,p.input.value);}catch(e){err.textContent=e.message;}finally{b.disabled=false;}});f.querySelector('.fields').style.gridTemplateColumns='1fr';
-    const google=button('使用 Google 帳號登入（選用）',async()=>{google.disabled=true;try{portalIdToken=null;await firebaseSDK.signInWithPopup(auth,new firebaseSDK.GoogleAuthProvider());}catch(e){err.textContent=e.message;}finally{google.disabled=false;}},'ghost');add(box,f,button('同仁第一次使用：自行建立帳號',registerEmailDialog,'secondary'),button('忘記密碼',resetPasswordDialog,'ghost'),google,note('同仁自行用可收信的 Email 建立帳號與密碼，不必使用 Gmail 或 Google 登入；收信驗證後由執行長核對身分，未核准前不能打卡。'),err);
-    if(auth.currentUser)add(box,note('此Email已登入，尚未連結員工身分。可以使用公司報到碼選擇本人，待負責人核對。',true),el('p','preserve','Email：'+(auth.currentUser.email||'未提供')),enrollmentJoinPanel(),button('重新讀取權限',async()=>{try{await reload();}catch(e){notify(e.message,true);}},'secondary'),button('登出 Firebase',()=>firebaseSDK.signOut(auth),'ghost'));
-  }
-  if(error&&!auth)add(box,el('p','error',error));add(box,el('p','muted tiny','所有時間以臺北時間顯示。員工角色與授權只由後端核對。'));app.append(add(el('div','login-shell'),left,add(el('section','login-form'),box)));
 }
 function employeeDialog(e){const name=field('姓名','text',e.name,true),join=field('到職日','date',e.joinDate||'',true),role=select('角色',[['employee','員工'],['manager','主管（另需授權）']],e.role),reason=field('異動依據','textarea','',true);role.wrap.hidden=true;const d=modal('編輯員工資料',form([name,join,role,reason],'儲存',async b=>{if(await action({action:'employeeUpdate',id:e.id,name:name.input.value.trim(),joinDate:join.input.value,reason:reason.input.value.trim()},b))d.close();}));}
 function requestPortalSession(){if(window.parent===window)return;for(const origin of trustedPortalOrigins()){try{if(new URL(origin).origin===origin)window.parent.postMessage({type:'HG_REQUEST_FIREBASE_SESSION'},origin);}catch{}}}
@@ -602,10 +576,11 @@ function productionPreparingScreen() {
   clearInterval(clockTimer);
   if (!config.productionPreparedOnly && config.apiUrl && location.protocol === 'file:') {
     app.replaceChildren(add(el('main','boot'),el('div','eyebrow','宏國地政｜易丞地政'),
-      el('h1','','公司員工工作台'),
-      el('p','muted','打卡、請假、用車與執行長管理，請由公司的安全網址登入。'),
-      button('進入正式工作台',()=>location.assign('https://homego-employee-prod.web.app/')),
-      note('這份 HTML 是公司工作台入口，登入後會依您的帳號顯示可使用的功能。')));
+      el('h1','','公司員工與管理工作台'),
+      el('p','muted','請選擇您的登入入口。開啟後可輸入帳號與密碼。'),
+      button('執行長／總經理登入',()=>location.assign('https://homego-employee-prod.web.app/#admin')),
+      button('同仁登入・上下班打卡',()=>location.assign('https://homego-employee-prod.web.app/#punch'),'secondary'),
+      note('管理帳號第一次使用，請由正式頁面確認本人並設定自訂帳號與密碼。舊版共用密碼不會自動成為新版管理密碼。')));
     return;
   }
   app.replaceChildren(add(el('main', 'boot'), el('div', 'eyebrow', '宏國地政｜易丞地政'),
@@ -998,6 +973,103 @@ function finishProductionRender(main, content) {
     const staff = content.querySelector('.staff-list');
     if (staff) staff.before(panel); else content.prepend(panel);
   }
+  if (typeof completeManagementLogin === 'function') completeManagementLogin();
+}
+
+/* Login presentation only; permissions always come from the verified backend. */
+function managementLoginSelected(){return location.hash==='#admin';}
+function selectLoginMode(management){page=management?'admin':'punch';initialLanding=false;history.replaceState(null,'','#'+page);login();}
+function loginNeedsEnrollment(error){return /尚未登錄為有效員工|請先完成登入Email驗證/.test(String(error?.message||error||''));}
+function loginErrorMessage(error){
+  const raw=String(error?.message||error||''),code=error?.code||(raw.match(/auth\/[a-z-]+/)||[])[0]||'';
+  const messages={
+    'auth/invalid-credential':'帳號或密碼不正確。若您之前只用 Google 登入，請先完成管理帳號與密碼設定。',
+    'auth/wrong-password':'帳號或密碼不正確，請重新輸入，或使用「忘記密碼」。',
+    'auth/invalid-email':'請輸入正確的 Email，或您已設定的管理帳號。',
+    'auth/user-disabled':'此登入帳號已停用，請由管理者核對帳號狀態。',
+    'auth/too-many-requests':'短時間嘗試次數過多，請稍後再試，或使用忘記密碼。',
+    'auth/popup-blocked':'瀏覽器擋住 Google 登入視窗。請允許本站彈出視窗，或將正式網址貼到 Chrome／Safari 開啟。',
+    'auth/popup-closed-by-user':'Google 登入尚未完成，請重新按登入並完成帳號選擇。',
+    'auth/cancelled-popup-request':'另一個登入視窗仍在處理，請先完成該視窗。',
+    'auth/unauthorized-domain':'目前網址尚未獲得登入授權。請使用下方的公司正式網址。',
+    'auth/operation-not-allowed':'這個登入方式尚未啟用，請改用已啟用的登入方式。',
+    'auth/network-request-failed':'無法連到登入服務。請確認網路，或將正式網址貼到 Chrome／Safari 再試。',
+    'auth/requires-recent-login':'請先重新登入確認本人身分，再設定密碼。',
+    'auth/web-storage-unsupported':'瀏覽器禁止登入所需的儲存空間。請以一般 Chrome／Safari 視窗開啟正式網址。'
+  };
+  if(messages[code])return messages[code];
+  if(/The requested action is invalid/i.test(raw))return 'Google 登入轉接未完成。請關閉該登入視窗，改用已設定的帳號密碼，或在 Chrome／Safari 開啟正式網址。';
+  if(/Failed to fetch|NetworkError|Load failed|fetch.*failed/i.test(raw))return '工作台連線未完成，請檢查網路後按「重新連線」。這不代表帳號或舊資料被刪除。';
+  if(/逾時|timeout|AbortError/i.test(raw))return '連線等候逾時，請重新連線；請勿因此重新註冊帳號。';
+  return raw;
+}
+async function resolveLoginName_(name){
+  const alias=String(name||'').trim();if(alias.includes('@'))return alias;
+  if(!/^[a-z0-9\u3400-\u9fff._-]{3,32}$/i.test(alias))throw Error('請輸入您設定的管理帳號或 Email。');
+  const abort=new AbortController(),timeout=setTimeout(()=>abort.abort(),15000);
+  try{
+    const response=await fetch(config.apiUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({op:'resolveLoginAlias',input:{alias}}),redirect:'follow',signal:abort.signal});
+    let result;try{result=await response.json();}catch{throw Error('帳號查詢服务暫時未回應，請稍後重試，或改用 Email 登入。');}
+    if(!response.ok||!result.ok||!result.result?.email)throw Error('帳號或密碼不正確。尚未設定管理帳號時，請先使用原 Google 帳號確認本人。');
+    return result.result.email;
+  }catch(error){if(error.name==='AbortError')throw Error('帳號查詢逾時，請稍後重試，或改用 Email 登入。');throw error;}
+  finally{clearTimeout(timeout);}
+}
+function managementSetupIntent(value){try{if(value)sessionStorage.setItem('homego-management-setup','requested');else sessionStorage.removeItem('homego-management-setup');}catch{}}
+function completeManagementLogin(){
+  let requested=false;try{requested=sessionStorage.getItem('homego-management-setup')==='requested';}catch{}
+  if(!requested||!state?.user)return;managementSetupIntent(false);
+  // The intent opens a form only after the backend has verified the CEO role.
+  if(ceo())ceoAccountDialog();
+}
+function login(error=''){
+  window.HGAssist?.clearSensitive();
+  if(config.productionPreparedOnly||location.protocol==='file:'||!config.firebase?.apiKey||!config.apiUrl){productionPreparingScreen();return;}
+  clearInterval(clockTimer);app.replaceChildren();const management=managementLoginSelected();
+  const art=add(el('section','login-art'),el('div','eyebrow','HONGGUO × YICHENG'),
+    el('h1','',management?'管理有依據，\n團隊更安心。':'把日常整理好，\n讓專業更專注。'),
+    el('p','',management?'員工出勤、主管授權、用車核准與薪資\n從您的管理帳號進入。':'上下班打卡、請假與公務車\n從同一個工作台開始。'));
+  art.querySelector('h1').style.whiteSpace='pre-line';art.querySelector('p').style.whiteSpace='pre-line';
+  const box=el('div','login-box'),modes=add(el('nav','login-modes'),
+    button('同仁登入',()=>selectLoginMode(false),management?'secondary':''),
+    button('執行長／總經理登入',()=>selectLoginMode(true),management?'':'secondary'));
+  modes.setAttribute('aria-label','選擇登入入口');
+  add(box,el('div','eyebrow','宏國地政｜易丞地政'),modes,el('h2','',management?'執行長／總經理登入':'同仁登入'));
+  const status=el('p','login-status',!firebaseSDK||!auth?'安全登入連線中':auth.currentUser?'登入身分已確認':'安全登入服務已連線');status.setAttribute('role','status');box.append(status);
+  if(!firebaseSDK||!auth){
+    box.append(note(authBooting?'正在載入安全登入元件，請稍候…':loginErrorMessage(error)||'安全登入暫時無法載入，請檢查網路後重試。',!authBooting));
+    if(!authBooting)box.append(button('重新連線',()=>location.reload(),'secondary'));
+  }else if(!authReady){box.append(note('正在確認登入狀態，請稍候…'));}
+  else if(auth.currentUser){
+    const unregistered=loginNeedsEnrollment(error);
+    add(box,note(unregistered?'帳號已登入，請完成本人身分核對。':'登入身分已確認，工作台資料尚未讀取成功。',true),
+      el('p','error',loginErrorMessage(error)),el('p','muted','目前帳號：'+(auth.currentUser.email||'已登入帳號')));
+    if(unregistered)box.append(enrollmentJoinPanel());
+    add(box,button('重新連線',async event=>{event.currentTarget.disabled=true;try{await reload();}catch(failure){login(failure);}finally{event.currentTarget.disabled=false;}}),
+      button('換另一個帳號登入',()=>firebaseSDK.signOut(auth),'secondary'));
+  }else{
+    const name=field(management?'管理帳號或 Email':'Email','text','',true),password=field('密碼','password','',true);
+    name.input.autocomplete='username';password.input.autocomplete='current-password';
+    const feedback=el('p','error',loginErrorMessage(error));feedback.setAttribute('role','alert');
+    const signIn=form([name,password],management?'登入管理後台':'登入打卡工作台',async submit=>{
+      submit.disabled=true;feedback.textContent='正在確認帳號…';
+      try{portalIdToken=null;managementSetupIntent(false);const email=await resolveLoginName_(name.input.value);await firebaseSDK.signInWithEmailAndPassword(auth,email,password.input.value);password.input.value='';}
+      catch(failure){feedback.textContent=loginErrorMessage(failure);}finally{submit.disabled=false;}
+    });signIn.querySelector('.fields').style.gridTemplateColumns='1fr';
+    const google=button(management?'首次設定管理帳密：用 Google 確認本人':'使用 Google 帳號登入（選用）',async()=>{
+      google.disabled=true;feedback.textContent='';managementSetupIntent(management);
+      const timer=setTimeout(()=>{google.disabled=false;feedback.textContent='Google 登入視窗仍未完成。若出現 The requested action is invalid，請改用管理帳密，或將正式網址貼到 Chrome／Safari。';},15000);
+      try{portalIdToken=null;await firebaseSDK.signInWithPopup(auth,new firebaseSDK.GoogleAuthProvider());}
+      catch(failure){managementSetupIntent(false);feedback.textContent=loginErrorMessage(failure);}finally{clearTimeout(timer);google.disabled=false;}
+    },'secondary');
+    add(box,signIn,feedback,button('忘記密碼',resetPasswordDialog,'ghost'));
+    if(management)add(box,note('已設定管理帳號者可直接輸入帳號與密碼。第一次設定請先確認本人，之後即可使用自訂帳號登入。'),google);
+    else add(box,button('同仁第一次使用：自行建立帳號',registerEmailDialog,'secondary'),google,note('Email 不限 Gmail。第一次報到須完成收信驗證及執行長核對，之後直接輸入 Email 與自設密碼。'));
+  }
+  add(box,el('p','muted tiny','若在內建瀏覽器無法登入，可將正式網址貼到 Chrome／Safari。'),
+    link('公司正式登入網址','https://homego-employee-prod.web.app/'+(management?'#admin':'#punch')),
+    el('p','muted tiny','登入入口不決定權限，管理權限由伺服器確認。'));
+  app.append(add(el('div','login-shell'),art,add(el('section','login-form'),box)));
 }
 
 </script>
