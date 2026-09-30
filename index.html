@@ -1,8 +1,1199 @@
-<!doctype html>
-<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>宏國地政｜易丞地政・公司登入</title>
-<style>*{box-sizing:border-box}body{margin:0;min-height:100svh;display:grid;place-items:center;background:#f5f4ee;color:#183142;font:17px/1.7 system-ui,sans-serif;padding:24px}main{width:min(100%,490px);padding:36px;background:white;border-radius:20px;box-shadow:0 12px 40px #18314212}small{color:#607781}h1{font-size:27px;margin:12px 0 10px}p{color:#536975}a{display:block;text-align:center;text-decoration:none;font-weight:700;border-radius:10px;padding:16px;margin:18px 0;min-height:58px;color:white;background:#117a73}a.staff{background:#e6efed;color:#153f46}footer{font-size:14px;color:#607781;margin-top:25px}</style></head>
-<body><main><small>宏國地政｜易丞地政</small><h1>公司員工與管理工作台</h1><p>選擇您的入口，登入後即可使用。</p>
-<a href="https://homego-employee-prod.firebaseapp.com/#admin">執行長／總經理登入</a>
-<a class="staff" href="https://homego-employee-prod.firebaseapp.com/#punch">同仁登入・上下班打卡</a>
-<footer>管理者第一次使用，可用 Google 確認本人，再設定自己的帳號與密碼。同仁可使用 Email 與自設密碼。</footer>
-</main></body></html>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>宏國地政|易丞地政 - 智慧指揮艙 (Nexus V5.43 Ultimate-Edit)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        
+        /* [Feature 2] 畫面固定與防破圖核心設定 */
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; color: #1e293b; overflow-x: hidden; width: 100%; }
+        
+        .serif { font-family: 'Noto Serif TC', serif; }
+        .brand-bg { background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); } 
+        .text-brand-gold { color: #facc15; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-radius: 1rem; transition: all 0.3s ease; }
+        .input-modern { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 0.5rem; transition: all 0.2s; }
+        .input-modern:focus { background: #fff; border-color: #2563eb; outline: none; }
+        .hidden-section { display: none; }
+        .fade-in-up { animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(20px); }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* 薪資拉條 */
+        input[type=range] { -webkit-appearance: none; width: 100%; height: 6px; border-radius: 5px; background: #cbd5e1; outline: none; margin: 10px 0; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #2563eb; cursor: pointer; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+        
+        .impact-card { transition: all 0.3s ease; border-left: 4px solid; background-color: white; border: 1px solid #e2e8f0; }
+        .impact-full { border-left-color: #22c55e; background-color: #f0fdf4; } 
+        .impact-half { border-left-color: #f97316; background-color: #fff7ed; } 
+        .impact-none { border-left-color: #ef4444; background-color: #fef2f2; } 
+        .btn-punch:active { transform: scale(0.95); }
+        .tab-active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: bold; background-color: #f0f9ff; }
+        .tab-inactive { color: #64748b; background-color: transparent; }
+        .device-badge { font-family: monospace; font-size: 0.7rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .modal-content { background: white; width: 95%; max-width: 900px; max-height: 90vh; border-radius: 1rem; padding: 0; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        
+        /* 捲軸優化 */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .lsa-badge { font-size: 0.65rem; background-color: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; border: 1px solid #bae6fd; display: inline-block; margin-top: 4px; }
+        .avatar-hover-container { position: relative; cursor: pointer; transition: transform 0.2s; }
+        .avatar-hover-container:active { transform: scale(0.95); }
+        .avatar-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); border-radius: 9999px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; }
+        .avatar-hover-container:hover .avatar-overlay { opacity: 1; }
+        .leave-mode-btn { border: 1px solid #cbd5e1; color: #64748b; background: white; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; flex: 1; transition: all 0.2s; }
+        .leave-mode-active { background-color: #eff6ff; border-color: #2563eb; color: #2563eb; font-weight: bold; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .calendar-cell { min-height: 100px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; font-size: 0.75rem; background: white; transition: all 0.2s; overflow: hidden; }
+        .calendar-cell:hover { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border-color: #cbd5e1; z-index: 10; position: relative; }
+        .calendar-header { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 0.8rem; font-weight: bold; color: #64748b; padding-bottom: 8px; }
+        .cal-today { border: 2px solid #3b82f6; background-color: #eff6ff; }
+        .cal-past { background-color: #f8fafc; color: #94a3b8; }
+
+        /* 表格強制不換行，允許父層滾動 */
+        .table-fixed-layout th, .table-fixed-layout td { white-space: nowrap; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <header class="brand-bg text-white sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white text-blue-900 rounded-lg flex items-center justify-center font-bold text-lg serif shadow-lg">宏</div>
+                <div>
+                    <h1 class="text-base md:text-lg font-bold tracking-wider serif">宏國地政 | 易丞地政</h1>
+                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">Nexus V5.43 Ultimate-Edit</p>
+                </div>
+            </div>
+            <div class="flex bg-blue-900/50 rounded-full p-1">
+                <button onclick="switchView('employee')" id="btnEmp" class="px-4 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all bg-white text-blue-900 shadow-sm">同仁專區</button>
+                <button onclick="checkAdminLogin()" id="btnAdm" class="px-4 py-1.5 rounded-full text-xs md:text-sm font-medium text-blue-200 hover:text-white transition-all">管理後台</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow p-4 md:p-6 max-w-7xl mx-auto w-full">
+        <section id="loginSection" class="w-full glass-panel p-10 text-center max-w-lg mx-auto mt-12 fade-in-up">
+            <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 text-2xl"><i class="fa-solid fa-shield-halved"></i></div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">身分驗證系統</h2>
+            <p class="text-slate-500 mb-6 text-sm">系統已啟用裝置鎖定保護</p>
+            <div class="space-y-4">
+                <div id="userSelectContainer">
+                    <select id="empSelect" onchange="tryBindAndLogin()" class="w-full p-3 pl-4 text-lg input-modern cursor-pointer text-center font-bold text-slate-700 disabled:opacity-50" disabled><option value="">-- 讀取資料中 --</option></select>
+                    <div class="text-[10px] text-red-400 mt-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> 注意：首次登入將自動綁定此裝置，無法更改。</div>
+                </div>
+                <div id="deviceLockedMsg" class="hidden p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div class="text-center"><i class="fa-solid fa-lock text-2xl text-blue-600 mb-2"></i><div class="text-sm font-bold text-slate-700">此裝置已鎖定</div><div class="text-xs text-slate-500 mt-1">專屬使用者：<span id="lockedUserName" class="font-bold text-blue-800 text-lg block mt-1">--</span></div><button onclick="loadEmployeeDashboard()" class="mt-3 w-full bg-blue-600 text-white text-xs py-2 rounded hover:bg-blue-700">進入系統</button></div>
+                </div>
+                <div id="loginStatusMsg" class="text-sm text-blue-600 font-bold hidden mt-2"><i class="fa-solid fa-spinner fa-spin"></i> 驗證中...</div>
+                <div class="bg-slate-50 p-2 rounded text-[10px] text-slate-400 font-mono">Device ID: <span id="myDeviceIdDisplay">...</span></div>
+            </div>
+        </section>
+
+        <section id="employeeView" class="w-full space-y-6 hidden-section">
+            <input type="file" id="avatarInput" accept="image/*" class="hidden" onchange="handleAvatarChange(event)">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in-up">
+                <div class="lg:col-span-2 brand-bg rounded-2xl p-6 text-white relative overflow-hidden shadow-xl flex flex-col justify-center min-h-[160px]">
+                    <div class="absolute top-0 right-0 bg-white/10 px-3 py-1 rounded-bl-lg text-[10px] font-bold tracking-widest uppercase text-blue-200">Official Notice</div>
+                    <div class="relative z-10 flex flex-col md:flex-row items-start gap-4">
+                        <div class="bg-white/10 p-3 rounded-xl backdrop-blur-sm shrink-0"><i class="fa-solid fa-bullhorn text-brand-gold text-2xl"></i></div>
+                        <div class="w-full"><h3 id="displayBulletinTitle" class="font-bold text-xl text-brand-gold mb-2">...</h3><p id="displayBulletinContent" class="text-slate-100 text-sm leading-relaxed whitespace-pre-wrap opacity-90">...</p><div class="mt-4 text-[10px] text-blue-300 border-t border-blue-800 pt-2 flex justify-between"><span><i class="fa-solid fa-user-tie mr-1"></i> 管理處發布</span><span id="displayBulletinDate">--/--</span></div></div>
+                    </div>
+                </div>
+                <div class="lg:col-span-1 glass-panel p-0 overflow-hidden flex flex-col h-auto lg:h-full border-t-4 border-green-500">
+                    <div class="p-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center shrink-0"><h3 class="font-bold text-slate-700 text-sm"><i class="fa-solid fa-rss text-green-600 mr-2"></i> 團隊即時動態</h3><span class="text-[10px] bg-green-100 text-green-800 px-2 py-0.5 rounded-full">Approved</span></div>
+                    <div class="flex-1 overflow-y-auto p-0 custom-scrollbar h-[200px] lg:h-auto" id="activityFeed"><div class="p-4 text-center text-xs text-slate-400">目前沒有即將發生的動態</div></div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="glass-panel p-6 border-l-4 border-blue-600 fade-in-up relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-blue-50 px-4 py-2 rounded-bl-xl border-b border-l border-blue-100 shadow-sm text-right"><div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">標準: 08:30 - 18:00</div><div class="text-xl font-black text-blue-700 font-mono" id="liveClock">00:00:00</div><div id="clockStatusBadge" class="text-[10px] font-bold text-slate-400 mt-1">檢測中...</div></div>
+                        <div class="flex justify-between items-center mb-8 mt-2"><h3 class="font-bold text-slate-800 flex items-center gap-2 text-lg"><i class="fa-solid fa-location-dot text-blue-600"></i> 定位打卡</h3></div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button onclick="handlePunch('上班')" class="btn-punch flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl"><i class="fa-solid fa-sun text-2xl mb-2"></i><span class="font-bold">上班打卡</span><span class="text-[10px] opacity-70 mt-1">遲到基準: 08:30</span></button>
+                            <button onclick="handlePunch('下班')" class="btn-punch flex flex-col items-center justify-center p-4 bg-gradient-to-br from-orange-400 to-red-500 text-white rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-xl"><i class="fa-solid fa-moon text-2xl mb-2"></i><span class="font-bold">下班打卡</span><span class="text-[10px] opacity-70 mt-1">加班起始: 18:00</span></button>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-6 border-t-4 border-brand-gold fade-in-up">
+                        <div class="flex border-b border-gray-200 mb-4">
+                            <button class="flex-1 py-2 text-center text-sm tab-active transition-colors" id="tab-leave" onclick="switchAppTab('leave')">請假</button>
+                            <button class="flex-1 py-2 text-center text-sm tab-inactive transition-colors" id="tab-car" onclick="switchAppTab('car')">公務車</button>
+                            <button class="flex-1 py-2 text-center text-sm tab-inactive transition-colors font-bold text-purple-600" id="tab-log" onclick="switchAppTab('log')">工作日誌</button>
+                        </div>
+                        <form id="form-leave" onsubmit="handleLeaveSubmit(event)" class="space-y-4">
+                            <div class="flex gap-2 mb-2"><button type="button" id="btnModeDay" class="leave-mode-btn leave-mode-active" onclick="switchLeaveMode('day')"><i class="fa-regular fa-calendar mr-1"></i> 全天單位</button><button type="button" id="btnModeTime" class="leave-mode-btn" onclick="switchLeaveMode('time')"><i class="fa-regular fa-clock mr-1"></i> 小時 (區間)</button></div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">假別</label><select id="leaveType" class="w-full p-2.5 input-modern" onchange="updateImpactInfo()"><option value="特休">特休 (全薪)</option><option value="病假">病假 (半薪)</option><option value="事假">事假 (無薪)</option><option value="補休">補休 (全薪)</option><option value="婚假">婚假 (全薪)</option></select></div>
+                                
+                                <div><label class="block text-xs font-bold text-slate-500 mb-1 text-blue-600">開始日期</label><input type="date" id="leaveDate" class="w-full p-2.5 input-modern border-blue-200" onchange="syncDatesAndCalc()"></div>
+                                <div><label class="block text-xs font-bold text-slate-500 mb-1 text-blue-600">結束日期</label><input type="date" id="leaveEndDate" class="w-full p-2.5 input-modern border-blue-200" onchange="syncDatesAndCalc()"></div>
+                                
+                                <div id="inputDayMode" class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">請假天數 <span class="font-normal text-[10px] text-slate-400">(自動依據行政總處日曆計算)</span></label><input type="number" id="leaveDays" min="0" step="any" value="1" class="w-full p-2.5 input-modern" oninput="updateImpactInfo()"></div>
+                                <div id="inputTimeMode" class="hidden md:col-span-2 grid grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-slate-500 mb-1">開始時間</label><input type="time" id="leaveStartTime" class="w-full p-2.5 input-modern" onchange="calcTimeDiff()"></div><div><label class="block text-xs font-bold text-slate-500 mb-1">結束時間</label><input type="time" id="leaveEndTime" class="w-full p-2.5 input-modern" onchange="calcTimeDiff()"></div><div class="col-span-2 text-xs text-blue-600 bg-blue-50 p-2 rounded text-center">預計: <span id="timeDiffDisplay" class="font-bold">0</span> 小時</div></div>
+                                <div class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">事由</label><input type="text" id="leaveReason" class="w-full p-2.5 input-modern" placeholder="例：處理私人事務"></div>
+                            </div>
+                            <div id="impactCard" class="impact-card impact-full p-4 rounded-lg flex justify-between items-center mt-2"><div><div class="font-bold text-sm text-slate-700" id="impactTitle">全薪</div><div class="text-xs text-slate-500" id="impactDesc">工資照給。</div></div><div class="text-right"><div class="text-xs text-slate-400">預估扣薪</div><div class="font-bold text-lg text-red-500">$<span id="impactAmount">0</span></div></div></div>
+                            <button type="submit" class="w-full bg-[#06c755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-lg shadow-lg transition flex justify-center items-center gap-2"><i class="fa-brands fa-line"></i> 送出並通知 LINE</button>
+                        </form>
+
+                        <form id="form-car" onsubmit="handleCarSubmit(event)" class="space-y-4 hidden-section">
+                            <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg text-xs text-blue-800 mb-2">
+                                <i class="fa-solid fa-circle-info mr-1"></i> 送出申請後將發送 LINE 通知給主管。主管核准後將自動為您寫入系統打卡紀錄。
+                            </div>
+                            <div class="flex justify-between items-end mb-2">
+                                <div class="w-full">
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">預約日期</label>
+                                    <input type="date" id="carDate" class="w-full p-2 input-modern">
+                                </div>
+                            </div>
+                            <div class="space-y-2" id="carEntriesContainer">
+                                <div class="text-center text-sm text-slate-400 py-4"><i class="fa-solid fa-spinner fa-spin"></i> 載入中...</div>
+                            </div>
+                            <button type="submit" class="w-full bg-[#06c755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-lg shadow-lg transition flex justify-center items-center gap-2 mt-4"><i class="fa-brands fa-line"></i> 提出預約申請 (通知 LINE)</button>
+                        </form>
+
+                        <form id="form-log" onsubmit="handleLogSubmit(event)" class="space-y-4 hidden-section"><div class="flex justify-between items-end mb-2"><div class="w-2/3"><label class="block text-xs font-bold text-slate-500 mb-1">日期</label><input type="date" id="logDate" class="w-full p-2 input-modern"></div></div><div class="space-y-2" id="logEntriesContainer"><div class="text-center text-sm text-slate-400 py-4"><i class="fa-solid fa-spinner fa-spin"></i> 載入中...</div></div><button type="submit" class="w-full bg-[#06c755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-lg shadow-lg transition flex justify-center items-center gap-2 mt-4"><i class="fa-brands fa-line"></i> 匯報 LINE</button></form>
+                    </div>
+                    <div class="glass-panel p-6 border-t-4 border-indigo-500 fade-in-up">
+                        <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-calendar-check text-indigo-600"></i> 我的考勤行事曆</h3><div class="flex items-center gap-2 text-sm"><button onclick="changeEmpMonth(-1)" class="bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600"><i class="fa-solid fa-chevron-left"></i></button><span id="empCalTitle" class="font-bold text-slate-700 min-w-[80px] text-center">--/--</span><button onclick="changeEmpMonth(1)" class="bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600"><i class="fa-solid fa-chevron-right"></i></button></div></div>
+                        <div class="calendar-header"><div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div></div><div id="empCalendarGrid" class="calendar-grid"><div class="p-4 text-center text-slate-400 col-span-7">載入中...</div></div>
+                    </div>
+                    <div class="glass-panel p-6 fade-in-up"><h3 class="font-bold text-slate-700 mb-4 text-sm uppercase tracking-wider">最近申請紀錄</h3><div class="overflow-x-auto"><table class="w-full text-sm text-left table-fixed-layout"><tbody id="myRequestsTable" class="divide-y divide-slate-100"></tbody></table></div></div>
+                </div>
+                <div class="space-y-6 lg:col-span-1">
+                    <div class="glass-panel p-6 bg-slate-900 text-white fade-in-up">
+                        <div class="flex justify-between items-center mb-4"><h3 class="font-bold flex items-center gap-2"><i class="fa-solid fa-calculator text-brand-gold"></i> 薪資試算儀表</h3></div>
+                        <div class="space-y-6">
+                            <div class="bg-slate-800 p-4 rounded-lg border border-slate-700"><label class="flex justify-between text-xs text-slate-400 mb-2"><span>設定月薪</span><span class="text-brand-gold font-mono">$<span id="displaySalary">30,000</span></span></label><input type="range" id="salarySlider" min="27000" max="80000" step="500" value="30000" oninput="updateSalaryFromSlider(this.value)"><input type="number" id="monthlySalary" value="30000" class="w-full bg-slate-900 border border-slate-600 rounded p-1 text-center text-white font-bold" oninput="updateSalaryFromInput(this.value)"></div>
+                            <div><div class="flex justify-between text-xs mb-1 text-slate-400"><span>加班(前2hr)</span><span class="text-white font-bold"><span id="calcHours1Val">0</span> hr</span></div><input type="range" id="calcHours1" min="0" max="20" step="0.5" value="0" oninput="calculateOvertime()"></div>
+                            <div><div class="flex justify-between text-xs mb-1 text-slate-400"><span>加班(第3hr起)</span><span class="text-white font-bold"><span id="calcHours2Val">0</span> hr</span></div><input type="range" id="calcHours2" min="0" max="20" step="0.5" value="0" oninput="calculateOvertime()"></div>
+                            <div class="mt-4 pt-4 border-t border-slate-700 space-y-2"><div class="flex justify-between text-xs text-slate-400"><span>加班費 (+)</span><span class="text-green-400 font-mono">$<span id="calcOtTotal">0</span></span></div><div class="flex justify-between text-xs text-slate-400"><span>扣薪 (-)</span><span class="text-red-400 font-mono">$<span id="calcDeduction">0</span></span></div><div class="flex justify-between items-end mt-2 pt-2 border-t border-slate-700/50"><span class="text-sm font-bold text-white">預估實領</span><div class="text-2xl font-black text-brand-gold font-mono">$<span id="calcFinalTotal">0</span></div></div></div>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-6 flex flex-col items-center text-center fade-in-up relative group">
+                        <div class="absolute top-3 right-3 text-slate-300 hover:text-blue-500 cursor-pointer" onclick="toggleLegalInfo()"><i class="fa-solid fa-scale-balanced"></i></div>
+                        <div class="avatar-hover-container w-24 h-24 mb-2 relative" onclick="triggerAvatarUpload()" title="點擊更換頭像"><img id="dashboardAvatarImg" src="" class="w-full h-full rounded-full object-cover border-4 border-white shadow-lg bg-slate-100 hidden"><div id="dashboardAvatarPlaceholder" class="w-full h-full bg-slate-100 rounded-full flex items-center justify-center text-4xl text-slate-300 border-4 border-white shadow-lg">👤</div><div class="avatar-overlay"><i class="fa-solid fa-camera text-white text-xl"></i></div></div>
+                        <h2 id="dashboardName" class="text-xl font-bold text-slate-800 mt-2">...</h2>
+                        <div class="flex flex-col items-center gap-1 mt-1"><div class="text-xs font-mono text-slate-500 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 shadow-sm flex items-center"><i class="fa-regular fa-calendar-check mr-1"></i> 入職：<span id="dashboardJoinDate" class="font-bold mx-1">--</span><span id="dashboardTenure" class="ml-1 bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-bold">--</span></div><span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-[10px] font-bold mt-1"><i class="fa-solid fa-check-circle"></i> 裝置已鎖定</span></div>
+                        <div class="mt-4 w-full grid grid-cols-2 gap-2 text-center"><div class="bg-blue-50 p-2 rounded relative"><div class="absolute -top-2 -left-1 bg-amber-400 text-white text-[9px] px-1 rounded shadow">週年制</div><div class="text-[10px] text-slate-400 uppercase mt-1">特休額度</div><div class="font-bold text-blue-800 text-lg" id="dashboardTotal">--</div></div><div class="bg-green-50 p-2 rounded"><div class="text-[10px] text-slate-400 uppercase mt-1">特休剩餘</div><div class="font-bold text-green-600 text-lg" id="dashboardRemaining">--</div></div></div>
+                        <div class="mt-4 border-t pt-2 w-full"><button onclick="registerWebAuthn()" class="w-full bg-slate-100 text-slate-600 text-xs py-2 rounded hover:bg-slate-200 flex items-center justify-center gap-1"><i class="fa-solid fa-link"></i> 綁定此裝置 (FaceID/指紋)</button></div>
+                        <div id="legalInfoCard" class="hidden absolute inset-0 bg-white/95 backdrop-blur z-20 rounded-xl p-4 flex flex-col justify-center text-left border border-blue-200"><h4 class="font-bold text-blue-800 mb-2 border-b pb-1">📜 勞基法第38條</h4><ul class="text-xs space-y-1 text-slate-600 list-disc pl-4"><li>6月-1年: 3日</li><li>1-2年: 7日</li><li>2-3年: 10日</li><li>3-5年: 14日</li><li>5-10年: 15日</li><li>10年以上: +1/年 (上限30)</li></ul><button onclick="toggleLegalInfo()" class="mt-4 w-full bg-slate-100 text-slate-500 text-xs py-1 rounded hover:bg-slate-200">關閉</button></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="adminView" class="hidden-section w-full fade-in-up">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-3 glass-panel p-6 border-t-4 border-slate-700">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-slate-700"></i> 考勤與報表中心</h2>
+                        <div class="flex items-center gap-2">
+                            <select id="adminFilterSelect" onchange="handleAdminFilterChange(this.value)" class="p-1.5 text-xs border rounded bg-white text-slate-600 font-bold"><option value="all">👥 顯示全體員工</option></select>
+                            <button onclick="exportLeaveRequests()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-2 rounded shadow flex items-center gap-1"><i class="fa-solid fa-file-invoice"></i> 匯出請假</button>
+                            <button onclick="exportAttendance()" class="bg-green-600 hover:bg-green-500 text-white text-xs px-3 py-2 rounded shadow flex items-center gap-1"><i class="fa-solid fa-file-excel"></i> 匯出打卡</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto max-h-60 overflow-y-auto custom-scrollbar"><table class="w-full text-left text-sm table-fixed-layout"><thead class="bg-slate-100 text-slate-500 text-xs"><tr><th class="p-2">姓名</th><th class="p-2">類型</th><th class="p-2">時間</th><th class="p-2">狀態</th><th class="p-2 text-right">編輯</th></tr></thead><tbody id="attendanceTableBody" class="divide-y divide-slate-100 text-xs"></tbody></table></div>
+                </div>
+
+                <div class="lg:col-span-3 glass-panel p-6 border-t-4 border-purple-500 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-calendar-days text-purple-600"></i> 團隊出勤總覽</h2>
+                        <div class="flex items-center gap-2">
+                            <button onclick="changeMonth(-1)" class="bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded text-slate-600"><i class="fa-solid fa-chevron-left"></i></button>
+                            <span id="calendarTitle" class="font-bold text-slate-700 min-w-[100px] text-center">--/--</span>
+                            <button onclick="changeMonth(1)" class="bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded text-slate-600"><i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                    <div class="calendar-header"><div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div></div>
+                    <div id="calendarGrid" class="calendar-grid"><div class="p-4 text-center text-slate-400 text-sm col-span-7">載入中...</div></div>
+                </div>
+
+                <div class="lg:col-span-2 glass-panel p-6 border-t-4 border-blue-600">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-clipboard-check text-blue-600"></i> 申請審核中心 <span id="pendingCountBadge" class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full hidden">0</span></h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm table-fixed-layout">
+                            <tbody id="approvalTableBody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                    <div id="noPendingMsg" class="text-center py-8 text-slate-400">
+                        <i class="fa-regular fa-circle-check text-4xl mb-2 text-slate-200"></i>
+                        <p>目前沒有待審核的申請</p>
+                    </div>
+                </div>
+                
+                <div class="lg:col-span-1 glass-panel p-6 border-t-4 border-brand-gold"><h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-bullhorn text-brand-gold mr-2"></i> 置頂公告管理</h2><input type="text" id="adminBulletinTitle" class="w-full p-2 mb-2 input-modern" placeholder="標題"><textarea id="adminBulletinContent" rows="4" class="w-full p-2 mb-2 input-modern" placeholder="內容"></textarea><button onclick="saveBulletin()" class="w-full bg-slate-800 text-white p-2 rounded font-bold hover:bg-slate-700">更新置頂發布</button></div>
+                
+                <div class="lg:col-span-3 glass-panel p-6"><h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-users mr-1"></i> 員工全方位管理</h2><div class="flex flex-wrap gap-2 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-200"><input type="text" id="newAdminName" placeholder="新進員工姓名" class="flex-1 min-w-[120px] p-2 input-modern"><select id="newAdminGender" class="w-20 p-2 input-modern"><option value="M">男</option><option value="F">女</option></select><div class="flex items-center gap-1"><span class="text-xs text-slate-500">到職:</span><input type="date" id="newAdminDate" class="w-36 p-2 input-modern"></div><div class="flex items-center gap-1"><span class="text-xs text-slate-500">生日:</span><input type="date" id="newAdminBirthday" class="w-36 p-2 input-modern"></div><button onclick="addEmployee()" class="bg-blue-600 text-white px-4 rounded font-bold hover:bg-blue-500">新增</button></div><div class="overflow-x-auto"><table class="w-full text-left text-sm table-fixed-layout"><thead class="bg-slate-100 text-slate-600 text-xs uppercase"><tr><th class="p-3">姓名</th><th class="p-3">資料</th><th class="p-3">特休</th><th class="p-3 w-1/4">裝置</th><th class="p-3 text-right">管理</th></tr></thead><tbody id="adminTableBody" class="divide-y divide-slate-100"></tbody></table></div></div>
+                <div class="lg:col-span-3 glass-panel p-6 border-t-4 border-indigo-600 mb-6"><h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-gear text-indigo-600"></i> 全域薪資規則 (預設基準)</h2><div class="grid grid-cols-1 md:grid-cols-3 gap-6"><div class="space-y-3"><h3 class="font-bold text-sm text-slate-600 border-b pb-1">💰 基本參數</h3><div><label class="block text-xs font-bold text-slate-500 mb-1">預設底薪</label><input type="number" id="settingBaseSalary" class="w-full p-2 input-modern" value="30000"></div><div><label class="block text-xs font-bold text-slate-500 mb-1">月工時</label><input type="number" id="settingWorkHours" class="w-full p-2 input-modern" value="240"></div></div><div class="space-y-3"><h3 class="font-bold text-sm text-slate-600 border-b pb-1">🔥 加班費倍率</h3><div class="flex gap-2"><div class="flex-1"><label class="block text-xs font-bold text-slate-500 mb-1">前2小時</label><input type="number" id="settingOtRate1" class="w-full p-2 input-modern bg-slate-100" value="1.34" step="0.01"></div><div class="flex-1"><label class="block text-xs font-bold text-slate-500 mb-1">第3小時起</label><input type="number" id="settingOtRate2" class="w-full p-2 input-modern bg-slate-100" value="1.67" step="0.01"></div></div></div><div class="space-y-3"><h3 class="font-bold text-sm text-slate-600 border-b pb-1">⏰ 遲到扣款</h3><div class="flex gap-2"><div class="flex-1"><label class="block text-xs font-bold text-slate-500 mb-1">寬限(分)</label><input type="number" id="settingLateBuffer" class="w-full p-2 input-modern" value="10"></div><div class="flex-1"><label class="block text-xs font-bold text-slate-500 mb-1">每分扣薪</label><input type="number" id="settingLatePenalty" class="w-full p-2 input-modern" value="0"></div></div><div class="text-[10px] text-slate-500 mt-1">* 設為 0 則依時薪比例扣款</div><button onclick="saveSalarySettings()" class="w-full bg-indigo-600 text-white py-2 rounded font-bold hover:bg-indigo-500 shadow mt-2"><i class="fa-solid fa-save mr-1"></i> 儲存規則</button></div></div></div>
+            </div>
+        </section>
+
+        <div id="historyModal" class="modal-overlay"><div class="modal-content"><div class="p-4 border-b bg-slate-100 flex justify-between items-center"><h3 class="font-bold text-slate-800 text-lg">假勤數據中控</h3><button onclick="closeHistory()" class="text-slate-500 hover:text-red-500 text-xl"><i class="fa-solid fa-times"></i></button></div><div class="p-6 overflow-y-auto flex-1 bg-slate-50"><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="bg-white p-4 rounded-lg border border-blue-200 shadow-sm relative"><div class="absolute top-0 right-0 bg-blue-100 text-blue-800 text-[10px] px-2 py-1 font-bold">特休 (Annual)</div><div class="mt-2 space-y-2"><div class="flex justify-between items-center text-sm"><span class="text-slate-500">已使用</span><input type="number" id="adjAnnualUsed" class="border rounded w-16 text-center font-bold text-blue-700" step="0.125"></div></div></div><div class="bg-white p-4 rounded-lg border border-orange-200 shadow-sm relative"><div class="absolute top-0 right-0 bg-orange-100 text-orange-800 text-[10px] px-2 py-1 font-bold">補休 (Comp)</div><div class="mt-2 space-y-2"><div class="flex justify-between items-center text-sm"><span class="text-slate-500">餘額</span><input type="number" id="adjCompBalance" class="border rounded w-16 text-center font-bold text-orange-700" step="0.125"></div></div></div><div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative"><div class="absolute top-0 right-0 bg-gray-100 text-gray-800 text-[10px] px-2 py-1 font-bold">病/事假</div><div class="mt-2 space-y-1"><div class="flex justify-between items-center text-sm"><span class="text-slate-500">病假</span><input type="number" id="adjSickUsed" class="border rounded w-16 text-center font-bold text-gray-700" step="0.125"></div><div class="flex justify-between items-center text-sm"><span class="text-slate-500">事假</span><input type="number" id="adjPersonalUsed" class="border rounded w-16 text-center font-bold text-gray-700" step="0.125"></div></div></div></div><button onclick="saveAllAdjustments()" class="w-full bg-slate-800 text-white py-2 rounded mb-6 font-bold hover:bg-slate-700 shadow-md">儲存修正</button><h4 class="font-bold text-slate-700 mb-2">📜 申請紀錄 (含已核准管理)</h4><div class="overflow-x-auto bg-white rounded-lg border border-slate-200"><table class="w-full text-sm text-left table-fixed-layout"><thead class="bg-slate-100 text-slate-500 text-xs"><tr><th class="p-2">日期</th><th class="p-2">類型</th><th class="p-2">狀態</th><th class="p-2 text-right">管理</th></tr></thead><tbody id="historyTableBody" class="divide-y divide-slate-100"></tbody></table></div></div></div></div>
+        <div id="salaryModal" class="modal-overlay"><div class="modal-content max-w-lg"><div class="p-4 border-b bg-indigo-600 text-white flex justify-between items-center"><h3 class="font-bold">個別薪資設定</h3><button onclick="closeSalaryModal()" class="text-white hover:text-red-300"><i class="fa-solid fa-times"></i></button></div><div class="p-6 space-y-4 bg-white"><input type="hidden" id="salaryEmpId"><div class="bg-yellow-50 p-3 rounded text-xs text-yellow-800 border border-yellow-200"><i class="fa-solid fa-circle-exclamation mr-1"></i> 設定此處將會「覆蓋」全域預設值。</div><div><label class="block text-xs font-bold text-slate-500 mb-1">底薪</label><input type="number" id="indBaseSalary" class="w-full p-2 input-modern" placeholder="預設: 30000"></div><div><label class="block text-xs font-bold text-slate-500 mb-1">月工時</label><input type="number" id="indWorkHours" class="w-full p-2 input-modern" placeholder="預設: 240"></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-slate-500 mb-1">加班倍率1</label><input type="number" id="indOtRate1" class="w-full p-2 input-modern" placeholder="預設: 1.34"></div><div><label class="block text-xs font-bold text-slate-500 mb-1">加班倍率2</label><input type="number" id="indOtRate2" class="w-full p-2 input-modern" placeholder="預設: 1.67"></div></div><button onclick="saveIndividualSalary()" class="w-full bg-indigo-600 text-white py-2 rounded font-bold hover:bg-indigo-500 shadow mt-2">儲存個人設定</button></div></div></div>
+        
+        <div id="adminEditModal" class="modal-overlay">
+            <div class="modal-content max-w-sm">
+                <div class="p-4 border-b bg-slate-800 text-white flex justify-between items-center">
+                    <h3 class="font-bold"><i class="fa-solid fa-pen-to-square mr-2"></i> 修改考勤狀態</h3>
+                    <button onclick="closeAdminEdit()" class="text-white hover:text-red-300"><i class="fa-solid fa-times"></i></button>
+                </div>
+                <div class="p-6 space-y-4 bg-white">
+                    <input type="hidden" id="editAttKey">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">狀態 (Status)</label>
+                        <select id="editAttStatus" class="w-full p-2 input-modern border rounded">
+                            <option value="正常">🟢 正常 (Normal)</option>
+                            <option value="遲到">🔴 遲到 (Late)</option>
+                            <option value="早退">🟠 早退 (Early)</option>
+                            <option value="加班">🟣 加班 (Overtime)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">時間 (Time)</label>
+                        <input type="text" id="editAttTime" class="w-full p-2 input-modern border rounded" placeholder="例如 08:25:00">
+                    </div>
+                    <button onclick="saveAdminEdit()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-500 shadow-lg mt-2">儲存修正</button>
+                    <button onclick="deleteAttendance()" class="w-full bg-red-50 text-red-600 py-2 rounded font-bold text-xs hover:bg-red-100 border border-red-200 mt-2">刪除此紀錄</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="reqEditModal" class="modal-overlay">
+            <div class="modal-content max-w-sm">
+                <div class="p-4 border-b bg-slate-800 text-white flex justify-between items-center">
+                    <h3 class="font-bold"><i class="fa-solid fa-pen-to-square mr-2"></i> 單據修改 (Admin)</h3>
+                    <button onclick="closeReqEdit()" class="text-white hover:text-red-300"><i class="fa-solid fa-times"></i></button>
+                </div>
+                <div class="p-6 space-y-4 bg-white">
+                    <div class="bg-blue-50 p-3 rounded text-xs text-blue-800 border border-blue-200 mb-4">
+                        <i class="fa-solid fa-circle-info mr-1"></i> 注意：【已結算薪資的歷史月份】系統將自動鎖定，無法在此強制變更。
+                    </div>
+                    <input type="hidden" id="editReqKey">
+                    <div><label class="block text-xs font-bold text-slate-500 mb-1">類型</label><input type="text" id="editReqType" class="w-full p-2 input-modern bg-slate-100" readonly></div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="block text-xs font-bold text-slate-500 mb-1">開始日期</label><input type="date" id="editReqDate" class="w-full p-2 input-modern"></div>
+                        <div><label class="block text-xs font-bold text-slate-500 mb-1">結束日期</label><input type="date" id="editReqEndDate" class="w-full p-2 input-modern"></div>
+                    </div>
+                    <div><label class="block text-xs font-bold text-slate-500 mb-1">天數 / 額度</label><input type="number" id="editReqDays" step="0.125" class="w-full p-2 input-modern"></div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">狀態</label>
+                        <select id="editReqStatus" class="w-full p-2 input-modern border rounded">
+                            <option value="approved">✅ 已核准 (Approved)</option>
+                            <option value="pending">⏳ 待審核 (Pending)</option>
+                            <option value="rejected">❌ 退回/撤銷 (Rejected)</option>
+                        </select>
+                    </div>
+                    <button onclick="saveReqEdit()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-500 shadow-lg mt-2">儲存修改</button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, remove, update, get } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyCcSH0HQutt6rYcFWjCKOpTSWkBDeinyvw", authDomain: "homego-system.firebaseapp.com", databaseURL: "https://homego-system-default-rtdb.firebaseio.com", projectId: "homego-system", storageBucket: "homego-system.firebasestorage.app", messagingSenderId: "679007509034", appId: "1:679007509034:web:df50010c5ab8cd7f964153" };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const ADMIN_PASSWORD = "8888";
+
+        let employees = {};
+        let requests = {};
+        let attendance = {};
+        let bulletin = { title: "歡迎", content: "...", date: "" };
+        let settings = {}; 
+        let currentUserId = null;
+        let currentDeduction = 0;
+        let currentModalEmpId = null;
+        let leaveMode = 'day';
+        let currentCalDate = new Date();
+        let currentEmpCalDate = new Date();
+        let adminFilterId = 'all';
+
+        const DEFAULT_TASKS = ["地政過戶", "貸款", "結案資料整理", "過水電", "用印", "對保", "塗銷"];
+        let taskOptions = DEFAULT_TASKS;
+
+        // =========================================
+        // [NEXUS CONFIG] DGPA 行事曆配置
+        // =========================================
+        const dgpaConfig = {
+            holidays: [
+                '2024-01-01', '2024-02-08', '2024-02-09', '2024-02-12', '2024-02-13', '2024-02-14',
+                '2024-02-28', '2024-04-04', '2024-04-05', '2024-06-10', '2024-09-17', '2024-10-10'
+            ],
+            workdays: [
+                '2024-02-17'
+            ]
+        };
+        // =========================================
+
+        let myDeviceId = localStorage.getItem('hge_security_did');
+        if (!myDeviceId) {
+            myDeviceId = 'DID-' + Math.random().toString(36).substr(2, 6).toUpperCase() + '-' + Date.now().toString(36).substr(-4);
+            localStorage.setItem('hge_security_did', myDeviceId);
+        }
+        document.getElementById('myDeviceIdDisplay').innerText = myDeviceId;
+
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('liveClock').innerText = now.toLocaleTimeString('zh-TW', {hour12: false});
+            const min = now.getHours() * 60 + now.getMinutes();
+            const badge = document.getElementById('clockStatusBadge');
+            if(min < 510) { badge.className="text-[10px] font-bold text-green-600 mt-1"; badge.innerText="早安！準時"; }
+            else if(min >= 510 && min < 1080) { badge.className="text-[10px] font-bold text-orange-600 mt-1"; badge.innerText="上班中"; }
+            else { badge.className="text-[10px] font-bold text-purple-600 mt-1"; badge.innerText="下班/加班"; }
+        }, 1000);
+
+        window.toggleLegalInfo = () => document.getElementById('legalInfoCard').classList.toggle('hidden');
+        window.switchView = (view) => {
+            document.querySelectorAll('section').forEach(el => el.classList.add('hidden-section'));
+            if(view === 'employee') {
+                document.getElementById('loginSection').classList.remove('hidden-section');
+                currentUserId = null; updateEmpSelect();
+            } else {
+                document.getElementById('adminView').classList.remove('hidden-section');
+            }
+        };
+        window.checkAdminLogin = async () => {
+            const { value: pass } = await Swal.fire({ title: '管理員驗證', input: 'password', showCancelButton: true });
+            if (pass === ADMIN_PASSWORD) window.switchView('admin'); else if(pass) Swal.fire('錯誤', '密碼不正確', 'error');
+        };
+        window.switchAppTab = (tab) => {
+            ['leave','car','log'].forEach(t => {
+                document.getElementById('tab-'+t).className = (t===tab) ? 'flex-1 py-2 text-center text-sm tab-active transition-colors' : 'flex-1 py-2 text-center text-sm tab-inactive transition-colors';
+                document.getElementById('form-'+t).classList.add('hidden-section');
+            });
+            document.getElementById('form-'+tab).classList.remove('hidden-section');
+        };
+
+        const bufferDecode = (value) => Uint8Array.from(atob(value), c => c.charCodeAt(0));
+        const bufferEncode = (value) => btoa(String.fromCharCode.apply(null, new Uint8Array(value))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+
+        window.registerWebAuthn = async () => {
+            if (!currentUserId) return;
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost') return Swal.fire('安全限制', '生物辨識僅支援 HTTPS 或 Localhost 環境', 'error');
+            try {
+                const publicKey = { challenge: new Uint8Array(32), rp: { name: "HomeGo HR System" }, user: { id: Uint8Array.from(currentUserId, c => c.charCodeAt(0)), name: employees[currentUserId].name, displayName: employees[currentUserId].name }, pubKeyCredParams: [{ type: "public-key", alg: -7 }] };
+                const credential = await navigator.credentials.create({ publicKey });
+                const credentialId = bufferEncode(credential.rawId);
+                await update(ref(db, `employees/${currentUserId}`), { webAuthnId: credentialId });
+                Swal.fire('綁定成功', '您現在可以使用生物辨識登入', 'success');
+            } catch (err) { console.error(err); Swal.fire('綁定失敗', err.message, 'error'); }
+        };
+
+        window.handleBiometricLogin = async () => {
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost') return Swal.fire('安全限制', '生物辨識僅支援 HTTPS 或 Localhost 環境', 'error');
+            try {
+                const publicKey = { challenge: new Uint8Array(32) };
+                const credential = await navigator.credentials.get({ publicKey });
+                const credentialId = bufferEncode(credential.rawId);
+                const emp = Object.values(employees).find(e => e.webAuthnId === credentialId);
+                if (emp) { Swal.fire({ title: `歡迎回來, ${emp.name}`, icon: 'success', timer: 1500, showConfirmButton: false }); loadEmployeeDashboard(emp.id); } else { Swal.fire('驗證失敗', '此裝置尚未綁定任何員工', 'error'); }
+            } catch (err) { console.error(err); }
+        };
+
+        onValue(ref(db), (snapshot) => {
+            const data = snapshot.val() || {};
+            employees = data.employees || {};
+            requests = data.requests || {};
+            attendance = data.attendance || {};
+            bulletin = data.bulletin || { title: "尚無公告", content: "", date: "" };
+            settings = data.settings || {}; 
+            taskOptions = data.settings?.taskTypes || DEFAULT_TASKS;
+
+            if(settings.salary) {
+                document.getElementById('settingBaseSalary').value = settings.salary.baseSalary || 30000;
+                document.getElementById('settingWorkHours').value = settings.salary.workHours || 240;
+                document.getElementById('settingOtRate1').value = settings.salary.otRate1 || 1.34;
+                document.getElementById('settingOtRate2').value = settings.salary.otRate2 || 1.67;
+                document.getElementById('settingLateBuffer').value = settings.salary.lateBuffer || 10;
+                document.getElementById('settingLatePenalty').value = settings.salary.latePenalty || 0;
+            }
+
+            renderLogForm(); 
+            window.renderCarForm(); 
+            
+            const today = new Date();
+            const todayStr = (today.getMonth()+1).toString().padStart(2,'0') + '-' + today.getDate().toString().padStart(2,'0');
+            const todayFullDate = today.toLocaleDateString();
+            let bdayNames = [];
+            Object.values(employees).forEach(emp => { if(emp.birthday && emp.birthday.slice(5) === todayStr) bdayNames.push(emp.name); });
+            if (bdayNames.length > 0 && bulletin.date !== todayFullDate) {
+                const newTitle = "🎂 生日快樂！";
+                const newContent = `今天是 ${bdayNames.join(' & ')} 的生日！\n祝福工作順利，身體健康！🎉\n(系統自動發布)`;
+                set(ref(db, 'bulletin'), { title: newTitle, content: newContent, date: todayFullDate });
+            }
+
+            updateEmpSelect(); updateAdminFilterSelect(); renderBulletin(); renderActivityFeed();
+            if (currentUserId) { renderEmployeeStats(employees[currentUserId]); window.renderEmployeePersonalCalendar(); }
+            renderAdminTable(); window.renderApprovalQueue(); renderAttendanceLog(); window.renderMonthCalendar();
+            
+            if (currentModalEmpId && document.getElementById('historyModal').style.display === 'flex') {
+                window.renderHistoryTable(currentModalEmpId);
+            }
+            document.getElementById('empSelect').disabled = false;
+        });
+
+        window.updateEmpSelect = () => { 
+            const select = document.getElementById('empSelect');
+            const container = document.getElementById('userSelectContainer');
+            const lockedMsg = document.getElementById('deviceLockedMsg');
+            const lockedName = document.getElementById('lockedUserName');
+            
+            select.innerHTML = '<option value="">-- 請選擇您的姓名 (首次需綁定) --</option>'; 
+            
+            let boundUser = null;
+            Object.values(employees).forEach(emp => { if (emp.devices && emp.devices.includes(myDeviceId)) boundUser = emp; });
+
+            if (boundUser) {
+                container.classList.add('hidden');
+                lockedMsg.classList.remove('hidden');
+                lockedName.innerText = boundUser.name;
+            } else {
+                container.classList.remove('hidden');
+                lockedMsg.classList.add('hidden');
+                Object.values(employees).forEach(emp => { select.innerHTML += `<option value="${emp.id}">${emp.name}</option>`; });
+            }
+        };
+
+        window.tryBindAndLogin = () => {
+            const id = document.getElementById('empSelect').value;
+            if (!id) return;
+            const emp = employees[id];
+            const currentDevices = emp.devices || [];
+            if (currentDevices.includes(myDeviceId)) { loadEmployeeDashboard(id); return; }
+            if (currentDevices.length >= 3) { Swal.fire({ icon: 'error', title: '綁定失敗', text: '您的帳號已綁定 3 台裝置 (上限)。請聯繫管理員解綁。' }); document.getElementById('empSelect').value = ""; return; }
+            Swal.fire({ title: '🔒 裝置綁定警告', html: `為了防止代打卡，綁定後此裝置將<b>鎖定為 ${emp.name} 專用</b>。<br>您將無法在此裝置登入其他帳號。<br><br>確定要綁定嗎？`, icon: 'warning', showCancelButton: true, confirmButtonText: '確認綁定並登入', confirmButtonColor: '#d33', cancelButtonText: '取消' }).then((result) => {
+                if (result.isConfirmed) { const newDevices = [...currentDevices, myDeviceId]; update(ref(db, `employees/${id}`), { devices: newDevices }).then(() => { Swal.fire('綁定成功', '裝置已鎖定', 'success'); loadEmployeeDashboard(id); }); } else { document.getElementById('empSelect').value = ""; }
+            });
+        };
+
+        window.loadEmployeeDashboard = (fid) => {
+            let targetId = fid;
+            if (!targetId) {
+                const lockedName = document.getElementById('lockedUserName').innerText;
+                if(lockedName !== '--') { Object.values(employees).forEach(emp => { if (emp.devices && emp.devices.includes(myDeviceId)) targetId = emp.id; }); } else { targetId = document.getElementById('empSelect').value; }
+            }
+            if(targetId) { currentUserId = targetId; document.getElementById('loginSection').classList.add('hidden-section'); document.getElementById('employeeView').classList.remove('hidden-section'); renderEmployeeStats(employees[currentUserId]); window.renderEmployeePersonalCalendar(); }
+        };
+
+        window.handleAdminFilterChange = (val) => { 
+            adminFilterId = val; 
+            renderAttendanceLog(); 
+            window.renderMonthCalendar();
+        };
+        
+        window.updateAdminFilterSelect = () => {
+            const sel = document.getElementById('adminFilterSelect');
+            let html = '<option value="all">👥 顯示全體員工</option>';
+            Object.values(employees).forEach(emp => { html += `<option value="${emp.id}">${emp.name}</option>`; });
+            sel.innerHTML = html;
+            sel.value = adminFilterId;
+        };
+
+        window.switchLeaveMode = (mode) => {
+            leaveMode = mode;
+            document.getElementById('btnModeDay').classList.toggle('leave-mode-active', mode === 'day');
+            document.getElementById('btnModeTime').classList.toggle('leave-mode-active', mode === 'time');
+            document.getElementById('inputDayMode').classList.toggle('hidden', mode === 'time');
+            document.getElementById('inputTimeMode').classList.toggle('hidden', mode === 'day');
+            
+            if (mode === 'day') {
+                syncDatesAndCalc();
+            } else {
+                calcTimeDiff();
+            }
+        };
+
+        window.syncDatesAndCalc = () => {
+            const startInput = document.getElementById('leaveDate');
+            const endInput = document.getElementById('leaveEndDate');
+            if (!startInput.value) return;
+            
+            if (!endInput.value || new Date(endInput.value) < new Date(startInput.value)) {
+                endInput.value = startInput.value;
+            }
+
+            if (leaveMode === 'day') {
+                const s = new Date(startInput.value);
+                const e = new Date(endInput.value);
+                
+                let workingDays = 0;
+                let currentDate = new Date(s);
+                
+                while (currentDate <= e) {
+                    const dayOfWeek = currentDate.getDay();
+                    const dateStr = currentDate.toISOString().split('T')[0]; 
+                    
+                    const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+                    const isNationalHoliday = dgpaConfig.holidays.includes(dateStr);
+                    const isMakeupWorkday = dgpaConfig.workdays.includes(dateStr);
+
+                    if (isMakeupWorkday) {
+                        workingDays++;
+                    } else if (!isWeekend && !isNationalHoliday) {
+                        workingDays++;
+                    }
+                    
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+                
+                document.getElementById('leaveDays').value = workingDays;
+            }
+            updateImpactInfo();
+        };
+
+        window.calcTimeDiff = () => {
+            const start = document.getElementById('leaveStartTime').value;
+            const end = document.getElementById('leaveEndTime').value;
+            if (start && end) {
+                const s = new Date(`2000-01-01T${start}`);
+                const e = new Date(`2000-01-01T${end}`);
+                let diff = (e - s) / (1000 * 60 * 60);
+                
+                const restStart = new Date(`2000-01-01T12:00`);
+                const restEnd = new Date(`2000-01-01T13:30`);
+                const overlapStart = s > restStart ? s : restStart;
+                const overlapEnd = e < restEnd ? e : restEnd;
+                
+                if (overlapEnd > overlapStart) {
+                    diff -= (overlapEnd - overlapStart) / (1000 * 60 * 60);
+                }
+
+                if (diff < 0) diff = 0;
+                
+                diff = Math.round(diff * 10) / 10;
+                document.getElementById('timeDiffDisplay').innerText = diff;
+                
+                document.getElementById('leaveDays').value = Number((diff / 8).toFixed(3));
+                updateImpactInfo();
+            }
+        };
+
+        window.handleLeaveSubmit = (e) => {
+            e.preventDefault();
+            if(!currentUserId) return Swal.fire('錯誤', '請先登入', 'error');
+            const type = document.getElementById('leaveType').value;
+            const date = document.getElementById('leaveDate').value;
+            const endDateStr = document.getElementById('leaveEndDate').value;
+            const reason = document.getElementById('leaveReason').value;
+            let days = document.getElementById('leaveDays').value;
+            
+            let timeStr = "";
+            let durationStr = `${days} 天`;
+
+            let dateDisplay = (date === endDateStr) ? date : `${date} ~ ${endDateStr}`;
+
+            if (leaveMode === 'time') {
+                const start = document.getElementById('leaveStartTime').value;
+                const end = document.getElementById('leaveEndTime').value;
+                if (!start || !end) return Swal.fire('錯誤', '請填寫請假起訖時間', 'warning');
+                
+                const hours = document.getElementById('timeDiffDisplay').innerText;
+                if(hours === "0" || hours === "0.0") return Swal.fire('錯誤', '請假時數不可為 0', 'warning');
+                
+                timeStr = `\n時間：${start} ~ ${end}`;
+                durationStr = `${hours} 小時 (約 ${days} 天)`;
+            }
+
+            if(!date || !endDateStr || !reason) return Swal.fire('錯誤', '請確認起訖日期與事由皆已填寫', 'warning');
+
+            const empName = employees[currentUserId].name;
+            const msg = `【請假申請】\n申請人：${empName}\n假別：${type}\n日期：${dateDisplay}${timeStr}\n長度：${durationStr}\n事由：${reason}`;
+            const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(msg)}`;
+
+            const reqData = {
+                empId: currentUserId, empName: empName, category: 'leave', type: type, date: date, endDate: endDateStr, days: days, reason: reason, status: 'pending', timestamp: Date.now()
+            };
+            
+            if(leaveMode === 'time') {
+                reqData.time = `${document.getElementById('leaveStartTime').value} ~ ${document.getElementById('leaveEndTime').value}`;
+                reqData.hours = document.getElementById('timeDiffDisplay').innerText;
+            }
+
+            push(ref(db, 'requests'), reqData).then(() => {
+                e.target.reset(); 
+                document.getElementById('leaveDate').valueAsDate = new Date();
+                document.getElementById('leaveEndDate').valueAsDate = new Date();
+                if(leaveMode === 'time') document.getElementById('timeDiffDisplay').innerText = "0";
+                
+                const a = document.createElement('a');
+                a.href = lineUrl;
+                a.target = '_blank';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                setTimeout(() => Swal.fire('申請已送出', '請至 LINE 確認是否成功跳轉發送', 'success'), 500);
+            });
+        };
+
+        window.changeEmpMonth = (delta) => { currentEmpCalDate.setMonth(currentEmpCalDate.getMonth() + delta); window.renderEmployeePersonalCalendar(); };
+        window.renderEmployeePersonalCalendar = () => {
+            const grid = document.getElementById('empCalendarGrid'); const title = document.getElementById('empCalTitle'); if(!grid || !title || !currentUserId) return;
+            grid.innerHTML = ''; const year = currentEmpCalDate.getFullYear(); const month = currentEmpCalDate.getMonth(); title.innerText = `${year}年 ${month+1}月`;
+            const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate(); const todayStr = new Date().toISOString().split('T')[0];
+            for(let i=0; i<firstDay; i++) grid.innerHTML += `<div class="calendar-cell bg-slate-50"></div>`;
+            for(let d=1; d<=daysInMonth; d++) {
+                const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; const isToday = (dateStr === todayStr); let evHtml = '';
+                const atts = Object.values(attendance).filter(a => { const aDate = new Date(a.timestamp); return a.empId === currentUserId && aDate.getFullYear()===year && aDate.getMonth()===month && aDate.getDate()===d; });
+                atts.forEach(a => { 
+                    const isLate = a.status === '遲到'; 
+                    const isOt = a.status === '加班';
+                    const isCar = a.status === '用車紀錄';
+                    
+                    let color = 'text-blue-600 bg-blue-50 border-blue-200';
+                    if (isLate) color = 'text-red-600 bg-red-50 border-red-200';
+                    if (isOt) color = 'text-purple-600 bg-purple-50 border-purple-200';
+                    if (isCar) color = 'text-amber-700 bg-amber-50 border-amber-300';
+                    
+                    const displayTime = a.timeStr.includes('~') ? a.timeStr : a.timeStr.split(':')[0] + ':' + a.timeStr.split(':')[1]; 
+                    evHtml += `<div class="${color} text-[9px] px-1 rounded mt-1 border truncate">${a.type} <strong>${displayTime}</strong></div>`; 
+                });
+                const reqs = Object.values(requests).filter(r => r.empId === currentUserId && r.status === 'approved' && r.date === dateStr);
+                reqs.forEach(r => { evHtml += `<div class="text-slate-500 bg-slate-100 border border-slate-200 text-[9px] px-1 rounded mt-1 truncate">[${r.category==='car'?'車':r.type}]</div>`; });
+                grid.innerHTML += `<div class="calendar-cell ${isToday?'cal-today':''}"><div class="text-right font-bold text-xs text-slate-600">${d}</div><div class="overflow-y-auto max-h-[70px] custom-scrollbar">${evHtml}</div></div>`;
+            }
+        };
+
+        window.changeMonth = (delta) => { currentCalDate.setMonth(currentCalDate.getMonth() + delta); window.renderMonthCalendar(); };
+        
+        // [NEXUS MODIFIED] 日曆區塊全點擊解鎖
+        window.renderMonthCalendar = () => {
+            const grid = document.getElementById('calendarGrid'); const title = document.getElementById('calendarTitle'); if(!grid || !title) return;
+            grid.innerHTML = ''; const year = currentCalDate.getFullYear(); const month = currentCalDate.getMonth(); title.innerText = `${year}年 ${month+1}月`;
+            const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate(); const todayStr = new Date().toISOString().split('T')[0];
+            for(let i=0; i<firstDay; i++) grid.innerHTML += `<div class="calendar-cell bg-slate-50"></div>`;
+            
+            let dataAtt = Object.entries(attendance).map(([k, v]) => ({...v, key: k}));
+            let dataReq = Object.entries(requests).map(([k, v]) => ({...v, key: k}));
+            
+            if (adminFilterId !== 'all') {
+                dataAtt = dataAtt.filter(a => a.empId === adminFilterId);
+                dataReq = dataReq.filter(r => r.empId === adminFilterId);
+            }
+
+            for(let d=1; d<=daysInMonth; d++) {
+                const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; const isToday = (dateStr === todayStr); const isPast = (new Date(dateStr) < new Date().setHours(0,0,0,0)); let evHtml = '';
+                
+                const atts = dataAtt.filter(a => { const aDate = new Date(a.timestamp); return aDate.getFullYear()===year && aDate.getMonth()===month && aDate.getDate()===d; });
+                atts.forEach(a => { 
+                    let colorClass = 'text-blue-600 bg-blue-50 border-blue-200';
+                    if (a.status === '遲到') colorClass = 'text-red-600 bg-red-50 border-red-200';
+                    if (a.status === '加班') colorClass = 'text-purple-600 bg-purple-50 border-purple-200';
+                    if (a.status === '用車紀錄') colorClass = 'text-amber-700 bg-amber-50 border-amber-300';
+                    
+                    const displayTime = a.timeStr.includes('~') ? a.timeStr.split('~')[0].trim() : a.timeStr.split(':')[0] + ':' + a.timeStr.split(':')[1]; 
+                    evHtml += `<div onclick="openAdminEdit('${a.key}')" class="cursor-pointer hover:shadow-md transition-all ${colorClass} text-[10px] px-1 rounded mt-1 border truncate" title="點擊修改: ${displayTime} ${a.empName} (${a.type})"><strong>${displayTime}</strong> ${a.empName} <span class="opacity-75">(${a.type})</span></div>`; 
+                });
+                
+                const reqs = dataReq.filter(r => r.status === 'approved' && r.date === dateStr);
+                reqs.forEach(r => { 
+                    evHtml += `<div onclick="openReqEdit('${r.key}')" class="cursor-pointer hover:bg-slate-200 hover:shadow-md transition-all text-slate-500 bg-slate-100 border border-slate-200 text-[10px] px-1 rounded mt-1 truncate" title="點擊修改: [${r.category==='car'?'車':r.type}] ${r.empName}">[${r.category==='car'?'車':r.type}] ${r.empName}</div>`; 
+                });
+                
+                grid.innerHTML += `<div class="calendar-cell ${isToday?'cal-today':''} ${isPast?'cal-past':''}"><div class="text-right font-bold text-xs ${[0,6].includes(new Date(dateStr).getDay())?'text-red-400':'text-slate-600'}">${d}</div><div class="overflow-y-auto max-h-[70px] custom-scrollbar">${evHtml}</div></div>`;
+            }
+        };
+
+        window.exportAttendance = () => { 
+            const rows = [['姓名', '類型', '日期', '時間', '狀態']]; 
+            let data = Object.values(attendance).sort((a,b)=>b.timestamp-a.timestamp);
+            if(adminFilterId !== 'all') data = data.filter(a => a.empId === adminFilterId); 
+            data.forEach(a => { rows.push([a.empName, a.type, a.dateStr, a.timeStr, a.status]); }); 
+            downloadCSV(rows, `打卡紀錄_${adminFilterId==='all'?'全體':employees[adminFilterId].name}.csv`); 
+        };
+        window.exportLeaveRequests = () => { 
+            const rows = [['姓名', '類別', '假別/地點', '日期區間', '天數/時間', '事由', '狀態']]; 
+            let data = Object.values(requests);
+            if(adminFilterId !== 'all') data = data.filter(r => r.empId === adminFilterId); 
+            data.forEach(r => { 
+                const dateDisplay = (r.endDate && r.endDate !== r.date) ? `${r.date} ~ ${r.endDate}` : r.date;
+                rows.push([r.empName, r.category==='car'?'用車':'請假', r.category==='car'?r.location:r.type, dateDisplay, r.days, r.reason, r.status]); 
+            }); 
+            downloadCSV(rows, `請假明細_${adminFilterId==='all'?'全體':employees[adminFilterId].name}.csv`); 
+        };
+        function downloadCSV(rows, filename) { let csvContent = "\uFEFF"; rows.forEach(row => { csvContent += row.join(",") + "\n"; }); const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); if (link.download !== undefined) { const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", filename); link.style.visibility = 'hidden'; document.body.appendChild(link); link.click(); document.body.removeChild(link); } }
+        
+        window.openSalaryModal = (empId) => { const emp = employees[empId]; if(!emp) return; document.getElementById('salaryEmpId').value = empId; const s = emp.salarySettings || {}; document.getElementById('indBaseSalary').value = s.baseSalary || ''; document.getElementById('indWorkHours').value = s.workHours || ''; document.getElementById('indOtRate1').value = s.otRate1 || ''; document.getElementById('indOtRate2').value = s.otRate2 || ''; document.getElementById('salaryModal').style.display = 'flex'; };
+        window.closeSalaryModal = () => document.getElementById('salaryModal').style.display = 'none';
+        window.saveIndividualSalary = () => { const id = document.getElementById('salaryEmpId').value; const settings = { baseSalary: document.getElementById('indBaseSalary').value, workHours: document.getElementById('indWorkHours').value, otRate1: document.getElementById('indOtRate1').value, otRate2: document.getElementById('indOtRate2').value }; update(ref(db, `employees/${id}/salarySettings`), settings).then(() => { Swal.fire('成功', '個人薪資設定已儲存', 'success'); closeSalaryModal(); }); };
+        function getSalaryConfig(empId) { const emp = employees[empId] || {}; const ind = emp.salarySettings || {}; const glo = settings.salary || {}; return { base: parseInt(ind.baseSalary || glo.baseSalary || 30000), hours: parseInt(ind.workHours || glo.workHours || 240), r1: parseFloat(ind.otRate1 || glo.otRate1 || 1.34), r2: parseFloat(ind.otRate2 || glo.otRate2 || 1.67), latePen: parseInt(glo.latePenalty || 0) }; }
+        window.calculateOvertime = () => { if(!currentUserId) return; const config = getSalaryConfig(currentUserId); const inputSalary = parseInt(document.getElementById('monthlySalary').value); const base = inputSalary || config.base; const hourly = Math.round(base / config.hours); const h1 = parseFloat(document.getElementById('calcHours1').value); const h2 = parseFloat(document.getElementById('calcHours2').value); const ot = Math.round((h1 * hourly * config.r1) + (h2 * hourly * config.r2)); document.getElementById('calcHours1Val').innerText = h1; document.getElementById('calcHours2Val').innerText = h2; document.getElementById('calcOtTotal').innerText = ot.toLocaleString(); document.getElementById('calcDeduction').innerText = currentDeduction.toLocaleString(); document.getElementById('calcFinalTotal').innerText = (base + ot - currentDeduction).toLocaleString(); };
+        window.updateImpactInfo = () => { if(!currentUserId) return; const type = document.getElementById('leaveType').value; const days = parseFloat(document.getElementById('leaveDays').value) || 0; const config = getSalaryConfig(currentUserId); const inputSalary = parseInt(document.getElementById('monthlySalary').value); const hourly = Math.round((inputSalary || config.base) / config.hours); const daily = hourly * 8; const card = document.getElementById('impactCard'); let ded = 0; card.classList.remove('impact-full','impact-half','impact-none'); if(['特休','補休','婚假'].includes(type)) { card.classList.add('impact-full'); document.getElementById('impactTitle').innerText="全薪"; document.getElementById('impactDesc').innerText="工資照給"; } else if(type==='病假') { card.classList.add('impact-half'); document.getElementById('impactTitle').innerText="半薪"; document.getElementById('impactDesc').innerText="扣除半薪"; ded = Math.round(daily * days * 0.5); } else { card.classList.add('impact-none'); document.getElementById('impactTitle').innerText="無薪"; if(type==='遲到' && config.latePen > 0) { document.getElementById('impactDesc').innerText="依設定扣款"; ded = Math.round(daily * days); } else { document.getElementById('impactDesc').innerText="依工時比例扣除"; ded = Math.round(daily * days); } } document.getElementById('impactAmount').innerText = ded.toLocaleString(); currentDeduction = ded; window.calculateOvertime(); };
+
+        function renderEmployeeStats(emp) {
+            if(!emp) return;
+            document.getElementById('dashboardName').innerText = emp.name;
+            const avatarImg = document.getElementById('dashboardAvatarImg'); const avatarPlace = document.getElementById('dashboardAvatarPlaceholder');
+            if (emp.avatar) { avatarImg.src = emp.avatar; avatarImg.classList.remove('hidden'); avatarPlace.classList.add('hidden'); } else { avatarImg.classList.add('hidden'); avatarPlace.classList.remove('hidden'); }
+            const calc = calculateLeave(emp.joinDate); document.getElementById('dashboardRemaining').innerText = (calc.days - (emp.stats?.annual||0)) + " 天"; document.getElementById('dashboardTotal').innerText = calc.days + " 天"; document.getElementById('dashboardJoinDate').innerText = emp.joinDate || "未設定"; document.getElementById('dashboardTenure').innerText = calculateTenure(emp.joinDate);
+            
+            const tbody = document.getElementById('myRequestsTable'); 
+            const myReqs = Object.values(requests).filter(r => r.empId === emp.id).sort((a,b) => b.timestamp - a.timestamp).slice(0, 5); 
+            tbody.innerHTML = myReqs.length ? myReqs.map(r => {
+                const displayDate = (r.endDate && r.endDate !== r.date) ? `${r.date.slice(5)}~${r.endDate.slice(5)}` : r.date.slice(5);
+                return `<tr class="border-b"><td class="p-2 text-xs text-slate-500">${displayDate}</td><td class="p-2 font-bold text-slate-700">${r.category==='car'?'用車':r.type}</td><td class="p-2 text-right"><span class="px-2 py-0.5 rounded text-[10px] ${r.status==='approved'?'bg-green-100 text-green-700':'bg-orange-100 text-orange-700'}">${r.status}</span></td></tr>`;
+            }).join('') : '<tr><td colspan="3" class="p-4 text-center text-slate-400 text-xs">無紀錄</td></tr>';
+            
+            const conf = getSalaryConfig(emp.id); document.getElementById('monthlySalary').value = conf.base; document.getElementById('displaySalary').innerText = conf.base.toLocaleString(); document.getElementById('salarySlider').value = conf.base;
+        }
+        window.triggerAvatarUpload = () => document.getElementById('avatarInput').click();
+        window.handleAvatarChange = (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); const MAX_WIDTH = 300; const scaleSize = MAX_WIDTH / Math.max(img.width, img.height); canvas.width = img.width * scaleSize; canvas.height = img.height * scaleSize; ctx.drawImage(img, 0, 0, canvas.width, canvas.height); const dataUrl = canvas.toDataURL('image/jpeg', 0.7); update(ref(db, `employees/${currentUserId}`), { avatar: dataUrl }).then(() => Swal.fire('成功', '大頭照已更新', 'success')); }; img.src = e.target.result; }; reader.readAsDataURL(file); };
+        function renderAdminTable() { const tbody = document.getElementById('adminTableBody'); tbody.innerHTML = ''; Object.values(employees).forEach(emp => { const devs = (emp.devices||[]).map((d,i)=>`<span class="device-badge cursor-pointer hover:bg-red-100" onclick="unbindDevice('${emp.id}',${i})">📱 ${d.substr(0,4)}</span>`).join(' '); const calc = calculateLeave(emp.joinDate); const avatarHTML = emp.avatar ? `<img src="${emp.avatar}" class="w-8 h-8 rounded-full border border-slate-200 object-cover mr-2 inline-block">` : `<div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs mr-2 inline-block">👤</div>`; tbody.innerHTML += `<tr class="border-b text-sm"><td class="p-3 font-bold text-slate-800 flex items-center">${avatarHTML} ${emp.name}</td><td class="p-3"><div class="text-xs text-slate-500">${emp.joinDate||'--'}</div><div class="text-xs text-slate-400">${calculateTenure(emp.joinDate)}</div></td><td class="p-3">剩:${calc.days-(emp.stats?.annual||0)}</td><td class="p-3">${devs || '未綁定'}</td><td class="p-3 text-right"><button onclick="openSalaryModal('${emp.id}')" class="text-indigo-600 mr-2" title="薪資"><i class="fa-solid fa-sack-dollar"></i></button><button onclick="openHistory('${emp.id}')" class="text-blue-600"><i class="fa-solid fa-pen-to-square"></i></button></td></tr>`; }); }
+        window.saveSalarySettings = () => { const s = { baseSalary: document.getElementById('settingBaseSalary').value, workHours: document.getElementById('settingWorkHours').value, otRate1: document.getElementById('settingOtRate1').value, otRate2: document.getElementById('settingOtRate2').value, lateBuffer: document.getElementById('settingLateBuffer').value, latePenalty: document.getElementById('settingLatePenalty').value }; update(ref(db, 'settings/salary'), s).then(() => Swal.fire('全域設定已儲存', '', 'success')); };
+        function calculateLeave(joinDate) { if(!joinDate) return { days: 0, rule: "未設定" }; const years = (new Date() - new Date(joinDate)) / (1000*60*60*24*365.25); let d = 0; if(years<0.5) d=0; else if(years<1) d=3; else if(years<2) d=7; else if(years<3) d=10; else if(years<5) d=14; else if(years<10) d=15; else d=Math.min(30, 15+Math.floor(years-10)); return { days: d, rule: "週年制" }; }
+        function calculateTenure(d) { if(!d) return "--"; const m = Math.floor((new Date() - new Date(d)) / (1000*60*60*24*30.44)); return m < 12 ? `${m}個月` : `${Math.floor(m/12)}年${m%12}月`; }
+        
+        window.handlePunch = (t) => { 
+            if(!currentUserId) return; 
+            navigator.geolocation.getCurrentPosition(p=>{ 
+                const now = new Date();
+                const nowMinutes = now.getHours() * 60 + now.getMinutes();
+                let status = "正常";
+                
+                if (t === '上班' && nowMinutes > 510) status = "遲到";
+                if (t === '下班' && nowMinutes > 1080) status = "加班";
+
+                push(ref(db,'attendance'),{
+                    empId:currentUserId,
+                    empName:employees[currentUserId].name,
+                    type:t,
+                    timestamp:now.getTime(),
+                    dateStr:now.toLocaleDateString(),
+                    timeStr:now.toLocaleTimeString(),
+                    location:`${p.coords.latitude},${p.coords.longitude}`,
+                    status: status
+                }); 
+                Swal.fire('打卡成功', `${t} (${status})`,'success'); 
+            }); 
+        };
+
+        window.handleCarSubmit = (e) => {
+            e.preventDefault();
+            if(!currentUserId) return Swal.fire('錯誤', '請先登入', 'error');
+            const date = document.getElementById('carDate').value; // YYYY-MM-DD
+            const locations = document.getElementsByName('carLocation');
+            const times = document.getElementsByName('carTime');
+            
+            let carContent = `【待審核：公務車預約】\n申請人：${employees[currentUserId].name}\n日期：${date}\n`;
+            let hasContent = false;
+            let firstTime = "";
+            let allLocations = [];
+
+            for(let i=0; i<locations.length; i++) {
+                if(locations[i].value) {
+                    hasContent = true;
+                    carContent += `\n[${times[i].value}] ${locations[i].value}`;
+                    if(!firstTime) firstTime = times[i].value;
+                    allLocations.push(locations[i].value);
+                }
+            }
+
+            if(!hasContent) return Swal.fire('錯誤', '請至少填寫一個時段的地點/用途', 'warning');
+
+            const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(carContent)}`;
+
+            push(ref(db, 'requests'), {
+                empId: currentUserId, empName: employees[currentUserId].name, category: 'car', type: '公務車', date: date, time: firstTime, location: allLocations.join(" | "), status: 'pending', timestamp: Date.now()
+            }).then(() => {
+                e.target.reset(); document.getElementById('carDate').valueAsDate = new Date();
+                
+                Swal.fire({
+                    title: '預約申請已送出',
+                    text: '已發送 LINE 通知，請等待主管核准。',
+                    icon: 'success',
+                    confirmButtonText: '確定',
+                    confirmButtonColor: '#4285F4'
+                });
+
+                const a = document.createElement('a');
+                a.href = lineUrl;
+                a.target = '_blank';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            });
+        };
+
+        window.handleLogSubmit = (e) => {
+            e.preventDefault();
+            if(!currentUserId) return Swal.fire('錯誤', '請先登入', 'error');
+            const date = document.getElementById('logDate').value;
+            const tasks = document.getElementsByName('logTask');
+            const details = document.getElementsByName('logDetail');
+            const times = document.getElementsByName('logTime');
+            
+            let logContent = `【工作日誌匯報】\n匯報人：${employees[currentUserId].name}\n日期：${date}\n`;
+            let hasContent = false;
+            
+            for(let i=0; i<tasks.length; i++) {
+                if(tasks[i].value || details[i].value) {
+                    hasContent = true;
+                    logContent += `\n[${times[i].value}] ${tasks[i].value}\n${details[i].value}`;
+                }
+            }
+            
+            if(!hasContent) return Swal.fire('錯誤', '請至少填寫一筆日誌', 'warning');
+
+            const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(logContent)}`;
+
+            const a = document.createElement('a');
+            a.href = lineUrl;
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            setTimeout(() => Swal.fire('日誌已彙整', '請至 LINE 確認是否成功跳轉發送', 'success'), 500);
+        };
+
+        window.renderApprovalQueue = () => { 
+            const t = document.getElementById('approvalTableBody'); 
+            t.innerHTML=''; 
+            const pendingReqs = Object.entries(requests).filter(([k,v])=>v.status==='pending');
+
+            const badge = document.getElementById('pendingCountBadge');
+            if(badge) {
+                badge.innerText = pendingReqs.length;
+                badge.style.display = pendingReqs.length > 0 ? 'inline-block' : 'none';
+            }
+            const noMsg = document.getElementById('noPendingMsg');
+            if(noMsg) noMsg.style.display = pendingReqs.length > 0 ? 'none' : 'block';
+
+            pendingReqs.forEach(([k,r])=>{ 
+                let dateDisplay = (r.endDate && r.endDate !== r.date) ? `${r.date} ~ ${r.endDate}` : r.date;
+                let timeDisplay = r.time ? `<div class="text-[10px] text-blue-600 font-bold bg-blue-50 px-1 py-0.5 rounded mt-0.5 inline-block"><i class="fa-regular fa-clock"></i> ${r.time}</div>` : '';
+                let detailsDisplay = r.reason ? `<div class="text-[10px] text-slate-500 truncate mt-0.5" title="${r.reason}">事由: ${r.reason}</div>` : (r.location ? `<div class="text-[10px] text-slate-500 truncate mt-0.5" title="${r.location}">地點: ${r.location}</div>` : '');
+
+                t.innerHTML+=`<tr class="border-b hover:bg-slate-50 transition">
+                    <td class="p-3 font-bold text-slate-700 w-1/4">${r.empName}</td>
+                    <td class="p-3 w-1/4">
+                        <span class="px-2 py-0.5 rounded text-[10px] bg-slate-100 border border-slate-200">${r.category==='car'?'🚗 用車':r.type}</span>
+                        ${detailsDisplay}
+                    </td>
+                    <td class="p-3 w-1/3">
+                        <div class="text-xs text-slate-700">${dateDisplay}</div>
+                        ${timeDisplay}
+                    </td>
+                    <td class="p-3 text-right w-1/6">
+                        <div class="flex justify-end gap-2">
+                            <button onclick="processRequest('${k}','approve')" class="bg-green-50 text-green-600 p-1.5 rounded hover:bg-green-100 border border-green-200 transition" title="核准"><i class="fa-solid fa-check"></i></button>
+                            <button onclick="processRequest('${k}','reject')" class="bg-red-50 text-red-600 p-1.5 rounded hover:bg-red-100 border border-red-200 transition" title="退回"><i class="fa-solid fa-times"></i></button>
+                        </div>
+                    </td>
+                </tr>`; 
+            }); 
+        };
+
+        window.processRequest = (k, s) => {
+            update(ref(db, `requests/${k}`), { status: s === 'approve' ? 'approved' : 'rejected' }).then(() => {
+                if (s === 'approve') {
+                    const req = requests[k];
+                    let approvalLineText = "";
+
+                    if (req.category === 'car') {
+                        const dateObj = new Date(req.date);
+                        dateObj.setHours(9, 0, 0); 
+                        push(ref(db, 'attendance'), {
+                            empId: req.empId, empName: req.empName, type: '🚗 公務車', timestamp: dateObj.getTime(), dateStr: new Date(req.date).toLocaleDateString(), timeStr: req.time || "整日", location: req.location, status: '用車紀錄'
+                        });
+
+                        approvalLineText = `✨🎊 【核准通過】公務車預約 🎊✨\n\n申請同仁：${req.empName}\n使用日期：${req.date}\n時段：${req.time || "全日"}\n地點：${req.location}\n\n👑 主管已核准您的用車申請！\n🚗 祝您行程順利，平安歸來！`;
+
+                    } else if (req.category === 'leave') {
+                        approvalLineText = `✨🎊 【假單核准通過】 🎊✨\n\n申請同仁：${req.empName}\n假別：${req.type}\n時間：${req.date} ${req.endDate && req.endDate !== req.date ? '~ '+req.endDate : ''}\n事由：${req.reason}\n\n👑 主管已核准您的請假申請！\n🌟 祝您有個美好的一天！`;
+                    }
+
+                    const approvalLineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(approvalLineText)}`;
+
+                    Swal.fire({
+                        title: '已核准',
+                        text: '資料已成功更新，請點擊下方按鈕發送 LINE 通知給同仁。',
+                        icon: 'success',
+                        confirmButtonText: '<i class="fa-brands fa-line"></i> 發送 LINE 通知',
+                        confirmButtonColor: '#06c755'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            setTimeout(() => {
+                                const a = document.createElement('a');
+                                a.href = approvalLineUrl;
+                                a.target = '_blank';
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                            }, 300); 
+                        }
+                    });
+
+                } else {
+                    Swal.fire('已退回', '', 'info');
+                }
+                window.renderApprovalQueue();
+            });
+        };
+
+        // [NEXUS 5.43 核心] 財會防護鎖定判斷
+        window.checkPayrollLock = (dateStr) => {
+            const reqDate = new Date(dateStr);
+            const now = new Date();
+            // 以當前月份的第一天做為防護線，更早的月份皆視為「歷史月份」
+            const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            return reqDate < currentMonthStart;
+        };
+
+        window.openHistory = (id) => { 
+            currentModalEmpId = id; 
+            window.renderHistoryTable(id);
+            document.getElementById('historyModal').style.display = 'flex'; 
+        };
+        
+        window.closeHistory = () => {
+            document.getElementById('historyModal').style.display = 'none';
+        };
+
+        window.renderHistoryTable = (id) => {
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+            
+            const userReqs = Object.entries(requests)
+                .filter(([k,v]) => v.empId === id)
+                .sort((a,b) => b[1].timestamp - a[1].timestamp);
+
+            if(userReqs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400">尚無申請紀錄</td></tr>';
+                return;
+            }
+
+            userReqs.forEach(([k,r]) => {
+                let statusBadge = '';
+                if(r.status === 'approved') statusBadge = '<span class="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded border border-green-200">已核准</span>';
+                else if(r.status === 'pending') statusBadge = '<span class="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-1 rounded border border-yellow-200">待審核</span>';
+                else statusBadge = '<span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded border border-slate-200">已退回</span>';
+
+                const displayDate = (r.endDate && r.endDate !== r.date) ? `${r.date.slice(5)}~${r.endDate.slice(5)}` : r.date.slice(5);
+                const typeDisplay = r.category === 'car' ? `🚗 用車` : r.type;
+                
+                // 新增編輯與撤銷雙軌按鈕
+                const actionBtn = `
+                    <div class="flex justify-end gap-1">
+                        <button onclick="openReqEdit('${k}')" class="bg-blue-50 text-blue-600 px-2 py-1 rounded text-[10px] font-bold hover:bg-blue-100 border border-blue-200 transition"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteRequestRecord('${k}')" class="bg-red-50 text-red-600 px-2 py-1 rounded text-[10px] font-bold hover:bg-red-100 border border-red-200 transition"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>`;
+                
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-slate-50">
+                        <td class="p-2 text-xs font-bold text-slate-700">${displayDate}</td>
+                        <td class="p-2 text-xs">${typeDisplay}</td>
+                        <td class="p-2">${statusBadge}</td>
+                        <td class="p-2 text-right">${actionBtn}</td>
+                    </tr>`;
+            });
+        };
+
+        // 開啟單據編輯 Modal
+        window.openReqEdit = (key) => {
+            const req = requests[key];
+            if(!req) return;
+            
+            // 寫入防護鎖
+            if(checkPayrollLock(req.date)) {
+                Swal.fire({
+                    title: '🛑 財報保護鎖定',
+                    text: '此單據位於【已結算薪資的歷史月份】。為避免影響已入帳的財務報表，系統禁止編輯歷史數據。請以「本月手動調整」取代溯及既往！',
+                    icon: 'error',
+                    confirmButtonColor: '#1e3a8a'
+                });
+                return;
+            }
+
+            document.getElementById('editReqKey').value = key;
+            document.getElementById('editReqType').value = req.category === 'car' ? '公務車' : req.type;
+            document.getElementById('editReqDate').value = req.date;
+            document.getElementById('editReqEndDate').value = req.endDate || req.date;
+            document.getElementById('editReqDays').value = req.days || 0;
+            document.getElementById('editReqStatus').value = req.status || 'pending';
+            
+            document.getElementById('reqEditModal').style.display = 'flex';
+        };
+
+        window.closeReqEdit = () => {
+            document.getElementById('reqEditModal').style.display = 'none';
+        };
+
+        // [NEXUS MODIFIED] 假單儲存即時更新日曆
+        window.saveReqEdit = () => {
+            const key = document.getElementById('editReqKey').value;
+            const updates = {
+                date: document.getElementById('editReqDate').value,
+                endDate: document.getElementById('editReqEndDate').value,
+                days: document.getElementById('editReqDays').value,
+                status: document.getElementById('editReqStatus').value
+            };
+            
+            update(ref(db, `requests/${key}`), updates).then(() => {
+                Swal.fire('修改成功', '單據資料已更新', 'success');
+                closeReqEdit();
+                if (document.getElementById('historyModal').style.display === 'flex') {
+                    window.renderHistoryTable(currentModalEmpId);
+                }
+                window.renderApprovalQueue();
+                window.renderMonthCalendar(); // 關鍵：強制刷新日曆畫面
+            });
+        };
+
+        // [NEXUS MODIFIED] 假單刪除即時更新日曆
+        window.deleteRequestRecord = (key) => {
+            const req = requests[key];
+            if(req && checkPayrollLock(req.date)) {
+                Swal.fire({
+                    title: '🛑 財報保護鎖定',
+                    text: '此單據位於【已結算薪資的歷史月份】。為保護財務與勞檢數據一致性，系統拒絕撤銷此單據。',
+                    icon: 'error',
+                    confirmButtonColor: '#1e3a8a'
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: '確認撤銷此申請？',
+                text: '刪除後，系統月曆將不再顯示此假單。若該申請為「公務車」，請留意打卡紀錄中自動生成的「用車紀錄」需由考勤中心手動刪除。',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: '確定刪除',
+                cancelButtonText: '取消'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    remove(ref(db, `requests/${key}`)).then(() => {
+                        Swal.fire('已成功撤銷/刪除', '', 'success');
+                        if (document.getElementById('historyModal').style.display === 'flex') {
+                            window.renderHistoryTable(currentModalEmpId);
+                        }
+                        window.renderApprovalQueue();
+                        window.renderMonthCalendar(); // 關鍵：強制刷新日曆畫面
+                    });
+                }
+            });
+        };
+
+        window.unbindDevice = (id, idx) => { const nd = [...employees[id].devices]; nd.splice(idx, 1); update(ref(db, `employees/${id}`), { devices: nd }); };
+        window.addEmployee = () => { const n=document.getElementById('newAdminName').value; if(n) push(ref(db,'employees'),{name:n,joinDate:document.getElementById('newAdminDate').value,id:Date.now()}); };
+        window.checkBirthdayEvents = () => {}; 
+        window.renderBulletin = () => { document.getElementById('displayBulletinTitle').innerText = bulletin.title; document.getElementById('displayBulletinContent').innerText = bulletin.content; document.getElementById('displayBulletinDate').innerText = bulletin.date; };
+        window.renderActivityFeed = () => { const feed = document.getElementById('activityFeed'); const approved = Object.values(requests).filter(r=>r.status==='approved' && new Date(r.date) >= new Date().setHours(0,0,0,0)).sort((a,b)=>new Date(a.date)-new Date(b.date)); if(approved.length===0) { feed.innerHTML='<div class="p-4 text-center text-xs text-slate-400">目前無動態</div>'; return; } feed.innerHTML = approved.map(r=>`<div class="p-3 border-b text-xs flex justify-between"><span><b>${r.empName}</b>: ${r.category==='car'?'用車':r.type}</span><span class="text-slate-400">${r.date.slice(5)}</span></div>`).join(''); };
+        
+        window.renderAttendanceLog = () => { 
+            const tbody = document.getElementById('attendanceTableBody'); 
+            tbody.innerHTML = '';
+            let data = Object.entries(attendance).sort((a,b)=>b[1].timestamp-a[1].timestamp);
+            
+            if(adminFilterId !== 'all') { 
+                data = data.filter(([k,v]) => v.empId === adminFilterId); 
+            }
+            
+            data.slice(0,30).forEach(([key, l]) => { 
+                let statusColor = "text-slate-600";
+                if(l.status === '遲到') statusColor = "text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded border border-red-100";
+                if(l.status === '加班') statusColor = "text-purple-600 font-bold bg-purple-50 px-2 py-0.5 rounded border border-purple-100";
+                if(l.status === '用車紀錄') statusColor = "text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200";
+                
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-slate-50 transition">
+                        <td class="p-2">${l.empName}</td>
+                        <td class="p-2 ${l.type==='上班'?'text-blue-600':(l.type.includes('車')?'text-amber-600':'text-orange-600')}">${l.type}</td>
+                        <td class="p-2">${l.dateStr} <span class="text-[10px] text-slate-400">${l.timeStr}</span></td>
+                        <td class="p-2"><span class="${statusColor}">${l.status||'正常'}</span></td>
+                        <td class="p-2 text-right">
+                            <button onclick="openAdminEdit('${key}')" class="text-slate-400 hover:text-blue-600 px-2">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                        </td>
+                    </tr>`; 
+            }); 
+        };
+
+        window.openAdminEdit = (key) => {
+            const record = attendance[key];
+            if(!record) return;
+            document.getElementById('editAttKey').value = key;
+            document.getElementById('editAttStatus').value = record.status || '正常';
+            document.getElementById('editAttTime').value = record.timeStr;
+            document.getElementById('adminEditModal').style.display = 'flex';
+        };
+
+        window.closeAdminEdit = () => {
+            document.getElementById('adminEditModal').style.display = 'none';
+        };
+
+        // [NEXUS MODIFIED] 打卡修改即時更新日曆
+        window.saveAdminEdit = () => {
+            const key = document.getElementById('editAttKey').value;
+            const status = document.getElementById('editAttStatus').value;
+            const timeStr = document.getElementById('editAttTime').value;
+            
+            update(ref(db, `attendance/${key}`), {
+                status: status,
+                timeStr: timeStr
+            }).then(() => {
+                Swal.fire('修改成功', '考勤狀態已更新', 'success');
+                closeAdminEdit();
+                window.renderMonthCalendar(); // 關鍵：強制刷新日曆畫面
+            });
+        };
+
+        // [NEXUS MODIFIED] 打卡刪除即時更新日曆
+        window.deleteAttendance = () => {
+            const key = document.getElementById('editAttKey').value;
+            Swal.fire({
+                title: '確定刪除?',
+                text: "此動作無法復原！",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: '刪除'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    remove(ref(db, `attendance/${key}`)).then(() => {
+                        Swal.fire('已刪除', '', 'success');
+                        closeAdminEdit();
+                        window.renderMonthCalendar(); // 關鍵：強制刷新日曆畫面
+                    });
+                }
+            });
+        };
+
+        window.renderLogForm = () => { const c = document.getElementById('logEntriesContainer'); if(!c || c.children.length > 1) return; c.innerHTML=''; ["09:00 ~ 10:00", "10:00 ~ 11:00", "11:00 ~ 12:00", "13:30 ~ 14:30", "14:30 ~ 15:30", "15:30 ~ 16:30", "16:30 ~ 17:30", "17:30 ~ 18:30"].forEach(s=>{ let o='<option value="">-- 選擇 --</option>'; taskOptions.forEach(op=>o+=`<option value="${op}">${op}</option>`); c.innerHTML+=`<div class="bg-white p-2 rounded border border-slate-200 flex flex-col md:flex-row gap-2 items-center shadow-sm"><div class="text-xs font-bold text-slate-500 w-full md:w-24 bg-slate-50 p-1.5 rounded text-center">${s}</div><select name="logTask" class="flex-1 p-1.5 text-sm border rounded w-full md:w-auto outline-none focus:border-blue-500">${o}</select><input type="text" name="logDetail" class="flex-1 p-1.5 text-sm border rounded w-full md:w-auto outline-none focus:border-blue-500" placeholder="內容"><input type="hidden" name="logTime" value="${s}"></div>`; }); };
+        
+        window.renderCarForm = () => { 
+            const c = document.getElementById('carEntriesContainer'); 
+            if(!c || c.children.length > 1) return; 
+            c.innerHTML=''; 
+            ["08:00 ~ 09:00", "09:00 ~ 10:00", "10:00 ~ 11:00", "11:00 ~ 12:00", "13:30 ~ 14:30", "14:30 ~ 15:30", "15:30 ~ 16:30", "16:30 ~ 17:30"].forEach(s=>{ 
+                c.innerHTML+=`<div class="bg-white p-2 rounded border border-slate-200 flex flex-col md:flex-row gap-2 items-center shadow-sm"><div class="text-xs font-bold text-slate-500 w-full md:w-24 bg-slate-50 p-1.5 rounded text-center"><i class="fa-solid fa-car-side mr-1 text-slate-400"></i>${s}</div><input type="text" name="carLocation" class="flex-1 p-1.5 text-sm border rounded w-full md:w-auto outline-none focus:border-blue-500" placeholder="地點 / 用途 (留白表示不預約)"><input type="hidden" name="carTime" value="${s}"></div>`; 
+            }); 
+        };
+
+        window.saveBulletin = () => { set(ref(db, 'bulletin'), { title: document.getElementById('adminBulletinTitle').value, content: document.getElementById('adminBulletinContent').value, date: new Date().toLocaleDateString() }); Swal.fire('公告已更新'); };
+        
+        // 初始化設定今天日期
+        document.getElementById('leaveDate').valueAsDate = new Date(); 
+        document.getElementById('leaveEndDate').valueAsDate = new Date(); 
+        document.getElementById('carDate').valueAsDate = new Date(); 
+        document.getElementById('logDate').valueAsDate = new Date();
+    </script>
+</body>
+</html>
