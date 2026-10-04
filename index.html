@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>宏國地政|易丞地政 - 現用版修復版 2026.10.01</title>
+    <title>宏國地政|易丞地政 - 公機記憶管理版 2026.10.04</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -83,7 +83,7 @@
                 <div class="w-10 h-10 bg-white text-blue-900 rounded-lg flex items-center justify-center font-bold text-lg serif shadow-lg">宏</div>
                 <div>
                     <h1 class="text-base md:text-lg font-bold tracking-wider serif">宏國地政 | 易丞地政</h1>
-                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">現用版修復版 2026.10.01</p>
+                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">公機記憶管理版 2026.10.04</p>
                 </div>
             </div>
             <div class="flex bg-blue-900/50 rounded-full p-1">
@@ -103,8 +103,9 @@
                     <select id="empSelect" onchange="tryBindAndLogin()" class="w-full p-3 pl-4 text-lg input-modern cursor-pointer text-center font-bold text-slate-700 disabled:opacity-50" disabled><option value="">-- 讀取資料中 --</option></select>
                     <div class="text-[10px] text-slate-500 mt-1">同一瀏覽器仍限已綁定的本人；裝置遺失請通知管理員撤銷。</div>
                 </div>
+                <p id="deviceLoginSummary" class="mb-3 text-xs text-slate-500">正在核對公機使用者…</p>
                 <div id="deviceLockedMsg" class="hidden p-4 bg-slate-50 border border-slate-200 rounded-lg">
-                    <div class="text-center"><i class="fa-solid fa-lock text-2xl text-blue-600 mb-2"></i><div class="text-sm font-bold text-slate-700">此裝置已鎖定</div><div class="text-xs text-slate-500 mt-1">專屬使用者：<span id="lockedUserName" class="font-bold text-blue-800 text-lg block mt-1">--</span></div><button onclick="loadEmployeeDashboard()" class="mt-3 w-full bg-blue-600 text-white text-xs py-2 rounded hover:bg-blue-700">進入系統</button></div>
+                    <div class="text-center"><i class="fa-solid fa-lock text-2xl text-blue-600 mb-2"></i><div class="text-sm font-bold text-slate-700">已記住這台公機</div><div class="text-xs text-slate-500 mt-1">專屬使用者：<span id="lockedUserName" class="font-bold text-blue-800 text-lg block mt-1">--</span></div><button onclick="loadEmployeeDashboard()" class="mt-3 w-full bg-blue-600 text-white text-xs py-2 rounded hover:bg-blue-700">進入系統</button></div>
                 </div>
                 <div id="loginDataNotice" role="status" aria-live="polite" class="hidden rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"><p id="loginDataNoticeText"></p><button type="button" onclick="window.location.reload()" class="mt-2 rounded bg-blue-700 px-4 py-2 font-bold text-white">重新讀取</button></div>
                 <div id="loginStatusMsg" class="text-sm text-blue-600 font-bold hidden mt-2"><i class="fa-solid fa-spinner fa-spin"></i> 驗證中...</div>
@@ -200,7 +201,7 @@
                         <div class="absolute top-3 right-3 text-slate-300 hover:text-blue-500 cursor-pointer" onclick="toggleLegalInfo()"><i class="fa-solid fa-scale-balanced"></i></div>
                         <div class="avatar-hover-container w-24 h-24 mb-2 relative" onclick="triggerAvatarUpload()" title="點擊更換頭像"><img id="dashboardAvatarImg" src="" class="w-full h-full rounded-full object-cover border-4 border-white shadow-lg bg-slate-100 hidden"><div id="dashboardAvatarPlaceholder" class="w-full h-full bg-slate-100 rounded-full flex items-center justify-center text-4xl text-slate-300 border-4 border-white shadow-lg">👤</div><div class="avatar-overlay"><i class="fa-solid fa-camera text-white text-xl"></i></div></div>
                         <h2 id="dashboardName" class="text-xl font-bold text-slate-800 mt-2">...</h2>
-                        <div class="flex flex-col items-center gap-1 mt-1"><div class="text-xs font-mono text-slate-500 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 shadow-sm flex items-center"><i class="fa-regular fa-calendar-check mr-1"></i> 入職：<span id="dashboardJoinDate" class="font-bold mx-1">--</span><span id="dashboardTenure" class="ml-1 bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-bold">--</span></div><span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-[10px] font-bold mt-1"><i class="fa-solid fa-check-circle"></i> 裝置已鎖定</span></div>
+                        <div class="flex flex-col items-center gap-1 mt-1"><div class="text-xs font-mono text-slate-500 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 shadow-sm flex items-center"><i class="fa-regular fa-calendar-check mr-1"></i> 入職：<span id="dashboardJoinDate" class="font-bold mx-1">--</span><span id="dashboardTenure" class="ml-1 bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-bold">--</span></div><span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-[10px] font-bold mt-1"><i class="fa-solid fa-check-circle"></i> 已記住本人</span></div>
                         <div class="mt-4 w-full grid grid-cols-2 gap-2 text-center"><div class="bg-blue-50 p-2 rounded relative"><div class="absolute -top-2 -left-1 bg-amber-400 text-white text-[9px] px-1 rounded shadow">週年制</div><div class="text-[10px] text-slate-400 uppercase mt-1">本期法定特休</div><div class="font-bold text-blue-800 text-lg" id="dashboardTotal">--</div></div><div class="bg-green-50 p-2 rounded"><div class="text-[10px] text-slate-400 uppercase mt-1">本期可用（核對後）</div><div class="font-bold text-green-600 text-lg" id="dashboardRemaining">--</div></div></div><div id="dashboardLeavePeriod" class="text-[11px] text-blue-100 mt-2"></div>
                         <div class="mt-4 border-t pt-2 w-full"><button onclick="registerWebAuthn()" class="w-full bg-slate-100 text-slate-600 text-xs py-2 rounded hover:bg-slate-200 flex items-center justify-center gap-1"><i class="fa-solid fa-link"></i> 綁定此裝置 (FaceID/指紋)</button></div>
                         <div id="legalInfoCard" class="hidden absolute inset-0 bg-white/95 backdrop-blur z-20 rounded-xl p-4 flex flex-col justify-center text-left border border-blue-200"><h4 class="font-bold text-blue-800 mb-2 border-b pb-1">📜 勞基法第38條</h4><ul class="text-xs space-y-1 text-slate-600 list-disc pl-4"><li>6月-1年: 3日</li><li>1-2年: 7日</li><li>2-3年: 10日</li><li>3-5年: 14日</li><li>5-10年: 15日</li><li>10年以上: +1/年 (上限30)</li></ul><button onclick="toggleLegalInfo()" class="mt-4 w-full bg-slate-100 text-slate-500 text-xs py-1 rounded hover:bg-slate-200">關閉</button></div>
@@ -676,7 +677,8 @@ window.HGEStability = (() => {
             };
         }
 
-        async function writePending(name, pending, emp, type, previous) {
+        async function writePending(name, pending, emp, type, previous, sessionToken) {
+            await window.HGEDeviceControl.verifySession(sessionToken);
             const record = pending.record;
             if (!record || String(record.empId) !== String(emp.id) || record.type !== type || Number(record.clientClickedAt) !== pending.clickedAt) {
                 throw new Error('舊版先前操作尚未確認，且缺少可重送的原始內容；已保留同一識別碼，請主管依實際時間核對，請勿清除網站資料');
@@ -685,6 +687,7 @@ window.HGEStability = (() => {
             notice(previous ? '正在以原識別碼核對並重送先前打卡；這次不建立新打卡。' : '正在寫入並向資料庫核對，請勿連按或關閉頁面。');
             await databaseWait(() => runTransaction(target, existing => existing === null ? record : undefined, { applyLocally: false }), '打卡寫入');
             const snapshot = await readAttendanceFromServer(pending.key, '打卡伺服器回讀');
+            window.HGEDeviceControl.assertSession(sessionToken);
             const saved = verifiedRecord(snapshot, pending, emp, type);
             if (!saved) throw new Error('資料庫尚未回讀到此筆打卡；原識別碼已保留');
             showConfirmed(name, pending, saved, previous);
@@ -700,6 +703,7 @@ window.HGEStability = (() => {
             punchBusy = true;
             document.querySelectorAll('.btn-punch').forEach(button => { button.disabled = true; });
             try {
+                const sessionToken = window.HGEDeviceControl.captureSession();
                 assertUniqueEmployeeId(emp);
                 const originalEmployeePath = employeePath(currentUserId);
                 const name = pendingName(emp.id, type);
@@ -709,9 +713,10 @@ window.HGEStability = (() => {
                 if (pending) {
                     notice('正在核對先前尚未確認的打卡；這次不建立新打卡。');
                     const snapshot = await readAttendanceFromServer(pending.key, '先前打卡伺服器核對');
+                    await window.HGEDeviceControl.verifySession(sessionToken);
                     const saved = verifiedRecord(snapshot, pending, emp, type);
                     if (saved) { showConfirmed(name, pending, saved, true); return; }
-                    await writePending(name, pending, emp, type, true);
+                    await writePending(name, pending, emp, type, true, sessionToken);
                     return;
                 }
                 const recent = Object.values(attendance).find(row => String(row.empId) === String(emp.id) && row.type === type && Number(row.timestamp) > clickedAt - 120000);
@@ -722,6 +727,7 @@ window.HGEStability = (() => {
                 }
                 notice('正在取得定位；最久約 12 秒。若定位失敗，仍可登記待覆核出勤。');
                 const located = await locate();
+                window.HGEDeviceControl.assertSession(sessionToken);
                 let reason = '';
                 if (located.error) {
                     const result = await Swal.fire({
@@ -735,6 +741,7 @@ window.HGEStability = (() => {
                     reason = String(result.value || '').trim();
                     if (!reason) { notice('未填定位失敗原因；本次沒有送出打卡。', true); return; }
                 }
+                window.HGEDeviceControl.assertSession(sessionToken);
                 // An employee can be archived or the session changed while GPS waits.
                 const freshEmp = employeeById(currentUserId);
                 if (!isActiveEmployee(freshEmp) || String(freshEmp.id) !== String(emp.id) || employeePath(currentUserId) !== originalEmployeePath) throw new Error('登入或員工狀態已變更，尚未送出，請重新登入');
@@ -742,7 +749,7 @@ window.HGEStability = (() => {
                 const next = { version: 2, key: push(ref(db, 'attendance')).key, clickedAt, record: makeRecord(freshEmp, type, clickedAt, located, reason) };
                 if (!next.key) throw new Error('無法建立打卡識別碼，尚未送出');
                 savePending(name, next);
-                await writePending(name, next, emp, type, false);
+                await writePending(name, next, emp, type, false, sessionToken);
             } catch (error) {
                 notice(`尚未確認打卡：${error.message}。請保留本頁與網站資料，稍後重試；並立即通知主管保留實際出勤時間。`, true);
                 Swal.fire('打卡未確認', `${error.message}。系統未證實這次已寫入，請勿當作打卡成功；立即通知主管。`, 'error');
@@ -864,7 +871,7 @@ window.HGEStability = (() => {
         };
         window.checkAdminLogin = async () => {
             const { value: pass } = await Swal.fire({ title: '管理員驗證', input: 'password', showCancelButton: true });
-            if (pass === ADMIN_PASSWORD) window.switchView('admin'); else if(pass) Swal.fire('錯誤', '密碼不正確', 'error');
+            if (pass === ADMIN_PASSWORD) { window.HGEDeviceControl.authorizeAdmin(); window.switchView('admin'); } else if(pass) Swal.fire('錯誤', '密碼不正確', 'error');
         };
         window.switchAppTab = (tab) => {
             ['leave','car','log'].forEach(t => {
@@ -912,7 +919,7 @@ window.HGEStability = (() => {
             const placeholder = document.createElement('option');
             placeholder.value = ''; placeholder.textContent = '-- 請選擇您的姓名 (首次需綁定) --';
             select.appendChild(placeholder);
-            const entries = Object.entries(employees).filter(([, emp]) => isActiveEmployee(emp));
+            const entries = Object.entries(employees).filter(([, emp]) => isActiveEmployee(emp) && emp.loginDisabled !== true);
             const owners = Object.entries(employees).filter(([, emp]) => Array.isArray(emp?.devices) && emp.devices.includes(myDeviceId));
             lockedName.textContent = '--';
             lockedMsg.dataset.employeeKey = '';
@@ -1269,7 +1276,7 @@ window.HGEStability = (() => {
             const conf = getSalaryConfig(emp.id); document.getElementById('monthlySalary').value = conf.base; document.getElementById('displaySalary').innerText = conf.base.toLocaleString(); document.getElementById('salarySlider').value = conf.base;
         }
         window.triggerAvatarUpload = () => document.getElementById('avatarInput').click();
-        window.handleAvatarChange = (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); const MAX_WIDTH = 300; const scaleSize = MAX_WIDTH / Math.max(img.width, img.height); canvas.width = img.width * scaleSize; canvas.height = img.height * scaleSize; ctx.drawImage(img, 0, 0, canvas.width, canvas.height); const dataUrl = canvas.toDataURL('image/jpeg', 0.7); update(ref(db, employeePath(currentUserId)), { avatar: dataUrl }).then(() => Swal.fire('成功', '大頭照已更新', 'success')).catch(error => Swal.fire('未儲存', error.message, 'error')); }; img.src = e.target.result; }; reader.readAsDataURL(file); };
+        window.handleAvatarChange = (event) => { const file = event.target.files[0]; if (!file) return; let avatarToken; try { avatarToken=window.HGEDeviceControl.captureSession(); } catch(error) { return Swal.fire('未儲存',error.message,'warning'); } const avatarPath=employeePath(currentUserId); const reader = new FileReader(); reader.onload = function(e) { const img = new Image(); img.onload = async function() { try { await window.HGEDeviceControl.verifySession(avatarToken); const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); const MAX_WIDTH = 300; const scaleSize = MAX_WIDTH / Math.max(img.width, img.height); canvas.width = img.width * scaleSize; canvas.height = img.height * scaleSize; ctx.drawImage(img, 0, 0, canvas.width, canvas.height); const dataUrl = canvas.toDataURL('image/jpeg', 0.7); await update(ref(db, avatarPath), { avatar: dataUrl }); Swal.fire('成功', '大頭照已更新', 'success'); } catch(error) { Swal.fire('未儲存', error.message, 'error'); } }; img.src = e.target.result; }; reader.readAsDataURL(file); };
         function renderAdminTable() {
             const tbody = document.getElementById('adminTableBody');
             const salaryBtnVisible = true; // Current NAS admin-screen behavior; not server authorization.
@@ -1285,13 +1292,13 @@ window.HGEStability = (() => {
             visible.forEach(([key, emp]) => {
                 // 管理動作使用 Firebase 真正的節點鍵；姓名或舊 id 都不能唯一代表一筆資料。
                 const keyToken = encodeURIComponent(key).replace(/'/g, '%27');
-                const devs = (emp.devices||[]).map((d,i)=>`<span class="device-badge cursor-pointer hover:bg-red-100" onclick="unbindDevice(decodeURIComponent('${keyToken}'),${i})">📱 ${d.substr(0,4)}</span>`).join(' ');
+                const devs = (emp.devices||[]).map(d=>`<button type="button" class="device-badge cursor-pointer hover:bg-red-100" style="min-height:44px" title="停用此裝置；命名或移交請用公機管理" onclick="unbindDevice(decodeURIComponent('${keyToken}'),decodeURIComponent('${encodeURIComponent(d).replace(/'/g,'%27')}'))">📱 …${String(d).slice(-6).replace(/[^A-Za-z0-9_-]/g,'?')}</button>`).join(' ');
                 const leave = annualLeaveState(emp, emp.employmentStatus === 'archived' && emp.terminationDate ? emp.terminationDate : todayTaipei());
                 const avatarHTML = emp.avatar ? `<img src="${emp.avatar}" class="w-8 h-8 rounded-full border border-slate-200 object-cover mr-2 inline-block">` : `<div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs mr-2 inline-block">👤</div>`;
                 const salaryButton = salaryBtnVisible ? `<button onclick="openSalaryModal(decodeURIComponent('${keyToken}'))" class="text-indigo-600 mr-2" title="薪資"><i class="fa-solid fa-sack-dollar"></i></button>` : '';
                 const archiveButton = isActiveEmployee(emp) ? `<button onclick="openArchiveEmployee(decodeURIComponent('${keyToken}'))" class="text-slate-500 ml-3" title="離職封存">封存</button>` : `<button onclick="restoreEmployee(decodeURIComponent('${keyToken}'))" class="text-green-700 ml-3" title="復職需重新核對到職日與年資">復職</button>`;
                 const duplicateHint = identityCounts.get(`${emp.name || ''}|${emp.joinDate || ''}`) > 1 ? `<div class="text-[10px] text-amber-700">同名同日資料・鍵末碼 ${key.slice(-6)}</div>` : '';
-                tbody.innerHTML += `<tr class="border-b text-sm"><td class="p-3 font-bold text-slate-800 flex items-center">${avatarHTML} ${emp.name}${!isActiveEmployee(emp)?'<span class="text-[10px] text-slate-500 ml-2">已封存</span>':''}</td><td class="p-3"><div class="text-xs text-slate-500">${emp.joinDate||'--'}</div><div class="text-xs text-slate-400">${emp.terminationDate ? '離職 '+emp.terminationDate : calculateTenure(emp.joinDate)}</div>${duplicateHint}</td><td class="p-3">${leave.pending ? '待核對' : `剩:${leave.remaining}`}</td><td class="p-3">${devs || '未綁定'}</td><td class="p-3 text-right">${salaryButton}<button onclick="openHistory(decodeURIComponent('${keyToken}'))" class="text-blue-600" title="假勤核對"><i class="fa-solid fa-pen-to-square"></i></button>${archiveButton}</td></tr>`;
+                tbody.innerHTML += `<tr class="border-b text-sm"><td class="p-3 font-bold text-slate-800 flex items-center">${avatarHTML} ${emp.name}${emp.loginDisabled === true && isActiveEmployee(emp)?'<span class="text-[10px] text-red-700 ml-2">登入停用</span>':''}${!isActiveEmployee(emp)?'<span class="text-[10px] text-slate-500 ml-2">已封存</span>':''}</td><td class="p-3"><div class="text-xs text-slate-500">${emp.joinDate||'--'}</div><div class="text-xs text-slate-400">${emp.terminationDate ? '離職 '+emp.terminationDate : calculateTenure(emp.joinDate)}</div>${duplicateHint}</td><td class="p-3">${leave.pending ? '待核對' : `剩:${leave.remaining}`}</td><td class="p-3">${devs || '未綁定'}</td><td class="p-3 text-right">${salaryButton}<button onclick="openHistory(decodeURIComponent('${keyToken}'))" class="text-blue-600" title="假勤核對"><i class="fa-solid fa-pen-to-square"></i></button>${archiveButton}</td></tr>`;
             });
             if (!visible.length) tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">${showArchived ? '目前沒有員工資料' : '目前沒有在職員工；勾選上方可檢視已封存同仁'}</td></tr>`;
         }
@@ -1899,7 +1906,7 @@ window.HGEStability = (() => {
                 const target = ref(db, employeePath(id));
                 const result = await runTransaction(target, record => {
                     if (!isActiveEmployee(record)) return;
-                    return { ...record, employmentStatus:'archived', terminationDate, archiveReason:reason, archivedAt:serverTimestamp(), devices:[],
+                    return { ...window.HGEDeviceControl.archiveRecord(record,employeeKeyById(id)), employmentStatus:'archived', terminationDate, archiveReason:reason, archivedAt:serverTimestamp(), devices:[],
                         employmentHistory:[...(Array.isArray(record.employmentHistory) ? record.employmentHistory : []), { action:'archived', terminationDate, reason, at:serverTimestamp() }] };
                 }, { applyLocally:false });
                 if (!result.committed) throw new Error('員工狀態已改變');
@@ -1931,7 +1938,7 @@ window.HGEStability = (() => {
                 if (saved.val()?.employmentStatus !== 'active') throw new Error('資料庫未確認復職');
                 employees[employeeKeyById(id)] = saved.val();
                 renderAdminTable();
-                Swal.fire('已恢復在職', '裝置須重新綁定；請核對年資、特休及復職前紀錄。', 'success');
+                Swal.fire('已恢復在職', '請在公機與登入管理恢復登入並重新配發手機；另核對年資、特休及復職前紀錄。', 'success');
             } catch (error) { Swal.fire('復職未完成', error.message, 'error'); }
         };
         window.addEmployee = async () => {
@@ -2068,6 +2075,817 @@ window.HGEStability = (() => {
         document.getElementById('carDate').value = todayTaipei(); 
         document.getElementById('logDate').value = todayTaipei();
         window.HGEStability.install({ deadlineMs:15000, gpsDeadlineMs:12000 });
+/*
+ * HGEDevices: pure device ownership changes for one atomic /employees transaction.
+ * Existing employees[actualFirebaseKey].devices remains a string array. Profiles
+ * retain blocked/released/transferred DIDs after that array is cleared.
+ *
+ * const state = HGEDevices.resolve(employees, did);
+ * const result = HGEDevices.apply(employees, {
+ *   type: 'bind', did, employeeKey: actualFirebaseKey,
+ *   expectedOwnerKey: state.ownerKey, expectedRevision: state.revision,
+ *   operationId: 'unique-request-id', at: { '.sv': 'timestamp' }, label: '公司手機'
+ * });
+ * if (result.ok) return result.employees; // Firebase transaction callback
+ *
+ * Admin commands require admin:true: rename, block, release, transfer (toKey),
+ * reenable, blockEmployee (employeeKey, blocked, expectedEmployeeRevision).
+ * A released DID is unassigned and may be bound again. A blocked DID cannot
+ * self-register. Transfer keeps the SAME DID and requires a current owner.
+ * blockEmployee:true also sets loginDisabled; false clears only loginDisabled.
+ * Archive integration: blockEmployee:true BEFORE clearing arrays/archiving, in
+ * the SAME employees transaction. Do not replace a fresh transaction snapshot
+ * with an earlier UI snapshot. Administrative authority is enforced by callers
+ * and Firebase Rules; admin:true is an explicit intent flag, not authentication.
+ *
+ * resolve -> {state, ownerKey, employeeId, revision, profile, reason}; state is
+ * bound/unassigned/blocked/archived/conflict/invalid. expectedOwnerKey is null
+ * when unassigned; revision remains monotonic across release/transfer cycles.
+ * apply -> {ok, employees, code, message, idempotent, resolution}. On failure
+ * employees is null. Inputs and their timestamp placeholders are never mutated.
+ * No clock, randomness, storage, network, DOM, or external state is accessed.
+ */
+(function (root) {
+    'use strict';
+    const own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
+    const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+    const forbidden = key => key === '__proto__' || key === 'prototype' || key === 'constructor';
+    const validDid = value => typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(value) && !forbidden(value);
+    const validKey = value => typeof value === 'string' && value.length > 0 && value.length <= 768 && !/[.#$\[\]\/\u0000-\u001f\u007f]/.test(value) && !forbidden(value);
+    const revision = value => Number.isSafeInteger(value) && value >= 0;
+    const identity = emp => object(emp) && ((typeof emp.id === 'string' && emp.id.trim() !== '') || (typeof emp.id === 'number' && Number.isFinite(emp.id))) ? String(emp.id) : null;
+    const active = emp => object(emp) && emp.employmentStatus !== 'archived' && emp.loginDisabled !== true;
+    const statusNames = ['active', 'blocked', 'released', 'transferred'];
+    function clone(value) {
+        if (Array.isArray(value)) return value.map(clone);
+        if (!object(value)) return value;
+        const result = {};
+        for (const key of Object.keys(value)) Object.defineProperty(result, key, { value: clone(value[key]), writable: true, enumerable: true, configurable: true });
+        return result;
+    }
+    function failure(code, message) { return { ok: false, employees: null, code, message, idempotent: false, resolution: null }; }
+    function validMap(employees) { return object(employees) && Object.keys(employees).every(key => validKey(key) && object(employees[key])); }
+    function employeeCheck(employees, key) {
+        if (!validKey(key) || !own(employees, key)) return 'employee_missing';
+        const id = identity(employees[key]);
+        if (id === null) return 'employee_identity_invalid';
+        if (Object.keys(employees).filter(otherKey => identity(employees[otherKey]) === id).length !== 1) return 'employee_identity_duplicate';
+        return null;
+    }
+    function entriesFor(employees, did) {
+        const entries = [];
+        for (const key of Object.keys(employees)) {
+            const emp = employees[key];
+            const listed = Array.isArray(emp.devices) && emp.devices.includes(did);
+            const hasProfile = object(emp.deviceProfiles) && own(emp.deviceProfiles, did);
+            const profile = hasProfile ? emp.deviceProfiles[did] : null;
+            if (listed || hasProfile) entries.push({ key, emp, listed, profile, hasProfile });
+        }
+        return entries;
+    }
+    function resolve(employees, did) {
+        const result = { state: 'invalid', ownerKey: null, employeeId: null, revision: 0, profile: null, reason: null };
+        if (!validDid(did)) return { ...result, reason: 'invalid_did' };
+        if (!validMap(employees)) return { ...result, reason: 'invalid_employees' };
+        const entries = entriesFor(employees, did);
+        let latest = null;
+        const owners = [];
+        for (const entry of entries) {
+            const profile = entry.profile;
+            if (entry.hasProfile && (!object(profile) || !statusNames.includes(profile.status) || !revision(profile.revision))) return { ...result, state: 'conflict', reason: 'invalid_profile' };
+            if (profile && (!latest || profile.revision > latest.profile.revision)) latest = entry;
+            if (profile && (profile.status === 'released' || profile.status === 'transferred')) {
+                if (entry.listed) return { ...result, state: 'conflict', reason: 'inactive_profile_still_listed' };
+            } else owners.push(entry);
+        }
+        result.revision = latest ? latest.profile.revision : 0;
+        if (owners.length > 1) return { ...result, state: 'conflict', reason: 'multiple_owners' };
+        if (!owners.length) {
+            if (entries.some(entry => entry.profile && entry.profile.status === 'transferred') && !entries.some(entry => entry.profile && entry.profile.status === 'released' && entry.profile.revision === result.revision)) return { ...result, state: 'conflict', reason: 'transfer_target_missing' };
+            return { ...result, state: 'unassigned', profile: latest ? clone(latest.profile) : null };
+        }
+        const entry = owners[0];
+        const issue = employeeCheck(employees, entry.key);
+        if (issue) return { ...result, state: 'conflict', reason: issue };
+        const ownerRevision = entry.profile ? entry.profile.revision : 0;
+        if (ownerRevision < result.revision) return { ...result, state: 'conflict', reason: 'owner_revision_behind_history' };
+        result.ownerKey = entry.key;
+        result.employeeId = entry.emp.id;
+        result.revision = ownerRevision;
+        result.profile = entry.profile ? clone(entry.profile) : { status: 'active', label: '', revision: 0, legacy: true };
+        result.state = entry.emp.employmentStatus === 'archived' ? 'archived' : entry.emp.loginDisabled === true || result.profile.status === 'blocked' ? 'blocked' : 'bound';
+        return result;
+    }
+    function validAt(at) {
+        return (typeof at === 'number' && Number.isFinite(at) && at >= 0) || (object(at) && Object.keys(at).length === 1 && at['.sv'] === 'timestamp');
+    }
+    function signature(command) {
+        const keys = ['type', 'did', 'employeeKey', 'expectedOwnerKey', 'expectedRevision', 'expectedEmployeeRevision', 'toKey', 'label', 'blocked', 'admin'];
+        return JSON.stringify(keys.map(key => own(command, key) ? [key, command[key]] : [key]));
+    }
+    function labelValid(command) { return !own(command, 'label') || (typeof command.label === 'string' && command.label.trim().length <= 60 && !/[\u0000-\u001f\u007f]/.test(command.label)); }
+    function employeeRevision(emp) { return emp.deviceRevision === undefined ? 0 : emp.deviceRevision; }
+    function hasOperation(employees, operationId) {
+        return validMap(employees) && validDid(operationId) && Object.values(employees).some(emp => object(emp.deviceOperationLog) && own(emp.deviceOperationLog, operationId) && object(emp.deviceOperationLog[operationId]) && typeof emp.deviceOperationLog[operationId].signature === 'string');
+    }
+    function addHistory(emp, did, status, command, nextRevision, extra) {
+        if (!object(emp.deviceProfiles)) emp.deviceProfiles = {};
+        const previous = object(emp.deviceProfiles[did]) ? emp.deviceProfiles[did] : {};
+        const at = clone(command.at);
+        const event = { action: command.type, operationId: command.operationId, at: clone(at), revision: nextRevision, ...clone(extra || {}) };
+        const next = { ...previous, status, label: own(command, 'label') ? command.label.trim() : (typeof previous.label === 'string' ? previous.label : ''), revision: nextRevision, createdAt: own(previous, 'createdAt') ? previous.createdAt : clone(at), updatedAt: clone(at), history: [...(Array.isArray(previous.history) ? previous.history : []), event] };
+        if (status === 'transferred') next.transferredToKey = command.toKey;
+        else if (own(next, 'transferredToKey')) delete next.transferredToKey;
+        emp.deviceProfiles[did] = next;
+        const devices = Array.isArray(emp.devices) ? emp.devices : [];
+        emp.devices = status === 'active' ? [...new Set([...devices, did])] : devices.filter(value => value !== did);
+    }
+    function apply(employees, command) {
+        if (!validMap(employees) || !object(command)) return failure('invalid_input', '員工資料或操作格式不正確');
+        const types = ['bind', 'rename', 'block', 'release', 'transfer', 'reenable', 'blockEmployee'];
+        if (!types.includes(command.type)) return failure('invalid_type', '不支援的裝置操作');
+        if (!validDid(command.operationId)) return failure('invalid_operation_id', '操作識別碼格式不正確');
+        if (!validAt(command.at)) return failure('invalid_timestamp', '操作時間格式不正確');
+        if (!labelValid(command)) return failure('invalid_label', '裝置名稱須為 60 字以內且不得含控制字元');
+        if (command.type !== 'bind' && command.admin !== true) return failure('admin_required', '此操作須由管理員執行');
+        const requestSignature = signature(command);
+        let retried = false;
+        for (const emp of Object.values(employees)) {
+            if (object(emp.deviceOperationLog) && own(emp.deviceOperationLog, command.operationId)) {
+                if (!object(emp.deviceOperationLog[command.operationId]) || emp.deviceOperationLog[command.operationId].signature !== requestSignature) return failure('operation_id_reused', '操作識別碼已用於其他操作，請重新整理');
+                retried = true;
+            }
+        }
+        if (retried) return { ok: true, employees: clone(employees), code: 'ok', message: '此操作已完成', idempotent: true, resolution: command.did ? resolve(employees, command.did) : null };
+        const next = clone(employees);
+        const changed = new Set();
+        const issueFor = key => {
+            const issue = employeeCheck(next, key);
+            if (issue) return failure(issue, issue === 'employee_identity_duplicate' ? '員工編號重複，請先由管理員核對' : '員工資料鍵或編號不正確');
+            if (!revision(employeeRevision(next[key]))) return failure('invalid_employee_revision', '員工裝置版本不正確');
+            return null;
+        };
+        if (command.type === 'blockEmployee') {
+            const issue = issueFor(command.employeeKey);
+            if (issue) return issue;
+            const emp = next[command.employeeKey];
+            if (typeof command.blocked !== 'boolean' || !revision(command.expectedEmployeeRevision)) return failure('invalid_employee_command', '員工停權操作缺少狀態或版本');
+            if (employeeRevision(emp) !== command.expectedEmployeeRevision) return failure('stale_employee', '員工裝置名單已更新，請重新整理再操作');
+            if (!command.blocked && emp.employmentStatus === 'archived') return failure('employee_archived', '請先完成復職核對');
+            if (command.blocked) {
+                const dids = new Set(Array.isArray(emp.devices) ? emp.devices : []);
+                if (object(emp.deviceProfiles)) for (const did of Object.keys(emp.deviceProfiles)) if (emp.deviceProfiles[did] && ['active', 'blocked'].includes(emp.deviceProfiles[did].status)) dids.add(did);
+                for (const did of dids) {
+                    const state = resolve(next, did);
+                    if (['conflict', 'invalid'].includes(state.state) || state.ownerKey !== command.employeeKey) return failure('device_conflict', '員工裝置歸屬有衝突，尚未變更');
+                    addHistory(emp, did, 'blocked', command, state.revision + 1, { ownerKey: command.employeeKey });
+                }
+            }
+            emp.loginDisabled = command.blocked;
+            changed.add(command.employeeKey);
+        } else {
+            if (!validDid(command.did)) return failure('invalid_did', '裝置識別碼格式不正確');
+            if (!own(command, 'expectedOwnerKey') || !(command.expectedOwnerKey === null || validKey(command.expectedOwnerKey)) || !revision(command.expectedRevision)) return failure('expected_state_required', '操作缺少原歸屬或版本，請重新整理');
+            const state = resolve(next, command.did);
+            if (['conflict', 'invalid'].includes(state.state)) return failure('device_conflict', '裝置歸屬有衝突，請先由管理員核對');
+            if (state.ownerKey !== command.expectedOwnerKey || state.revision !== command.expectedRevision) return failure('stale_device', '裝置歸屬已更新，請重新整理再操作');
+            const ownerKey = state.ownerKey;
+            if (command.type === 'bind') {
+                const issue = issueFor(command.employeeKey);
+                if (issue) return issue;
+                if (!active(next[command.employeeKey])) return failure('employee_inactive', '此員工已封存或停止登入');
+                if (state.state !== 'unassigned' && !(state.state === 'bound' && ownerKey === command.employeeKey)) return failure('device_unavailable', '此裝置已綁定或停用，請由管理員處理');
+                if (state.state === 'unassigned' || state.profile.legacy) {
+                    addHistory(next[command.employeeKey], command.did, 'active', command, state.revision + 1, { ownerKey: command.employeeKey });
+                    changed.add(command.employeeKey);
+                }
+                // A repeat bind with a fresh operation ID records a receipt only.
+            } else {
+                if (ownerKey === null) return failure('device_unassigned', '此裝置尚未配發，請先綁定');
+                const issue = issueFor(ownerKey);
+                if (issue) return issue;
+                if (own(command, 'employeeKey') && command.employeeKey !== ownerKey) return failure('stale_owner', '裝置原歸屬與畫面不符，請重新整理');
+                if (command.type === 'transfer') {
+                    if (command.toKey === ownerKey) return failure('same_owner', '請選擇不同的接收員工');
+                    const targetIssue = issueFor(command.toKey);
+                    if (targetIssue) return targetIssue;
+                    if (!active(next[command.toKey])) return failure('target_inactive', '接收員工已封存或停止登入');
+                    const oldLabel = state.profile.label || '';
+                    addHistory(next[ownerKey], command.did, 'transferred', command, state.revision + 1, { fromKey: ownerKey, toKey: command.toKey });
+                    const targetCommand = own(command, 'label') ? command : { ...command, label: oldLabel };
+                    addHistory(next[command.toKey], command.did, 'active', targetCommand, state.revision + 1, { fromKey: ownerKey, toKey: command.toKey });
+                    changed.add(command.toKey);
+                } else {
+                    let status = state.profile.status;
+                    if (command.type === 'rename') {
+                        if (!own(command, 'label')) return failure('label_required', '請填寫裝置名稱');
+                    } else if (command.type === 'block') status = 'blocked';
+                    else if (command.type === 'release') status = 'released';
+                    else if (command.type === 'reenable') {
+                        if (!active(next[ownerKey])) return failure('employee_inactive', '此員工已封存或停止登入');
+                        if (state.profile.status !== 'blocked') return failure('device_not_blocked', '此裝置目前不是停用狀態');
+                        status = 'active';
+                    }
+                    addHistory(next[ownerKey], command.did, status, command, state.revision + 1, { ownerKey });
+                }
+                changed.add(ownerKey);
+            }
+        }
+        const receiptKeys = changed.size ? [...changed] : [command.employeeKey];
+        for (const key of receiptKeys) {
+            const emp = next[key];
+            if (changed.has(key)) emp.deviceRevision = employeeRevision(emp) + 1;
+            if (!object(emp.deviceOperationLog)) emp.deviceOperationLog = {};
+            emp.deviceOperationLog[command.operationId] = { signature: requestSignature, type: command.type, at: clone(command.at), ...(command.did ? { did: command.did } : {}) };
+        }
+        return { ok: true, employees: next, code: 'ok', message: '操作完成', idempotent: false, resolution: command.did ? resolve(next, command.did) : null };
+    }
+    const api = Object.freeze({ resolve, apply, hasOperation, isValidDid: validDid, isActiveEmployee: active });
+    root.HGEDevices = api;
+    if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+/*
+ * Standalone admin UI; this file performs no persistence or authorization.
+ * mount(adminView, { before?: Element }) -> section (id: hgeDevicePanel)
+ * render({ employees, deviceId, engine: HGEDevices, actions: async command => result })
+ * The actions promise must resolve only after authorization, atomic mutation,
+ * and readback. Its optional result.employees may refresh the rendered snapshot.
+ * Commands use real employee object keys, never employee.id aliases.
+ */
+(() => {
+    'use strict';
+
+    const state = {
+        root: null, employees: {}, deviceId: '', engine: null, actions: null,
+        busy: false, notice: '', noticeKind: 'info', drafts: new Map(), expanded: new Set()
+    };
+    const text = value => value == null ? '' : String(value);
+    const employeeName = (employee, key) => text(employee && employee.name).trim() || `未命名員工（末碼 ${text(key).slice(-6)}）`;
+    const archived = employee => employee && employee.employmentStatus === 'archived';
+    const shortId = did => text(did).slice(-6) || '未取得';
+    const labelOf = profile => text(profile && profile.label).trim() || '未命名手機';
+    const node = (tag, className, content) => {
+        const element = document.createElement(tag);
+        if (className) element.className = className;
+        if (content !== undefined) element.textContent = text(content);
+        return element;
+    };
+    const add = (parent, ...children) => { children.forEach(child => parent.appendChild(child)); return parent; };
+    const badge = (content, kind = 'neutral') => node('span', `hged-badge hged-badge-${kind}`, content);
+    const button = (content, handler, options = {}) => {
+        const element = node('button', `hged-button ${options.kind ? `hged-button-${options.kind}` : ''}`, content);
+        element.type = 'button';
+        element.disabled = state.busy || !state.actions || !!options.disabled;
+        if (options.title) element.title = options.title;
+        element.addEventListener('click', handler);
+        return element;
+    };
+
+    function installStyle() {
+        if (document.getElementById('hgeDevicePanelStyles')) return;
+        const style = node('style');
+        style.id = 'hgeDevicePanelStyles';
+        style.textContent = `
+            #hgeDevicePanel{min-width:0;max-width:100%;margin:0 0 24px;padding:24px;border:1px solid #dbe3ee;border-top:4px solid #2563eb;border-radius:16px;background:#fff;color:#1e293b;box-shadow:0 4px 12px #0f172a08;font-size:14px;line-height:1.6}
+            #hgeDevicePanel *{box-sizing:border-box}
+            #hgeDevicePanel h2,#hgeDevicePanel h3,#hgeDevicePanel p{margin:0}
+            #hgeDevicePanel h2{font-size:20px;font-weight:700;color:#0f172a}
+            #hgeDevicePanel h3{font-size:16px;font-weight:700}
+            #hgeDevicePanel .hged-top,#hgeDevicePanel .hged-employee-heading,#hgeDevicePanel .hged-phone-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;min-width:0;flex-wrap:wrap}
+            #hgeDevicePanel .hged-title-copy{flex:1;min-width:160px}
+            #hgeDevicePanel .hged-muted{font-size:12px;color:#64748b;overflow-wrap:anywhere}
+            #hgeDevicePanel .hged-subtitle{color:#475569;margin-top:4px;font-size:13px}
+            #hgeDevicePanel .hged-current{padding:10px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;max-width:100%;font-size:12px;overflow-wrap:anywhere;color:#1e40af}
+            #hgeDevicePanel .hged-instructions{margin:16px 0;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc}
+            #hgeDevicePanel summary{min-height:44px;cursor:pointer;display:list-item;padding:10px 14px;font-weight:600;list-style-position:inside;color:#334155}
+            #hgeDevicePanel summary:focus-visible,#hgeDevicePanel button:focus-visible,#hgeDevicePanel input:focus-visible,#hgeDevicePanel select:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}
+            #hgeDevicePanel .hged-instructions ol{margin:0;padding:0 20px 12px 36px;font-size:13px;color:#475569;list-style:decimal}
+            #hgeDevicePanel .hged-instructions li{padding:3px 0}
+            #hgeDevicePanel .hged-summary{margin:12px 0;color:#475569;font-size:13px}
+            #hgeDevicePanel .hged-employees{display:grid;gap:12px;min-width:0}
+            #hgeDevicePanel .hged-employee{min-width:0;border:1px solid #dbe3ee;border-radius:12px;overflow:hidden;background:#fff}
+            #hgeDevicePanel .hged-employee-heading{padding:14px 16px;background:#f8fafc;align-items:center}
+            #hgeDevicePanel .hged-employee-identity{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;flex:1}
+            #hgeDevicePanel .hged-employee-identity h3{overflow-wrap:anywhere}
+            #hgeDevicePanel .hged-employee-note{padding:0 16px 12px;background:#f8fafc;font-size:12px;color:#64748b}
+            #hgeDevicePanel .hged-phone{padding:14px 16px;border-top:1px solid #e2e8f0;min-width:0}
+            #hgeDevicePanel .hged-phone-title{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-width:0}
+            #hgeDevicePanel .hged-phone-name{font-weight:700;overflow-wrap:anywhere}
+            #hgeDevicePanel .hged-id{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;color:#64748b;letter-spacing:.04em;white-space:nowrap}
+            #hgeDevicePanel .hged-badge{display:inline-flex;padding:2px 8px;align-items:center;border-radius:999px;font-size:11px;font-weight:600;line-height:1.6;white-space:nowrap}
+            #hgeDevicePanel .hged-badge-neutral{background:#e2e8f0;color:#475569}
+            #hgeDevicePanel .hged-badge-green{background:#dcfce7;color:#166534}
+            #hgeDevicePanel .hged-badge-red{background:#fee2e2;color:#991b1b}
+            #hgeDevicePanel .hged-badge-blue{background:#dbeafe;color:#1e40af}
+            #hgeDevicePanel .hged-badge-amber{background:#fef3c7;color:#92400e}
+            #hgeDevicePanel .hged-manage{margin-top:8px;border:1px solid #e2e8f0;border-radius:8px;min-width:0}
+            #hgeDevicePanel .hged-manage summary{font-size:12px}
+            #hgeDevicePanel .hged-controls{padding:0 12px 12px;display:grid;gap:14px;min-width:0}
+            #hgeDevicePanel .hged-field{display:block;min-width:0;flex:1}
+            #hgeDevicePanel .hged-field-label{display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:5px}
+            #hgeDevicePanel .hged-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;min-width:0}
+            #hgeDevicePanel .hged-field input,#hgeDevicePanel .hged-field select{display:block;width:100%;max-width:100%;min-width:0;min-height:44px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;padding:9px 10px;color:#1e293b;font:inherit}
+            #hgeDevicePanel .hged-field select{white-space:normal}
+            #hgeDevicePanel .hged-button{min-height:44px;padding:9px 13px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#334155;font:inherit;font-size:12px;font-weight:600;cursor:pointer;max-width:100%;white-space:normal}
+            #hgeDevicePanel .hged-button:hover:not(:disabled){background:#f1f5f9;border-color:#94a3b8}
+            #hgeDevicePanel .hged-button-blue{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+            #hgeDevicePanel .hged-button-blue:hover:not(:disabled){background:#1e40af;border-color:#1e40af}
+            #hgeDevicePanel .hged-button-danger{color:#b91c1c;border-color:#fecaca;background:#fff7f7}
+            #hgeDevicePanel .hged-button:disabled,#hgeDevicePanel input:disabled,#hgeDevicePanel select:disabled{cursor:not-allowed;opacity:.55}
+            #hgeDevicePanel .hged-transfer{border-top:1px solid #e2e8f0;padding-top:12px}
+            #hgeDevicePanel .hged-empty{padding:14px 16px;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b}
+            #hgeDevicePanel .hged-notice{margin:12px 0;padding:10px 12px;border-radius:8px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e40af;font-size:13px;overflow-wrap:anywhere}
+            #hgeDevicePanel .hged-notice-error{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+            #hgeDevicePanel .hged-notice-success{background:#f0fdf4;border-color:#bbf7d0;color:#166534}
+            #hgeDevicePanel .hged-small-note{margin-top:5px;font-size:12px;color:#64748b}
+            @media(max-width:600px){#hgeDevicePanel{padding:16px 12px}#hgeDevicePanel h2{font-size:18px}#hgeDevicePanel .hged-current{width:100%}#hgeDevicePanel .hged-employee-heading,#hgeDevicePanel .hged-phone{padding:12px}#hgeDevicePanel .hged-field{flex-basis:100%}#hgeDevicePanel .hged-field input,#hgeDevicePanel .hged-field select{font-size:16px}#hgeDevicePanel .hged-row>.hged-button{flex:1}#hgeDevicePanel .hged-employee-heading>.hged-button{width:100%}}
+        `;
+        document.head.appendChild(style);
+    }
+
+    function mount(adminView, options = {}) {
+        if (!adminView || typeof adminView.appendChild !== 'function') throw new Error('找不到管理後台容器');
+        installStyle();
+        if (!state.root) {
+            state.root = document.getElementById('hgeDevicePanel') || node('section', 'lg:col-span-3');
+            state.root.id = 'hgeDevicePanel';
+            state.root.setAttribute('aria-labelledby', 'hgeDevicePanelTitle');
+        }
+        if (options.before && adminView.contains(options.before)) {
+            options.before.parentNode.insertBefore(state.root, options.before);
+        } else if (!adminView.contains(state.root)) {
+            const roster = adminView.querySelector('#adminTableBody');
+            const rosterPanel = roster && roster.closest('.glass-panel');
+            if (rosterPanel) rosterPanel.parentNode.insertBefore(state.root, rosterPanel);
+            else adminView.appendChild(state.root);
+        }
+        return state.root;
+    }
+
+    function resolve(did) {
+        if (!state.engine || typeof state.engine.resolve !== 'function') return { state: 'invalid', reason: '管理工具尚未準備完成' };
+        try { return state.engine.resolve(state.employees, did); }
+        catch (_) { return { state: 'invalid', reason: '此手機資料無法讀取，請重新載入後核對' }; }
+    }
+
+    function deviceEntries(employees) {
+        const seen = new Map();
+        Object.entries(employees).forEach(([key, employee]) => {
+            if (!employee || typeof employee !== 'object') return;
+            const profiles = employee.deviceProfiles && typeof employee.deviceProfiles === 'object' ? employee.deviceProfiles : {};
+            const ids = new Set([...(Array.isArray(employee.devices) ? employee.devices : []), ...Object.keys(profiles)]);
+            ids.forEach(value => {
+                if (typeof value !== 'string' || !value) return;
+                const profile = profiles[value] || {};
+                const previous = seen.get(value);
+                if (!previous || Number(profile.revision || 0) > Number(previous.profile.revision || 0)) seen.set(value, { did: value, key, profile });
+            });
+        });
+        const byEmployee = new Map(Object.keys(employees).map(key => [key, []]));
+        seen.forEach(entry => {
+            const resolution = resolve(entry.did);
+            const key = resolution.ownerKey != null ? text(resolution.ownerKey) : entry.key;
+            const employee = employees[key];
+            if (!employee || !byEmployee.has(key)) return;
+            const profile = resolution.profile || (employee.deviceProfiles && employee.deviceProfiles[entry.did]) || entry.profile;
+            if (resolution.state === 'unassigned' && profile.status === 'transferred') return;
+            byEmployee.get(key).push({ did: entry.did, key, profile, resolution });
+        });
+        return byEmployee;
+    }
+
+    function setNotice(message, kind = 'info') {
+        state.notice = message;
+        state.noticeKind = kind;
+    }
+
+    async function confirmAction(title, message, confirmButtonText, dangerous) {
+        if (window.Swal && typeof window.Swal.fire === 'function') {
+            const result = await window.Swal.fire({
+                title, text: message, icon: dangerous ? 'warning' : 'question',
+                showCancelButton: true, confirmButtonText, cancelButtonText: '取消',
+                confirmButtonColor: dangerous ? '#b91c1c' : '#1d4ed8',
+                focusCancel: !!dangerous, allowOutsideClick: false
+            });
+            return !!result.isConfirmed;
+        }
+        return window.confirm(`${title}\n\n${message}`);
+    }
+
+    async function run(command, review, draftKey) {
+        if (state.busy || typeof state.actions !== 'function') return;
+        state.busy = true;
+        setNotice('請核對確認視窗中的員工與手機。');
+        draw();
+        try {
+            if (!await confirmAction(review.title, review.message, review.button, review.dangerous)) {
+                setNotice('已取消，資料未變更。');
+                return;
+            }
+            setNotice('正在儲存並核對，請稍候…');
+            draw();
+            const result = await state.actions(command);
+            if (result && result.ok === false) throw new Error(result.message || '操作未完成，請重新讀取後再試。');
+            if (result && result.employees && typeof result.employees === 'object') state.employees = result.employees;
+            if (draftKey) state.drafts.delete(draftKey);
+            setNotice(review.success || '操作已完成。', 'success');
+        } catch (error) {
+            setNotice(text(error && error.message) || '操作未完成，請重新讀取後再試。', 'error');
+        } finally {
+            state.busy = false;
+            draw();
+            const notice = state.root && state.root.querySelector('.hged-notice');
+            if (notice) notice.focus({ preventScroll: true });
+        }
+    }
+
+    function employeeLoginButton(key, employee) {
+        const name = employeeName(employee, key);
+        if (archived(employee)) return button('已封存，停止登入', () => {}, { disabled: true, title: '請從員工管理完成復職核對，封存期間不能恢復登入。' });
+        const disabled = employee.loginDisabled === true;
+        const command = { type: 'blockEmployee', employeeKey: key, blocked: !disabled, expectedEmployeeRevision: Number(employee.deviceRevision || 0) };
+        return button(disabled ? '恢復員工登入' : '停止員工登入', () => run(command, {
+            title: disabled ? '恢復這位員工登入？' : '停止這位員工登入？',
+            message: disabled
+                ? `員工：${name}。恢復後，只有仍在用的手機可登入；已停用手機仍需另外恢復。`
+                : `員工：${name}。確認後，這位員工的所有手機將無法登入與打卡。人事、打卡及請假紀錄保留。`,
+            button: disabled ? '確認恢復登入' : '確認停止登入', dangerous: !disabled,
+            success: disabled ? `已恢復 ${name} 的登入資格；停用手機需另外恢復。` : `已停止 ${name} 登入。`
+        }), { kind: disabled ? 'blue' : 'danger' });
+    }
+
+    function renderDevice(entry, employee, availableTargets) {
+        const { did, key, profile, resolution } = entry;
+        const item = node('div', 'hged-phone');
+        const employeeIsArchived = archived(employee);
+        const phoneBlocked = profile.status === 'blocked';
+        const unassigned = resolution.state === 'unassigned';
+        const invalid = !['bound', 'blocked', 'archived', 'unassigned'].includes(resolution.state);
+        const cannotLogin = employeeIsArchived || employee.loginDisabled === true || phoneBlocked || resolution.state === 'blocked' || resolution.state === 'archived';
+        const status = invalid ? '待核對' : unassigned ? '待配發' : cannotLogin ? '停用' : '在用';
+        const phoneLabel = labelOf(profile);
+        const phoneDescription = `${phoneLabel}（末碼 ${shortId(did)}）`;
+        const heading = node('div', 'hged-phone-heading');
+        const title = add(node('div', 'hged-phone-title'), node('span', 'hged-phone-name', phoneLabel), node('span', 'hged-id', `末碼 ${shortId(did)}`), badge(status, invalid || unassigned ? 'amber' : cannotLogin ? 'red' : 'green'));
+        if (did === state.deviceId) title.appendChild(badge('目前這支／瀏覽器', 'blue'));
+        heading.appendChild(title);
+        item.appendChild(heading);
+        if (invalid) {
+            item.appendChild(node('p', 'hged-small-note', '綁定資料待核對，暫停操作。請重新讀取資料，確認後再處理。'));
+            return item;
+        }
+        if (unassigned) item.appendChild(node('p', 'hged-small-note', '目前無使用者，可由管理者配發給在職員工。'));
+        else if (employeeIsArchived) item.appendChild(node('p', 'hged-small-note', '員工已封存，不能登入；公機可轉交給在職員工。'));
+        else if (phoneBlocked) item.appendChild(node('p', 'hged-small-note', '本手機已停用，不能自行選名登入；需管理者恢復或轉交。'));
+        else if (employee.loginDisabled === true) item.appendChild(node('p', 'hged-small-note', '員工已停止登入；需先恢復員工登入資格。'));
+        if (!text(profile.label).trim()) item.appendChild(node('p', 'hged-small-note', '尚未命名，請依手機實物與末碼核對；系統未記錄最後使用時間。'));
+
+        const draftKey = `${key}\u0000${did}`;
+        let draft = state.drafts.get(draftKey);
+        if (!draft) {
+            draft = { label: text(profile.label), target: '' };
+            state.drafts.set(draftKey, draft);
+        }
+        const details = node('details', 'hged-manage');
+        details.open = state.expanded.has(draftKey);
+        details.addEventListener('toggle', () => {
+            if (!details.isConnected) return;
+            if (details.open) state.expanded.add(draftKey); else state.expanded.delete(draftKey);
+        });
+        details.appendChild(node('summary', '', unassigned ? '設定名稱與配發' : '手機命名／停用／轉交'));
+        const controls = node('div', 'hged-controls');
+        const input = node('input');
+        input.type = 'text'; input.maxLength = 60; input.placeholder = '例如：公機 01／小陳的手機'; input.value = draft.label;
+        input.disabled = state.busy || !state.actions;
+        input.addEventListener('input', () => { draft.label = input.value; });
+        const labelField = add(node('label', 'hged-field'), node('span', 'hged-field-label', '手機名稱'), input);
+        const baseCommand = {
+            did, employeeKey: key,
+            expectedOwnerKey: resolution.ownerKey == null ? null : text(resolution.ownerKey),
+            expectedRevision: Number(resolution.revision || 0)
+        };
+        const nameRow = add(node('div', 'hged-row'), labelField);
+        if (!unassigned) nameRow.appendChild(button('儲存名稱', () => {
+            const label = input.value.trim();
+            if (!label) { input.setCustomValidity('請填寫方便辨識的手機名稱'); input.reportValidity(); return; }
+            input.setCustomValidity('');
+            run({ ...baseCommand, type: 'rename', label }, {
+                title: '儲存手機名稱？', message: `員工：${employeeName(employee, key)}。手機末碼 ${shortId(did)}，名稱改為「${label}」。`,
+                button: '確認儲存', success: `已更新手機末碼 ${shortId(did)} 的名稱。`
+            }, draftKey);
+        }));
+        controls.appendChild(nameRow);
+        input.addEventListener('input', () => input.setCustomValidity(''));
+
+        if (!unassigned && !employeeIsArchived) {
+            const operationRow = node('div', 'hged-row');
+            if (phoneBlocked) {
+                operationRow.appendChild(button('恢復這支手機', () => run({ ...baseCommand, type: 'reenable' }, {
+                    title: '恢復這支手機？', message: `手機：${phoneDescription}。恢復後將由 ${employeeName(employee, key)} 使用。請確認手機已找回或已交還本人。`,
+                    button: '確認恢復', success: `已恢復 ${phoneDescription}。`
+                }, draftKey), { kind: 'blue', disabled: employee.loginDisabled === true, title: employee.loginDisabled === true ? '請先恢復這位員工的登入資格。' : '' }));
+            } else {
+                operationRow.appendChild(button('停用這支手機', () => run({ ...baseCommand, type: 'block' }, {
+                    title: '停用這支手機？', message: `員工：${employeeName(employee, key)}。手機：${phoneDescription}。停用後，本手機不能自行選名登入；需管理者恢復或轉交。其他手機不受影響。`,
+                    button: '確認停用', dangerous: true, success: `已停用 ${phoneDescription}。`
+                }, draftKey), { kind: 'danger' }));
+            }
+            controls.appendChild(operationRow);
+        }
+
+        const transfer = node('div', 'hged-transfer');
+        const select = node('select');
+        select.disabled = state.busy || !state.actions;
+        const placeholder = node('option', '', '-- 選擇接手員工 --'); placeholder.value = ''; select.appendChild(placeholder);
+        const targets = availableTargets.filter(([targetKey]) => unassigned || targetKey !== key);
+        targets.forEach(([targetKey, targetEmployee]) => {
+            const option = node('option', '', employeeName(targetEmployee, targetKey));
+            option.value = targetKey; select.appendChild(option);
+        });
+        select.value = targets.some(([targetKey]) => targetKey === draft.target) ? draft.target : '';
+        select.addEventListener('change', () => { draft.target = select.value; });
+        const targetField = add(node('label', 'hged-field'), node('span', 'hged-field-label', unassigned ? '配發給' : '公機轉交給'), select);
+        const transferRow = add(node('div', 'hged-row'), targetField);
+        transferRow.appendChild(button(unassigned ? '確認配發' : '轉交手機', () => {
+            const targetKey = select.value;
+            if (!targetKey) { select.setCustomValidity('請選擇接手員工'); select.reportValidity(); return; }
+            select.setCustomValidity('');
+            const targetEmployee = state.employees[targetKey];
+            if (!targetEmployee || archived(targetEmployee) || targetEmployee.loginDisabled === true) {
+                setNotice('接手員工狀態已變更，請重新選擇可登入的在職員工。', 'error'); draw(); return;
+            }
+            const label = input.value.trim() || phoneLabel;
+            const command = unassigned
+                ? { ...baseCommand, type: 'bind', employeeKey: targetKey, expectedOwnerKey: null, label }
+                : { ...baseCommand, type: 'transfer', toKey: targetKey, label };
+            run(command, {
+                title: unassigned ? '確認配發這支手機？' : '確認公機交接？',
+                message: `手機：${label}（末碼 ${shortId(did)}）。原使用者：${unassigned ? '無／待配發' : employeeName(employee, key)}。接手員工：${employeeName(targetEmployee, targetKey)}。確認後，這支手機將以接手員工身分登入；請同時完成實物交接。`,
+                button: unassigned ? '確認配發' : '確認轉交', dangerous: !unassigned,
+                success: `已將 ${label}（末碼 ${shortId(did)}）配發給 ${employeeName(targetEmployee, targetKey)}。請在該手機重新讀取確認。`
+            }, draftKey);
+        }, { kind: 'blue', disabled: targets.length === 0 }));
+        select.addEventListener('change', () => select.setCustomValidity(''));
+        transfer.appendChild(transferRow);
+        transfer.appendChild(node('p', 'hged-small-note', targets.length ? '只列出可登入的在職員工。請先核對手機末碼，再確認新使用者。' : '目前沒有其他可登入的在職員工可接手。'));
+        controls.appendChild(transfer);
+        details.appendChild(controls);
+        item.appendChild(details);
+        return item;
+    }
+
+    function draw() {
+        if (!state.root) return;
+        state.root.replaceChildren();
+        state.root.setAttribute('aria-busy', String(state.busy));
+        const top = node('div', 'hged-top');
+        const title = node('h2', '', '公機與登入管理'); title.id = 'hgeDevicePanelTitle';
+        add(top, add(node('div', 'hged-title-copy'), title, node('p', 'hged-subtitle', '看清楚誰在用哪支手機，直接命名、停用或交接。')));
+        const currentResolution = state.deviceId ? resolve(state.deviceId) : null;
+        const currentOwner = currentResolution && currentResolution.ownerKey != null ? state.employees[currentResolution.ownerKey] : null;
+        const current = node('div', 'hged-current');
+        add(current, node('div', '', `目前瀏覽器｜末碼 ${shortId(state.deviceId)}`), node('div', '', currentOwner ? `登記使用者：${employeeName(currentOwner, currentResolution.ownerKey)}` : '尚未綁定使用者或資料待核對'));
+        top.appendChild(current); state.root.appendChild(top);
+
+        const help = node('details', 'hged-instructions');
+        help.open = state.expanded.has('instructions');
+        help.addEventListener('toggle', () => {
+            if (!help.isConnected) return;
+            if (help.open) state.expanded.add('instructions'); else state.expanded.delete('instructions');
+        });
+        const instructions = node('ol');
+        [
+            '第一次使用：在要使用的手機開啟同仁專區，選擇本人完成首次綁定，再由管理者在此命名。',
+            '公機交接：找到原使用者的手機，核對末碼，選擇接手員工後按「轉交手機」。',
+            '手機遺失或暫停使用：按「停用這支手機」。停用後不能自行選名登入，需管理者恢復或轉交。',
+            '人員暫停使用：按「停止員工登入」。恢復員工登入後，已停用手機仍需另外恢復。',
+            '同一支手機的不同瀏覽器，可能有不同末碼；請在要使用的瀏覽器核對。'
+        ].forEach(content => instructions.appendChild(node('li', '', content)));
+        add(help, node('summary', '', '第一次使用／公機交接怎麼做'), instructions); state.root.appendChild(help);
+
+        if (state.notice) {
+            const notice = node('div', `hged-notice hged-notice-${state.noticeKind}`, state.notice);
+            notice.setAttribute('role', state.noticeKind === 'error' ? 'alert' : 'status');
+            notice.setAttribute('aria-live', state.noticeKind === 'error' ? 'assertive' : 'polite');
+            notice.tabIndex = -1; state.root.appendChild(notice);
+        }
+        const employees = Object.entries(state.employees).filter(([, employee]) => employee && typeof employee === 'object');
+        employees.sort((a, b) => Number(archived(a[1])) - Number(archived(b[1])) || employeeName(a[1], a[0]).localeCompare(employeeName(b[1], b[0]), 'zh-Hant'));
+        const byEmployee = deviceEntries(state.employees);
+        const availableTargets = employees.filter(([, employee]) => !archived(employee) && employee.loginDisabled !== true);
+        const archivedCount = employees.filter(([, employee]) => archived(employee)).length;
+        state.root.appendChild(node('p', 'hged-summary', `在職 ${employees.length - archivedCount} 位 · 已封存 ${archivedCount} 位 · 包含已停用與待配發手機`));
+        const list = node('div', 'hged-employees');
+        if (!employees.length) list.appendChild(node('p', 'hged-empty', '尚無可顯示的員工資料。資料載入後，已綁定手機會顯示在這裡。'));
+        employees.forEach(([key, employee]) => {
+            const card = node('article', 'hged-employee');
+            const identity = add(node('div', 'hged-employee-identity'), node('h3', '', employeeName(employee, key)));
+            identity.appendChild(badge(archived(employee) ? '已封存' : employee.loginDisabled === true ? '已停止登入' : '可登入', archived(employee) ? 'neutral' : employee.loginDisabled === true ? 'red' : 'green'));
+            const entries = byEmployee.get(key) || [];
+            identity.appendChild(node('span', 'hged-muted', `${entries.length} 支手機`));
+            add(card, add(node('div', 'hged-employee-heading'), identity, employeeLoginButton(key, employee)));
+            if (archived(employee)) card.appendChild(node('p', 'hged-employee-note', '封存期間無法恢復登入；如需復職，請到下方員工管理核對辦理。'));
+            if (!entries.length) card.appendChild(node('p', 'hged-empty', archived(employee) ? '目前沒有待處理的手機綁定。' : '尚未綁定手機。在本人手機首次選名登入後，會顯示於此。'));
+            entries.forEach(entry => card.appendChild(renderDevice(entry, employee, availableTargets)));
+            list.appendChild(card);
+        });
+        state.root.appendChild(list);
+    }
+
+    function render({ employees = {}, deviceId = '', engine, actions } = {}) {
+        state.employees = employees && typeof employees === 'object' ? employees : {};
+        state.deviceId = text(deviceId);
+        state.engine = engine;
+        state.actions = typeof actions === 'function' ? actions : null;
+        if (!state.root) {
+            const adminView = document.getElementById('adminView');
+            if (adminView) mount(adminView);
+        }
+        draw();
+        return state.root;
+    }
+
+    window.HGEDevicePanel = Object.freeze({ mount, render });
+})();
+
+/* UI lifecycle over the existing employees node. This is compatibility control,
+   not a replacement for Firebase Authentication or server-side Rules. */
+window.HGEDeviceControl = (() => {
+    let admin = false, initialSnapshot = true, actor = null, loginBusy = false, generation = 0;
+    let options = {}, actionBusy = false, lastPanelState = '';
+    const engine = () => window.HGEDevices;
+    const wait = (fn,label) => window.HGEStability.withDeadline(fn, options.deadlineMs || 15000,label);
+    const message = text => { const box=document.getElementById('loginStatusMsg'); box.textContent=text;box.classList.remove('hidden'); };
+    const newOperation = () => 'op_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,12);
+    const snapshot = () => engine().resolve(employees,myDeviceId);
+    const keyOf = id => employeeKeyById(id);
+    const signature = state => `${state.state}|${state.ownerKey||''}|${state.revision||0}|${state.employeeId??''}`;
+    const stateMessage = state => ({blocked:'這台公機或員工已停止登入，請由管理員恢復或轉交。',archived:'原使用者已離職封存，請由管理員把公機轉交給在職同仁。',conflict:'公機歸屬或員工編號有重複，請由管理員核對；不會自行判定是哪一位。',invalid:'公機識別或員工資料尚未就緒，請重新整理後再試。'})[state.state] || '本公機尚未配發，請選擇本人或由管理員處理。';
+    async function readEmployees() {
+        if(options.readEmployees) return wait(options.readEmployees,'核對公機使用者');
+        return wait(async()=>{
+            const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),options.deadlineMs||15000);
+            try {
+                const response=await fetch(firebaseConfig.databaseURL.replace(/\/$/,'')+'/employees.json',{cache:'no-store',signal:controller.signal});
+                if(!response.ok)throw new Error(`員工資料回讀失敗 (${response.status})`);
+                const value=await response.json();
+                if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('員工資料未完成讀取');
+                return value;
+            } finally { clearTimeout(timer); }
+        },'核對公機使用者');
+    }
+    function clearSession(reason) {
+        currentUserId=null;actor=null;generation++;
+        document.getElementById('employeeView').classList.add('hidden-section');
+        if(!admin)document.getElementById('loginSection').classList.remove('hidden-section');
+        if(reason)message(reason);
+    }
+    function captureSession() {
+        const state=snapshot();
+        if(!actor||state.state!=='bound'||keyOf(currentUserId)!==state.ownerKey||actor.signature!==signature(state))throw new Error('公機使用者或登入權限已變更，請重新進入；舊操作不會改記到其他同仁');
+        return {...actor};
+    }
+    function assertSession(token) {
+        const current=captureSession();
+        if(!token||current.generation!==token.generation||current.signature!==token.signature)throw new Error('公機已停用或移交，先前操作停止；已送出的紀錄須另外核對');
+        return current;
+    }
+    async function verifySession(token) {
+        assertSession(token);
+        const latest=await readEmployees();
+        assertSession(token);
+        const resolved=engine().resolve(latest,myDeviceId);
+        if(signature(resolved)!==token.signature) {
+            employees=latest;clearSession('此公機或員工已停用／改配，請由管理員核對後重新進入。');render();
+            throw new Error('伺服器已變更公機使用者或登入狀態，尚未送出這次操作');
+        }
+        return resolved;
+    }
+    function render() {
+        const state=snapshot();
+        const locked=document.getElementById('deviceLockedMsg');
+        const select=document.getElementById('empSelect');
+        if(['blocked','archived','conflict','invalid'].includes(state.state)) {
+            document.getElementById('userSelectContainer').classList.add('hidden');locked.classList.add('hidden');select.disabled=true;
+            message(stateMessage(state));
+        }
+        const stamp=document.getElementById('deviceLoginSummary');
+        if(stamp)stamp.textContent=state.state==='bound' ? `已記住：${employees[state.ownerKey]?.name||'同仁'}｜${window.HGEStability.initDeviceId().storageKind==='session'?'目前只能在這個分頁記住；請使用一般瀏覽模式':'下次用同一瀏覽器開啟會直接進入'}` : '首次選擇本人即可記住；公機移交請從管理後台配發。';
+        const panelState=JSON.stringify(employees);
+        if(admin&&panelState!==lastPanelState) {
+            lastPanelState=panelState;
+            window.HGEDevicePanel.render({employees,deviceId:myDeviceId,engine:engine(),actions:command=>applyCommand(command,true)});
+        }
+    }
+    function onSnapshot() {
+        const state=snapshot();
+        if(actor&&(state.state!=='bound'||actor.signature!==signature(state)||keyOf(currentUserId)!==state.ownerKey))clearSession('公機或員工登入已停用／改配；舊頁面已退出，歷史紀錄保留。');
+        const first=initialSnapshot;initialSnapshot=false;
+        render();
+        // Never switch an already-open page silently to the next employee.
+        if(first&&!admin&&state.state==='bound')window.loadEmployeeDashboard(state.ownerKey);
+    }
+    async function applyCommand(input,needsAdmin=false) {
+        if(needsAdmin&&!admin)throw new Error('請先從管理後台輸入原管理密碼');
+        if(actionBusy)throw new Error('上一個裝置操作尚未完成，請稍候');
+        const command={...input,admin:needsAdmin,operationId:newOperation(),at:Date.now()};
+        actionBusy=true;
+        try {
+            let failure;
+            const transaction=await wait(()=>runTransaction(ref(db,'employees'),value=>{
+                const next=engine().apply(value||{},command);
+                if(!next.ok){failure=next.message;return;}
+                return next.employees;
+            },{applyLocally:false}),'儲存公機管理');
+            if(!transaction.committed)throw new Error(failure||'資料已變更，請重新核對後操作');
+            const latest=await readEmployees();
+            const found=typeof engine().hasOperation==='function'?engine().hasOperation(latest,command.operationId):Object.values(latest).some(emp=>emp?.deviceOperationLog?.[command.operationId]);
+            if(!found)throw new Error('尚未回讀到本次異動，請重新讀取名單；不要當作已完成');
+            employees=latest;window.updateEmpSelect();renderAdminTable();onSnapshot();
+            return {ok:true,message:'已儲存並向資料庫核對；目前名單已更新。',resolution:engine().resolve(latest,command.did)};
+        } finally { actionBusy=false; }
+    }
+    async function bindSelected() {
+        if(loginBusy)return;
+        const select=document.getElementById('empSelect'),key=select.value;
+        if(!key)return;
+        loginBusy=true;select.disabled=true;
+        try {
+            if(!window.HGEStability.initDeviceId().persistent)throw new Error('瀏覽器禁止保存裝置資料，請允許此網站儲存後重新開啟');
+            const latest=await readEmployees();employees=latest;
+            const state=snapshot();
+            if(state.state==='bound') {
+                if(state.ownerKey!==key)throw new Error('公機已配發給其他同仁，請由管理員移交');
+                window.loadEmployeeDashboard(key);return;
+            }
+            if(state.state!=='unassigned')throw new Error(stateMessage(state));
+            const emp=employees[key];
+            if(!isActiveEmployee(emp)||emp.loginDisabled===true)throw new Error('員工已停用或封存');
+            const answer=await Swal.fire({title:'記住這台公機',text:`確認這台公機由「${emp.name}」使用？之後用同一瀏覽器開啟會直接進入；換人由後台移交。`,showCancelButton:true,confirmButtonText:'確認本人並記住',cancelButtonText:'取消'});
+            if(!answer.isConfirmed)return;
+            await applyCommand({type:'bind',did:myDeviceId,employeeKey:key,expectedOwnerKey:null,expectedRevision:state.revision},false);
+            if(!window.loadEmployeeDashboard(key))throw new Error('指派已變更，請重新核對');
+        } catch(error){message('登入未完成：'+error.message);await Swal.fire('尚未登入',error.message,'warning');}
+        finally {loginBusy=false;window.updateEmpSelect();render();}
+    }
+    function install(config={}) {
+        options=config;
+        const originalLoad=window.loadEmployeeDashboard;
+        window.loadEmployeeDashboard=fid=>{
+            const state=snapshot();const requested=fid?keyOf(fid):state.ownerKey;
+            if(state.state!=='bound'||requested!==state.ownerKey){message(stateMessage(state));return false;}
+            const loaded=originalLoad(state.ownerKey);
+            if(loaded){generation++;actor={generation,signature:signature(state),employeeKey:state.ownerKey,employeeId:state.employeeId,did:myDeviceId};document.getElementById('loginStatusMsg').classList.add('hidden');}
+            return loaded;
+        };
+        const originalSwitch=window.switchView;
+        window.switchView=view=>{
+            if(view==='admin'&&!admin){message('請先由管理後台輸入原管理密碼。');return;}
+            if(view==='employee')admin=false;
+            originalSwitch(view);
+            if(view==='employee'){actor=null;const state=snapshot();if(state.state==='bound')window.loadEmployeeDashboard(state.ownerKey);else render();}
+            else {document.getElementById('hgeDevicePanel')?.classList.remove('hidden-section');lastPanelState='';render();}
+        };
+        window.tryBindAndLogin=bindSelected;
+        // All original non-punch employee form submissions must recheck ownership.
+        for(const name of ['handleLeaveSubmit','handleCarSubmit','handleLogSubmit']) {
+            const original=window[name];let busy=false;
+            window[name]=async event=>{
+                event?.preventDefault();if(busy)return;busy=true;
+                try {const token=captureSession();await verifySession(token);assertSession(token);return await original(event);}
+                catch(error){await Swal.fire('尚未送出',error.message,'warning');}
+                finally{busy=false;}
+            };
+        }
+        // Preserve the old roster affordance but use stable DID, never array position.
+        window.unbindDevice=async(key,did)=>{
+            try{
+                if(!admin)throw new Error('請先登入管理後台');
+                const state=engine().resolve(employees,did);
+                if(state.ownerKey!==key)throw new Error('公機歸屬已變更，請重新讀取');
+                const answer=await Swal.fire({title:'停用這台裝置？',text:'停止此裝置登入，保留歷史紀錄。需要換人請改用「公機與登入管理」的移交。',showCancelButton:true,confirmButtonText:'停用'});
+                if(!answer.isConfirmed)return;
+                await applyCommand({type:'block',did,employeeKey:key,expectedOwnerKey:state.ownerKey,expectedRevision:state.revision},true);
+                await Swal.fire('已停用','裝置不能自行重新選人；可由後台恢復或移交。','success');
+            }catch(error){await Swal.fire('未完成',error.message,'warning');}
+        };
+        window.HGEDevicePanel.mount(document.getElementById('adminView'));
+        // switchView hides all sections; the management panel is nested in adminView.
+        document.getElementById('hgeDevicePanel')?.classList.remove('hidden-section');
+    }
+    function authorizeAdmin(){admin=true;lastPanelState='';}
+    // Invoked inside the original employee transaction, preserving archival history.
+    function archiveRecord(record,key) {
+        const command={type:'blockEmployee',employeeKey:key,blocked:true,expectedEmployeeRevision:Number(record.deviceRevision||0),admin:true,operationId:newOperation(),at:Date.now()};
+        const result=engine().apply({[key]:record},command);
+        if(!result.ok)throw new Error(result.message);
+        return result.employees[key];
+    }
+    return Object.freeze({install,onSnapshot,authorizeAdmin,captureSession,assertSession,verifySession,applyCommand,archiveRecord,isAdmin:()=>admin,refresh:async()=>{employees=await readEmployees();window.updateEmpSelect();onSnapshot();}});
+})();
+
+        window.HGEDeviceControl.install();
         window.__hgeModuleReady = true;
         onValue(ref(db), (snapshot) => {
             const data = snapshot.val() || {};
@@ -2106,6 +2924,7 @@ window.HGEStability = (() => {
             updateEmpSelect(); updateAdminFilterSelect(); renderBulletin(); renderActivityFeed();
             if (currentUserId && employeeById(currentUserId)) { renderEmployeeStats(employeeById(currentUserId)); window.renderEmployeePersonalCalendar(); }
             renderAdminTable(); window.renderApprovalQueue(); renderAttendanceLog(); window.renderMonthCalendar();
+            window.HGEDeviceControl.onSnapshot();
             
             if (currentModalEmpId && document.getElementById('historyModal').style.display === 'flex') {
                 window.renderHistoryTable(currentModalEmpId);
