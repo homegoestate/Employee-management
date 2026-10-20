@@ -2272,6 +2272,8 @@ const policy=getAnnualPolicy(employeeById(currentUserId));
                  }
                  const row=result.snapshot.val()?.[key];
                  if(!row || row.status!==(action==='approve'?'approved':'rejected')) throw new Error('審核交易尚未確認');
+                 // Another read after transaction distinguishes local optimistic state
+                 // from a server-confirmed committed request.
                  const confirmed=await get(ref(db,`requests/${key}`));
                  if(!confirmed.exists() || confirmed.val()?.status!==row.status ||
                      String(confirmed.val()?.approvedById)!==String(row.approvedById))
@@ -2711,7 +2713,7 @@ document.getElementById('annualJoinDate').value = emp.joinDate || '';
                  reviewDraft.id=null;reviewDraft.periodStart=null;reviewDraft.choice='';
                  const latestRequestSnap=await get(ref(db,'requests'));
                  const latestRequests=latestRequestSnap.val()||{};
-                 requests = latestRequests;
+                 requests = latestRequests; // render from verified server readback, not a stale listener snapshot
                  const resultState=annualLeaveState(saved,asOf,latestRequests);
                  window.renderAnnualManager(id,start);
                  renderAdminTable();window.renderAnnualOverview();window.renderApprovalQueue();
@@ -3940,7 +3942,10 @@ window.HGEDeviceControl = (() => {
     async function readEmployees() {
         if(options.readEmployees) return wait(options.readEmployees,'核對公機使用者');
         if (window.HGE_DATA_MODE === 'mock') {
-            // SDK get carries Firebase credentials for protected database rules.
+            return wait(async()=>{ const snap = await get(ref(db,'employees')); const value = snap.val(); if(!value||typeof value!=='object'||Array.isArray(value)) throw new Error('員工資料未完成讀取'); return value; },'核對公機使用者');
+        }
+        // Use the Firebase SDK, not unauthenticated REST: SDK reads can carry the
+        // currently authenticated Firebase session when Rules are enabled.
         return wait(async () => {
             const snap = await get(ref(db,'employees'));
             const value = snap.val();
@@ -4188,7 +4193,8 @@ window.HGEDeviceControl = (() => {
                         applyRootData(data || {}, 'mock');
                         return data || {};
                     }
-                    // SDK reads share the same Rules context as realtime updates.
+                    // SDK get avoids a second anonymous REST request and uses the same Rules
+                    // context as the live realtime listener. This read is advisory only.
                     const snapshot = await get(ref(db));
                     if (!snapshot.exists()) throw new Error('Firebase 尚無可讀取的假勤資料');
                     const data = snapshot.val() || {};
