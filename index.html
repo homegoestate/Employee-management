@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>宏國地政｜易丞地政－特休核定同步・主管授權修復 V9（2026.10.20）</title>
+    <title>宏國地政｜易丞地政－假勤特休・主管授權上線候選 V10（2026.10.20）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -160,7 +160,7 @@
                 <div class="w-10 h-10 bg-white text-blue-900 rounded-lg flex items-center justify-center font-bold text-lg serif shadow-lg">宏</div>
                 <div>
                     <h1 class="text-base md:text-lg font-bold tracking-wider serif">宏國地政 | 易丞地政</h1>
-                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">公機・特休同步・主管審核 V9 2026.10.20</p>
+                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">公機・特休同步・主管審核 V10 2026.10.20</p>
                 </div>
             </div>
             <div class="flex bg-blue-900/50 rounded-full p-1">
@@ -679,7 +679,18 @@
         };
 
         const firebaseReady = !!(window.firebase && firebase.apps && firebase.database);
-        let usingMockDb = !firebaseReady;
+        // Demo is permitted only on a local preview, NEVER silently on a published company website.
+        const localPreview = location.protocol === 'file:' || location.protocol === 'about:' ||
+            ['localhost','127.0.0.1'].includes(location.hostname);
+        let usingMockDb = !firebaseReady && localPreview;
+        if (!firebaseReady && !usingMockDb) {
+            const errorBox = document.getElementById('loginDataNotice');
+            const errorText = document.getElementById('loginDataNoticeText');
+            if(errorText) errorText.textContent = '正式員工資料系統尚未連線：Firebase 程式未載入。已禁止使用示範資料替代正式資料，也不會寫入任何請假或考勤紀錄。請檢查網路及部署設定。';
+            errorBox?.classList.remove('hidden');
+            window.HGE_DATA_MODE = 'unavailable';
+            throw new Error('正式環境禁止以示範資料取代 Firebase');
+        }
         let mockApi = null;
         let app = null;
         let db = null;
@@ -2258,7 +2269,11 @@ const policy=getAnnualPolicy(employeeById(currentUserId));
                      throw new Error(rejectReason || '審核結果未確認，請重新讀取');
                  }
                  const row=result.snapshot.val()?.[key];
-                 if(!row || row.status!==(action==='approve'?'approved':'rejected')) throw new Error('資料庫尚未回讀確認');
+                 if(!row || row.status!==(action==='approve'?'approved':'rejected')) throw new Error('審核交易尚未確認');
+                 const confirmed=await get(ref(db,`requests/${key}`));
+                 if(!confirmed.exists() || confirmed.val()?.status!==row.status ||
+                     String(confirmed.val()?.approvedById)!==String(row.approvedById))
+                     throw new Error('資料庫審核回讀結果不一致，請核對原申請後再操作');
                  let carWarning='';
                  if(action==='approve' && row.category==='car') {
                      const dateObj=dateOnly(row.date), fixedKey=`approved_car_${key}`;
@@ -2270,7 +2285,7 @@ const policy=getAnnualPolicy(employeeById(currentUserId));
                          catch(error){carWarning='；但用車行事曆寫入未確認，請主管核對：'+error.message;}
                      } else carWarning='；申請日期格式錯誤，無法自動建立用車紀錄';
                  }
-                 // Update UI from the committed transaction snapshot immediately; live listener catches up later.
+                 // Update UI from a committed readback immediately; live listener catches up later.
                  requests = result.snapshot.val() || {};
                  const freshApplicant=employeeById(row.empId);
                  if (freshApplicant && currentUserId && String(row.empId) === String(currentUserId)) renderEmployeeStats(freshApplicant);
@@ -2691,9 +2706,10 @@ document.getElementById('annualJoinDate').value = emp.joinDate || '';
                  employees[employeeKeyById(id)]=saved;
                  const latestRequestSnap=await get(ref(db,'requests'));
                  const latestRequests=latestRequestSnap.val()||{};
+                 requests = latestRequests;
                  const resultState=annualLeaveState(saved,asOf,latestRequests);
                  window.renderAnnualManager(id,start);
-                 renderAdminTable();window.renderAnnualOverview();
+                 renderAdminTable();window.renderAnnualOverview();window.renderApprovalQueue();
                  if (currentUserId&&String(currentUserId)===String(emp.id)) renderEmployeeStats(saved);
                  await Swal.fire('已儲存核定',resultState.pending?`舊 ${oldValue} 天已完成對帳，但仍有其他待核事項：${resultState.reason}`:`本期核定餘額 ${resultState.remaining} 天。舊紀錄與本期假單均已保留。`,'success');
              } catch (error) { await Swal.fire('尚未核定',`${error.message}。請勿依舊試算數字核假。`,'error'); }
@@ -3873,17 +3889,13 @@ window.HGEDeviceControl = (() => {
     async function readEmployees() {
         if(options.readEmployees) return wait(options.readEmployees,'核對公機使用者');
         if (window.HGE_DATA_MODE === 'mock') {
-            return wait(async()=>{ const snap = await get(ref(db,'employees')); const value = snap.val(); if(!value||typeof value!=='object'||Array.isArray(value)) throw new Error('員工資料未完成讀取'); return value; },'核對公機使用者');
-        }
-        return wait(async()=>{
-            const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),options.deadlineMs||15000);
-            try {
-                const response=await fetch(firebaseConfig.databaseURL.replace(/\/$/,'')+'/employees.json',{cache:'no-store',signal:controller.signal});
-                if(!response.ok)throw new Error(`員工資料回讀失敗 (${response.status})`);
-                const value=await response.json();
-                if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('員工資料未完成讀取');
-                return value;
-            } finally { clearTimeout(timer); }
+            // SDK get carries Firebase credentials for protected database rules.
+        return wait(async () => {
+            const snap = await get(ref(db,'employees'));
+            const value = snap.val();
+            if (!value || typeof value !== 'object' || Array.isArray(value))
+                throw new Error('員工資料尚未由 Firebase 確認，請重新整理或通知管理員');
+            return value;
         },'核對公機使用者');
     }
     function clearSession(reason) {
@@ -4125,12 +4137,12 @@ window.HGEDeviceControl = (() => {
                         applyRootData(data || {}, 'mock');
                         return data || {};
                     }
-                    const url = firebaseConfig.databaseURL.replace(/\/$/, '') + '/.json?_=' + Date.now();
-                    const response = await fetch(url, { cache: 'no-store', signal: controller.signal });
-                    if (!response.ok) throw new Error(`資料讀取失敗 (${response.status})`);
-                    const data = await response.json();
-                    applyRootData(data || {}, 'bootstrap');
-                    return data || {};
+                    // SDK reads share the same Rules context as realtime updates.
+                    const snapshot = await get(ref(db));
+                    if (!snapshot.exists()) throw new Error('Firebase 尚無可讀取的假勤資料');
+                    const data = snapshot.val() || {};
+                    applyRootData(data, 'bootstrap');
+                    return data;
                 } finally {
                     clearTimeout(timer);
                     bootstrapPromise = null;
