@@ -3,23 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>宏國地政|易丞地政 - 公機記憶管理版 2026.10.04</title>
+    <title>宏國地政｜易丞地政－特休快速核定・主管授權 V8（2026.10.20）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
         
         /* [Feature 2] 畫面固定與防破圖核心設定 */
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; color: #1e293b; overflow-x: hidden; width: 100%; }
+        :root { --brand-navy:#102a6b; --brand-navy-2:#0f172a; --brand-gold:#d4a72c; --surface:#ffffff; --surface-soft:#f8fafc; --line:#dbe4f0; --shadow:0 18px 50px rgba(15, 23, 42, 0.08); }
+        body { font-family: 'Noto Sans TC', sans-serif; background: radial-gradient(circle at top right, rgba(37,99,235,.12), transparent 30%), radial-gradient(circle at top left, rgba(212,167,44,.10), transparent 24%), linear-gradient(180deg, #f8fbff 0%, #f5f7fb 55%, #eef3f9 100%); color: #1e293b; overflow-x: hidden; width: 100%; }
         
         .serif { font-family: 'Noto Serif TC', serif; }
-        .brand-bg { background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); } 
+        .brand-bg { background: linear-gradient(135deg, #18367f 0%, #102a6b 42%, #0f172a 100%); border-bottom: 1px solid rgba(255,255,255,.08); } 
         .text-brand-gold { color: #facc15; }
-        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-radius: 1rem; transition: all 0.3s ease; }
+        .glass-panel { background: rgba(255, 255, 255, 0.97); backdrop-filter: blur(14px); border: 1px solid rgba(226, 232, 240, 0.95); box-shadow: var(--shadow); border-radius: 1.15rem; transition: all 0.3s ease; }
+        .glass-panel:hover { box-shadow: 0 20px 55px rgba(15, 23, 42, 0.10); }
+        .hero-card { position: relative; overflow: hidden; }
+        .hero-card::after { content:''; position:absolute; inset:auto -40px -40px auto; width:120px; height:120px; background: radial-gradient(circle, rgba(37,99,235,.12), transparent 70%); border-radius:999px; pointer-events:none; }
+        .hero-kpi { font-size: 1.25rem; font-weight: 800; color:#0f172a; }
+        .hero-label { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color:#64748b; }
+        .status-pill { display:inline-flex; align-items:center; gap:.4rem; border-radius:999px; padding:.38rem .8rem; font-size:.72rem; font-weight:700; }
+        .status-pill-online { background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; }
+        .status-pill-sync { background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; }
+        .status-pill-warn { background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; }
+        .section-caption { font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:#64748b; font-weight:700; }
+        .section-title { font-size:1.55rem; font-weight:800; color:#0f172a; letter-spacing:-.02em; }
+        .hge-legacy-choice { display:flex;align-items:flex-start;gap:10px;cursor:pointer;border:1px solid #cbd5e1;border-radius:11px;padding:11px 12px;background:white;min-height:64px; }
+        .hge-legacy-choice:has(input:checked) {border-color:#1d4ed8;background:#eff6ff;box-shadow:0 0 0 1px #93c5fd;}
+        .hge-legacy-choice input { margin-top:4px; accent-color:#1d4ed8; flex:0 0 auto; width:18px;height:18px;min-height:18px!important;}
+        .hge-legacy-choice strong {font-size:13px;color:#1e293b;}
+        .hge-legacy-choice small {display:block;font-size:12px;color:#64748b;line-height:1.55;margin-top:4px;}
+        #legacyReviewPanel {scroll-margin-top:15px;}
+        #legacyReviewPanel .legacy-preview-row {display:flex;justify-content:space-between;gap:10px;align-items:center;margin:7px 0;}
+        
+
+        /* V8：讓特休核對在手機與桌機都能直接使用，其他既有 UI 不異動 */
+        #historyModal .modal-content {max-width:1020px;border-radius:18px;box-shadow:0 28px 90px rgba(6,20,47,.3)}
+        #historyModal .hge-history-bar {gap:12px;background:#102a6b;color:#fff;border-bottom:1px solid #314c85;flex-shrink:0}
+        #historyModal .hge-history-bar h3 {color:#fff}
+        #historyModal .hge-history-bar button {min-height:40px}
+        #historyModal .hge-history-bar .hge-jump {background:#f8fafc;color:#102a6b;padding:8px 14px;border-radius:10px;font-size:13px;font-weight:750;white-space:nowrap}
+        #historyModal .hge-history-bar .hge-close {color:#fff;min-width:40px}
+        #legacyReviewPanel {padding:20px;border:1px solid #c8d9f1;background:#fff;border-radius:16px;box-shadow:0 9px 24px rgba(20,49,99,.06); scroll-margin-top:12px}
+        #legacyReviewPanel .hge-legacy-header {display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+        #legacyReviewPanel .hge-legacy-kpis {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+        #legacyReviewPanel .hge-legacy-kpi {background:#f6f8fc;border:1px solid #e1e8f2;border-radius:12px;padding:12px 10px;min-width:0}
+        #legacyReviewPanel .hge-legacy-kpi .hge-kpi-label {display:block;color:#64748b;font-size:12px;line-height:1.5}
+        #legacyReviewPanel .hge-legacy-kpi strong {display:block;color:#16346c;font-size:23px;font-weight:800;font-variant-numeric:tabular-nums}
+        #legacyReviewPanel .hge-primary-choice {display:flex;gap:12px;align-items:flex-start;border:2px solid #bacbe9;border-radius:12px;padding:14px;background:#f8fbff;cursor:pointer}
+        #legacyReviewPanel .hge-primary-choice:has(input:checked) {border-color:#2450b9;background:#edf4ff}
+        #legacyReviewPanel input[type=radio],#legacyReviewPanel input[type=checkbox] {width:21px!important;min-height:21px!important;height:21px!important;flex:0 0 21px;accent-color:#1e40af;margin-top:2px}
+        #legacyReviewPanel .hge-entry {background:#f8fafc;border:1px solid #d6e0ec;border-radius:12px;padding:13px}
+        #legacyReviewPanel .hge-entry input[type=number],#legacyReviewPanel select,#legacyReviewPanel textarea {width:100%;min-height:48px;padding:10px 12px;border-radius:10px;border:1px solid #cbd5e1;color:#172a47;background:white;font-size:16px}
+        #legacyReviewPanel .hge-entry input[type=number] {font-size:22px;font-weight:800;max-width:230px;appearance:textfield}
+        #legacyReviewPanel .hge-small-info {font-size:12px;line-height:1.65;color:#64748b}
+        #legacyReviewPanel .hge-legacy-advanced {border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;background:#fff}
+        #legacyReviewPanel .hge-legacy-advanced summary {list-style:revert;padding:12px 15px;min-height:44px;cursor:pointer;color:#334155;font-size:13px;font-weight:700;background:#f8fafc}
+        #legacyReviewPanel .hge-legacy-advanced .hge-legacy-choice {margin:10px 12px;min-height:unset}
+        #legacyReviewPanel .hge-legacy-preview {border-radius:13px;border:1px solid #c6d8f8;background:#eff6ff;padding:14px 16px}
+        #legacyReviewPanel .hge-legacy-preview .hge-result {font-size:28px;color:#193b83;font-weight:900;font-variant-numeric:tabular-nums}
+        #legacyReviewPanel .hge-review-foot {position:sticky;bottom:0;z-index:4;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);padding:13px 0 2px;border-top:1px solid #e2e8f0}
+        #legacyReviewPanel #legacyReviewConfirm {min-height:52px;font-size:15px;border:0;border-radius:11px;background:#173882;color:#fff;font-weight:800;cursor:pointer;box-shadow:0 5px 16px rgba(23,56,130,.12)}
+        #legacyReviewPanel #legacyReviewConfirm:hover:not(:disabled) {background:#102a6b}
+        #legacyReviewPanel input[type=number] {box-sizing:border-box}
+        #legacyReviewPanel .hge-legacy-kpi {box-sizing:border-box;overflow-wrap:anywhere}
+        html,body {max-width:100%;overflow-x:hidden}
+        #legacyReviewPanel #legacyReviewConfirm:disabled {cursor:not-allowed;background:#94a3b8;color:#fff;box-shadow:none}
+        #legacyReviewPanel #legacyReviewSource {line-height:1.7}
+        #legacyReviewPanel #legacyReviewSource .hge-evidence-list {display:none}
+        #legacyReviewPanel #legacyReviewSource details[open] .hge-evidence-list {display:block}
+        #legacyReviewPanel .hge-confirm-ack {display:flex;gap:10px;align-items:flex-start;background:#fffdf5;border:1px solid #fde68a;padding:11px 12px;border-radius:10px;font-size:13px;color:#6b3d08;line-height:1.6;cursor:pointer}
+        @media(max-width:700px) {
+          #historyModal .modal-content{max-height:96vh;width:98%;border-radius:14px}
+          #historyModal .hge-history-bar {padding:10px 12px}
+          #historyModal .hge-history-bar .hge-jump{font-size:12px;padding:7px 10px}
+          #historyModal .hge-history-bar h3 {font-size:14px}
+          #historyModal .hge-main-body{padding:12px}
+          #legacyReviewPanel {padding:13px}
+          #legacyReviewPanel .hge-legacy-kpis {grid-template-columns:repeat(2,minmax(0,1fr))}
+          #legacyReviewPanel .hge-legacy-kpi strong{font-size:21px}
+          #legacyReviewPanel .hge-entry input[type=number] {max-width:100%}
+        }
+
+        .diag-card { border:1px dashed #cbd5e1; background:linear-gradient(180deg,#fff,#f8fafc); border-radius:1rem; padding:1rem; }
+        .mini-kpi { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; padding:.9rem 1rem; border:1px solid #e2e8f0; border-radius:1rem; background:#fff; }
+        .mini-kpi strong { display:block; font-size:1rem; color:#0f172a; }
+        .mini-kpi span { display:block; font-size:.75rem; color:#64748b; margin-top:.15rem; }
         .input-modern { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 0.5rem; transition: all 0.2s; }
         .input-modern:focus { background: #fff; border-color: #2563eb; outline: none; }
-        .hidden-section { display: none; }
+        .hidden-section, .hidden { display: none !important; }
         .fade-in-up { animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(20px); }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         
@@ -61,6 +136,8 @@
         /* 表格強制不換行，允許父層滾動 */
         .table-fixed-layout th, .table-fixed-layout td { white-space: nowrap; }
         /* Preserve familiar controls while making mobile taps and text accessible. */
+        #ceoDelegationPanel input[type="checkbox"] { min-height: 18px; height: 18px; width: 18px; accent-color: #1d4ed8; }
+        #supervisorApprovalPanel button { min-height: 40px; }
         button, select, input:not([type=hidden]):not([type=range]), textarea { min-height: 44px; }
         #punchCard { width: 100%; }
         #loginDataNotice button { min-width: 110px; }
@@ -83,7 +160,7 @@
                 <div class="w-10 h-10 bg-white text-blue-900 rounded-lg flex items-center justify-center font-bold text-lg serif shadow-lg">宏</div>
                 <div>
                     <h1 class="text-base md:text-lg font-bold tracking-wider serif">宏國地政 | 易丞地政</h1>
-                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">公機記憶管理版 2026.10.04</p>
+                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">公機・特休快速核定・主管授權 V8 2026.10.20</p>
                 </div>
             </div>
             <div class="flex bg-blue-900/50 rounded-full p-1">
@@ -94,10 +171,88 @@
     </header>
 
     <main class="flex-grow p-4 md:p-6 max-w-7xl mx-auto w-full">
-        <section id="loginSection" class="w-full glass-panel p-10 text-center max-w-lg mx-auto mt-12 fade-in-up">
+        <section id="introHero" class="w-full mb-6 fade-in-up">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div class="glass-panel hero-card p-5 lg:col-span-2">
+                    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                        <div>
+                            <div class="section-caption mb-2">企業級假勤與公機管理</div>
+                            <h2 class="section-title mb-2">特休自動試算、舊資料對帳、主管核准整合</h2>
+                            <p class="text-sm text-slate-600 leading-7">特休依到職日計算；遇到舊已休統計與已核准假單重疊，提供逐人快速核定，不會自動刪除或重複扣減舊帳。</p>
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                <span id="systemModeBadge" class="status-pill status-pill-sync"><i class="fa-solid fa-rotate"></i> 系統初始化中</span>
+                                <span id="systemDataBadge" class="status-pill status-pill-warn"><i class="fa-solid fa-database"></i> 尚未取得員工資料</span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 min-w-[240px]">
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                <div class="hero-label">登入模式</div>
+                                <div class="hero-kpi">同仁 / 管理</div>
+                                <div class="text-xs text-slate-500 mt-1">公機綁定、主管審核、執行長後台</div>
+                            </div>
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                <div class="hero-label">特休邏輯</div>
+                                <div class="hero-kpi">週年制</div>
+                                <div class="text-xs text-slate-500 mt-1">依到職日、工時與個別核定條件重算</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-panel p-5">
+                    <div class="section-caption mb-3">V8 便捷特休對帳與核定</div>
+                    <ul class="space-y-3 text-sm text-slate-700">
+                        <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-600 mt-1"></i><span>主管可個別核准公務車、病假、事假</span></li>
+                        <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-600 mt-1"></i><span>執行長可任意指定或撤銷主管身分</span></li>
+                        <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-600 mt-1"></i><span>特休重算加入全體總覽與個人條件校正</span></li>
+                        <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-600 mt-1"></i><span>新增「離線預覽模式」，外部資源被擋時仍可打開與操作示範</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="startupDiagnostics" class="w-full mb-6 fade-in-up">
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                <div class="glass-panel p-5 xl:col-span-2">
+                    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                        <div class="flex-1">
+                            <div class="section-caption mb-2">啟動診斷與修正說明</div>
+                            <h3 class="text-xl font-extrabold text-slate-900 mb-2">這次我實際修正了哪些地方？</h3>
+                            <div class="diag-card text-sm text-slate-700 leading-7">
+                                <ol class="list-decimal pl-5 space-y-1">
+                                    <li>將啟動流程改成<strong>先顯示畫面、再判斷資料來源</strong>，避免一開始整頁卡死。</li>
+                                    <li>新增<strong>離線預覽模式</strong>：若外部 CDN 或 Firebase 被預覽器擋住，仍會載入本機示範資料。</li>
+                                    <li>保留原本的 Firebase 線上模式；若在正式網站或正常瀏覽器中可連線，仍會使用真實資料庫。</li>
+                                    <li>補上<strong>系統狀態徽章、資料來源提示、啟動診斷卡</strong>，讓你一眼看出目前是正式模式還是預覽模式。</li>
+                                </ol>
+                            </div>
+                        </div>
+                        <div class="w-full lg:w-[320px] space-y-3">
+                            <div class="mini-kpi">
+                                <div><strong id="dataSourceTitle">資料來源尚未判定</strong><span id="dataSourceDesc">系統正在檢查 Firebase 與預覽備援。</span></div>
+                                <i class="fa-solid fa-plug-circle-bolt text-blue-600 text-xl"></i>
+                            </div>
+                            <div class="mini-kpi">
+                                <div><strong id="uiModeTitle">畫面模式：初始化中</strong><span id="uiModeDesc">若外部腳本受限，會切換到離線預覽模式。</span></div>
+                                <i class="fa-solid fa-laptop-code text-slate-700 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-panel p-5">
+                    <div class="section-caption mb-3">你現在看到的差異</div>
+                    <ul class="space-y-3 text-sm text-slate-700">
+                        <li class="flex gap-3"><i class="fa-solid fa-sparkles text-amber-500 mt-1"></i><span>精品企業感首頁與診斷卡</span></li>
+                        <li class="flex gap-3"><i class="fa-solid fa-sparkles text-amber-500 mt-1"></i><span>狀態徽章顯示：正式連線 / 備援模式 / 離線預覽</span></li>
+                        <li class="flex gap-3"><i class="fa-solid fa-sparkles text-amber-500 mt-1"></i><span>若預覽器擋外網，也不會只剩一個「打不開」</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="loginSection" class="w-full glass-panel p-10 text-center max-w-xl mx-auto mt-6 fade-in-up">
             <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 text-2xl"><i class="fa-solid fa-shield-halved"></i></div>
             <h2 class="text-2xl font-bold text-slate-800 mb-2">身分驗證系統</h2>
-            <p class="text-slate-500 mb-6 text-sm">選擇本人並綁定裝置；更換手機不需先刪除舊裝置</p>
+            <p class="text-slate-500 mb-6 text-sm leading-7">請先選擇本人完成裝置綁定。若是公用手機，由管理後台指派或移交即可，不必手動刪除舊裝置。</p>
             <div class="space-y-4">
                 <div id="userSelectContainer">
                     <select id="empSelect" onchange="tryBindAndLogin()" class="w-full p-3 pl-4 text-lg input-modern cursor-pointer text-center font-bold text-slate-700 disabled:opacity-50" disabled><option value="">-- 讀取資料中 --</option></select>
@@ -123,6 +278,11 @@
                         </div>
                         <div id="punchNotice" role="status" aria-live="polite" class="mt-3 text-sm text-slate-600">上／下班各按一次，請等候「已寫入並核對」。定位失敗時可登記為「待覆核」，須由主管確認。</div>
                     </div>
+            <div id="supervisorApprovalPanel" class="glass-panel p-5 md:p-6 border-t-4 border-emerald-600 hidden" aria-live="polite">
+                <div class="flex flex-wrap justify-between gap-3 items-center mb-3"><h3 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-user-check text-emerald-700 mr-2"></i>主管審核工作台</h3><span id="supervisorPermissionsLabel" class="text-xs text-slate-500"></span></div>
+                <p class="text-xs text-slate-600 mb-4">執行長指派後，主管在此直接核准公務車、病假及事假；不得審核自己的申請。特休、補休、婚假、人事異動不在本授權範圍內。</p><div class="text-xs text-blue-800 bg-blue-50 border border-blue-100 rounded p-2 mb-3">提醒：這裡的核准會回寫原有申請紀錄，LINE 僅為另行發送的通知，不等於已送達。</div>
+                <div id="supervisorApprovalList" class="overflow-x-auto text-sm"><p class="text-slate-500 text-sm">讀取審核資料中…</p></div>
+            </div>
             <div id="birthdayGreeting" role="status" class="hidden rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"></div>
             <input type="file" id="avatarInput" accept="image/*" class="hidden" onchange="handleAvatarChange(event)">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in-up">
@@ -155,17 +315,17 @@
                                 <div><label class="block text-xs font-bold text-slate-500 mb-1 text-blue-600">開始日期</label><input type="date" id="leaveDate" class="w-full p-2.5 input-modern border-blue-200" onchange="syncDatesAndCalc()"></div>
                                 <div><label class="block text-xs font-bold text-slate-500 mb-1 text-blue-600">結束日期</label><input type="date" id="leaveEndDate" class="w-full p-2.5 input-modern border-blue-200" onchange="syncDatesAndCalc()"></div>
                                 
-                                <div id="inputDayMode" class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">請假天數 <span class="font-normal text-[10px] text-slate-400">(自動依據行政總處日曆計算)</span></label><input type="number" id="leaveDays" min="0" step="any" value="1" class="w-full p-2.5 input-modern" oninput="updateImpactInfo()"></div>
+                                <div id="inputDayMode" class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">請假天數 <span class="font-normal text-[10px] text-slate-400">(依週休與115年官方日曆估算；仍須依公司排班核對)</span></label><input type="number" id="leaveDays" min="0" step="any" value="1" class="w-full p-2.5 input-modern" oninput="updateImpactInfo()"></div>
                                 <div id="inputTimeMode" class="hidden md:col-span-2 grid grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-slate-500 mb-1">開始時間</label><input type="time" id="leaveStartTime" class="w-full p-2.5 input-modern" onchange="calcTimeDiff()"></div><div><label class="block text-xs font-bold text-slate-500 mb-1">結束時間</label><input type="time" id="leaveEndTime" class="w-full p-2.5 input-modern" onchange="calcTimeDiff()"></div><div class="col-span-2 text-xs text-blue-600 bg-blue-50 p-2 rounded text-center">預計: <span id="timeDiffDisplay" class="font-bold">0</span> 小時</div></div>
                                 <div class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">事由</label><input type="text" id="leaveReason" class="w-full p-2.5 input-modern" placeholder="例：處理私人事務"></div>
                             </div>
                             <div id="impactCard" class="impact-card impact-full p-4 rounded-lg flex justify-between items-center mt-2"><div><div class="font-bold text-sm text-slate-700" id="impactTitle">全薪</div><div class="text-xs text-slate-500" id="impactDesc">工資照給。</div></div><div class="text-right"><div class="text-xs text-slate-400">預估扣薪</div><div class="font-bold text-lg text-red-500">$<span id="impactAmount">0</span></div></div></div>
-                            <button type="submit" class="w-full bg-[#06c755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-lg shadow-lg transition flex justify-center items-center gap-2"><i class="fa-brands fa-line"></i> 送出並通知 LINE</button>
+                            <button type="submit" class="w-full bg-[#06c755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-lg shadow-lg transition flex justify-center items-center gap-2"><i class="fa-brands fa-line"></i> 送出並通知 LINE</button><div id="employeeAnnualRequestHint" role="status" class="text-xs rounded-lg border border-blue-100 bg-blue-50 text-blue-800 px-3 py-2 mt-2">特休資料讀取中…</div><p id="leaveDayEstimateNotice" class="text-xs text-amber-700 mt-2">請依同仁實際工作日核對天數；非一般週一至週五班別不可直接採用自動估算。</p>
                         </form>
 
                         <form id="form-car" onsubmit="handleCarSubmit(event)" class="space-y-4 hidden-section">
                             <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg text-xs text-blue-800 mb-2">
-                                <i class="fa-solid fa-circle-info mr-1"></i> 送出申請後將發送 LINE 通知給主管。主管核准後將自動為您寫入系統打卡紀錄。
+                                <i class="fa-solid fa-circle-info mr-1"></i> 送出申請後將發送 LINE 通知給主管。主管核准後將建立「用車紀錄」，不會代替上下班打卡。
                             </div>
                             <div class="flex justify-between items-end mb-2">
                                 <div class="w-full">
@@ -202,7 +362,26 @@
                         <div class="avatar-hover-container w-24 h-24 mb-2 relative" onclick="triggerAvatarUpload()" title="點擊更換頭像"><img id="dashboardAvatarImg" src="" class="w-full h-full rounded-full object-cover border-4 border-white shadow-lg bg-slate-100 hidden"><div id="dashboardAvatarPlaceholder" class="w-full h-full bg-slate-100 rounded-full flex items-center justify-center text-4xl text-slate-300 border-4 border-white shadow-lg">👤</div><div class="avatar-overlay"><i class="fa-solid fa-camera text-white text-xl"></i></div></div>
                         <h2 id="dashboardName" class="text-xl font-bold text-slate-800 mt-2">...</h2>
                         <div class="flex flex-col items-center gap-1 mt-1"><div class="text-xs font-mono text-slate-500 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 shadow-sm flex items-center"><i class="fa-regular fa-calendar-check mr-1"></i> 入職：<span id="dashboardJoinDate" class="font-bold mx-1">--</span><span id="dashboardTenure" class="ml-1 bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-bold">--</span></div><span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-[10px] font-bold mt-1"><i class="fa-solid fa-check-circle"></i> 已記住本人</span></div>
-                        <div class="mt-4 w-full grid grid-cols-2 gap-2 text-center"><div class="bg-blue-50 p-2 rounded relative"><div class="absolute -top-2 -left-1 bg-amber-400 text-white text-[9px] px-1 rounded shadow">週年制</div><div class="text-[10px] text-slate-400 uppercase mt-1">本期法定特休</div><div class="font-bold text-blue-800 text-lg" id="dashboardTotal">--</div></div><div class="bg-green-50 p-2 rounded"><div class="text-[10px] text-slate-400 uppercase mt-1">本期可用（核對後）</div><div class="font-bold text-green-600 text-lg" id="dashboardRemaining">--</div></div></div><div id="dashboardLeavePeriod" class="text-[11px] text-blue-100 mt-2"></div>
+                        <div class="mt-4 w-full grid grid-cols-2 gap-3 text-center">
+                            <div class="bg-blue-50 border border-blue-100 rounded-xl p-3 relative">
+                                <div class="absolute -top-2 -left-1 bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded shadow">週年制</div>
+                                <div class="text-[11px] text-slate-600 mt-1">本期應給</div>
+                                <div class="font-extrabold text-blue-900 text-2xl" id="dashboardTotal">--</div>
+                            </div>
+                            <div id="dashboardRemainingCard" class="bg-green-50 border border-green-100 rounded-xl p-3">
+                                <div class="text-[11px] text-slate-600 mt-1" id="dashboardRemainingLabel">帳面剩餘試算</div>
+                                <div class="font-extrabold text-green-700 text-2xl" id="dashboardRemaining">--</div>
+                                <div id="dashboardRemainingStatus" class="text-[10px] font-semibold text-green-800 mt-1">讀取中…</div>
+                            </div>
+                        </div>
+                        <p id="dashboardLeavePeriod" class="text-xs text-slate-600 mt-3 text-left leading-5"></p>
+                        <div id="dashboardLeaveBreakdown" class="w-full mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left text-xs text-slate-700" aria-live="polite">正在計算特休…</div>
+                        <div id="dashboardLeaveReviewNote" class="hidden w-full mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-left text-xs text-amber-950 leading-5">
+                            <div class="font-bold mb-1"><i class="fa-solid fa-circle-exclamation mr-1"></i>試算不等於已核定餘額</div>
+                            <p id="dashboardLeaveReviewReason"></p>
+                            <p class="mt-1 text-amber-900/80">請確認舊紀錄與已核准假單有無重疊；未核定前，試算數字不可視為正式餘額。</p>
+                            <button type="button" id="employeeReconcileButton" onclick="openMyAnnualReconcile()" class="w-full mt-3 min-h-11 px-3 py-2.5 rounded-lg bg-blue-900 text-white hover:bg-blue-800 font-bold text-sm">進入管理核對並核定</button>
+                        </div>
                         <div class="mt-4 border-t pt-2 w-full"><button onclick="registerWebAuthn()" class="w-full bg-slate-100 text-slate-600 text-xs py-2 rounded hover:bg-slate-200 flex items-center justify-center gap-1"><i class="fa-solid fa-link"></i> 綁定此裝置 (FaceID/指紋)</button></div>
                         <div id="legalInfoCard" class="hidden absolute inset-0 bg-white/95 backdrop-blur z-20 rounded-xl p-4 flex flex-col justify-center text-left border border-blue-200"><h4 class="font-bold text-blue-800 mb-2 border-b pb-1">📜 勞基法第38條</h4><ul class="text-xs space-y-1 text-slate-600 list-disc pl-4"><li>6月-1年: 3日</li><li>1-2年: 7日</li><li>2-3年: 10日</li><li>3-5年: 14日</li><li>5-10年: 15日</li><li>10年以上: +1/年 (上限30)</li></ul><button onclick="toggleLegalInfo()" class="mt-4 w-full bg-slate-100 text-slate-500 text-xs py-1 rounded hover:bg-slate-200">關閉</button></div>
                     </div>
@@ -212,6 +391,13 @@
 
         <section id="adminView" class="hidden-section w-full fade-in-up">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                 <div id="hrQuickNav" class="lg:col-span-3 rounded-xl bg-blue-950 text-white p-4 flex flex-wrap items-center gap-3">
+                    <span class="font-bold text-sm">人事快速入口</span>
+                    <button type="button" onclick="document.getElementById('ceoDelegationPanel').scrollIntoView({behavior:'smooth',block:'start'})" class="bg-white/15 hover:bg-white/25 px-3 py-2 rounded-lg text-sm">① 指派／撤銷主管</button>
+                    <button type="button" onclick="document.getElementById('annualOverviewPanel').scrollIntoView({behavior:'smooth',block:'start'})" class="bg-white/15 hover:bg-white/25 px-3 py-2 rounded-lg text-sm">② 查看特休重算</button>
+                    <button type="button" onclick="document.getElementById('approvalTableBody').scrollIntoView({behavior:'smooth',block:'center'})" class="bg-white/15 hover:bg-white/25 px-3 py-2 rounded-lg text-sm">③ 查看待審申請</button>
+                 </div>
+
                 <div class="lg:col-span-3 glass-panel p-6 border-t-4 border-slate-700">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-slate-700"></i> 考勤與報表中心</h2>
@@ -252,13 +438,38 @@
                 
                 <div class="lg:col-span-1 glass-panel p-6 border-t-4 border-brand-gold"><h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-bullhorn text-brand-gold mr-2"></i> 置頂公告管理</h2><input type="text" id="adminBulletinTitle" class="w-full p-2 mb-2 input-modern" placeholder="標題"><textarea id="adminBulletinContent" rows="4" class="w-full p-2 mb-2 input-modern" placeholder="內容"></textarea><button onclick="saveBulletin()" class="w-full bg-slate-800 text-white p-2 rounded font-bold hover:bg-slate-700">更新置頂發布</button></div>
                 
+                 <div id="ceoDelegationPanel" class="lg:col-span-3 glass-panel p-6 border-t-4 border-amber-500 scroll-mt-24">
+                    <div class="flex flex-wrap justify-between items-center gap-3 mb-4"><h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-user-shield text-amber-600 mr-2"></i>執行長｜主管指派與審核授權</h2><span class="text-xs text-slate-500">僅管理後台可異動</span></div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                        <label class="text-sm font-semibold">選擇同仁<select id="delegationEmployeeSelect" onchange="loadDelegationEditor()" class="block mt-1 p-2.5 input-modern w-full"><option value="">選擇同仁</option></select></label>
+                        <label class="text-sm font-semibold">職務身分<select id="delegationRole" onchange="toggleDelegationEditor()" class="block mt-1 p-2.5 input-modern w-full"><option value="staff">一般同仁</option><option value="supervisor">主管（可個別授權）</option></select></label>
+                        <button onclick="saveSupervisorDelegation()" class="w-full bg-blue-900 text-white rounded-lg font-bold p-3 hover:bg-blue-800"><i class="fa-solid fa-check mr-1"></i>儲存主管及核准權限</button>
+                    </div>
+                    <div id="delegationPermissionBoxes" class="flex flex-wrap gap-5 mt-4 bg-slate-50 rounded-lg p-3 border text-sm">
+                        <label class="flex gap-2 items-center"><input id="delegateCar" type="checkbox">核准公務車</label>
+                        <label class="flex gap-2 items-center"><input id="delegateSick" type="checkbox">核准病假</label>
+                        <label class="flex gap-2 items-center"><input id="delegatePersonal" type="checkbox">核准事假</label>
+                    </div>
+                    <p id="delegationStatus" class="text-xs text-slate-600 mt-3" role="status">選擇員工後可核定或撤銷主管及各項審核權限。特休一律不授權主管。</p>
+                    <div id="delegationRoster" class="mt-4 flex flex-wrap gap-2 text-xs text-slate-600"></div>
+                    <p class="text-xs text-amber-800 border-t mt-4 pt-3">權限設定寫入原有 Firebase 員工資料，並保留異動歷程。本 HTML 的管理密碼與公機綁定不是伺服器端身分驗證；正式權限防護需搭配 Firebase Authentication / Database Rules。</p>
+                 </div>
+                <div id="annualOverviewPanel" class="lg:col-span-3 glass-panel p-5 md:p-6 border-t-4 border-blue-700 scroll-mt-24">
+                    <div class="flex flex-wrap justify-between items-start gap-2 mb-3">
+                        <div><h2 class="font-bold text-lg text-slate-900"><i class="fa-solid fa-calendar-check text-blue-700 mr-2"></i>全體同仁特休重算總覽</h2><p class="text-xs text-slate-600 mt-1">以實際到職日／認列年資／個人工時條件依週年制重新試算；同時保留原核准假單、舊已休數與期末結算。</p></div>
+                        <button onclick="renderAnnualOverview(true)" type="button" class="px-4 py-2 rounded-lg text-sm font-bold bg-blue-900 text-white hover:bg-blue-800"><i class="fa-solid fa-rotate mr-1"></i>重新試算（不改紀錄）</button>
+                    </div>
+                    <p id="annualOverviewNotice" role="status" class="text-xs mb-3 rounded-lg bg-blue-50 p-3 text-blue-900">正在讀取同仁特休資料…</p>
+                    <div class="overflow-x-auto"><table class="w-full min-w-[980px] text-left text-sm"><thead class="bg-slate-100 text-slate-600 text-xs"><tr><th class="p-2">同仁／到職日</th><th class="p-2">個別條件</th><th class="p-2">本期區間</th><th class="p-2">法定＋加給</th><th class="p-2">已核准／額外已休</th><th class="p-2">可用額度</th><th class="p-2">狀態</th><th class="p-2 text-right">操作</th></tr></thead><tbody id="annualOverviewBody"><tr><td colspan="8" class="p-3 text-slate-500">載入中…</td></tr></tbody></table></div>
+                    <div class="text-xs text-slate-600 mt-3">「試算」會直接顯示依現有給假與核准假單算出的數字；若資料有缺漏，另外提示具體原因，不能把它當成已核定可用天數。按「核對個人特休」可確認到職日、認列年資、工時、漏列已休、個別加給及遞延紀錄。</div>
+                </div>
                 <div class="lg:col-span-3 glass-panel p-6"><h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-users mr-1"></i> 員工全方位管理</h2><div class="flex flex-wrap gap-2 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-200"><input type="text" id="newAdminName" placeholder="新進員工姓名" class="flex-1 min-w-[120px] p-2 input-modern"><select id="newAdminGender" class="w-20 p-2 input-modern"><option value="M">男</option><option value="F">女</option></select><div class="flex items-center gap-1"><span class="text-xs text-slate-500">到職:</span><input type="date" id="newAdminDate" class="w-36 p-2 input-modern"></div><div class="flex items-center gap-1"><span class="text-xs text-slate-500">生日:</span><input type="date" id="newAdminBirthday" class="w-36 p-2 input-modern"></div><button onclick="addEmployee()" class="bg-blue-600 text-white px-4 rounded font-bold hover:bg-blue-500">新增</button></div><div class="overflow-x-auto"><table class="w-full text-left text-sm table-fixed-layout"><thead class="bg-slate-100 text-slate-600 text-xs uppercase"><tr><th class="p-3">姓名</th><th class="p-3">資料</th><th class="p-3">特休</th><th class="p-3 w-1/4">裝置</th><th class="p-3 text-right">管理</th></tr></thead><tbody id="adminTableBody" class="divide-y divide-slate-100"></tbody></table></div></div>
                 <div class="lg:col-span-3 px-2 text-sm text-slate-600"><label><input type="checkbox" id="showArchivedEmp"> 顯示已離職封存同仁</label><span id="archiveEmployeeSummary" class="ml-3 text-xs" aria-live="polite">名單載入中…</span><div class="mt-1 text-xs">封存會停止登入並移出在職名單；原打卡、假單與人事紀錄保留。</div></div>
                 <div id="ceoSalaryRulesPanel" class="lg:col-span-3 glass-panel p-6 border-t-4 border-indigo-600 mb-6"><h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-gear text-indigo-600"></i> 全域薪資規則 (預設基準)</h2><div class="grid grid-cols-1 md:grid-cols-3 gap-6"><div class="space-y-3"><h3 class="font-bold text-sm text-slate-600 border-b pb-1">💰 基本參數</h3><div><label class="block text-xs font-bold text-slate-500 mb-1">預設底薪</label><input type="number" id="settingBaseSalary" class="w-full p-2 input-modern" value="30000"></div><div><label class="block text-xs font-bold text-slate-500 mb-1">月工時</label><input type="number" id="settingWorkHours" class="w-full p-2 input-modern" value="240"></div></div><div class="space-y-3"><h3 class="font-bold text-sm text-slate-600 border-b pb-1">🔥 加班費倍率</h3><div class="flex gap-2"><div class="flex-1"><label class="block text-xs font-bold text-slate-500 mb-1">前2小時</label><input type="number" id="settingOtRate1" class="w-full p-2 input-modern bg-slate-100" value="1.34" step="0.01"></div><div class="flex-1"><label class="block text-xs font-bold text-slate-500 mb-1">第3小時起</label><input type="number" id="settingOtRate2" class="w-full p-2 input-modern bg-slate-100" value="1.67" step="0.01"></div></div></div><div class="space-y-3"><h3 class="font-bold text-sm text-slate-600 border-b pb-1">⏰ 遲到扣款</h3><div class="flex gap-2"><div class="flex-1"><label class="block text-xs font-bold text-slate-500 mb-1">寬限(分)</label><input type="number" id="settingLateBuffer" class="w-full p-2 input-modern" value="10"></div><div class="flex-1"><label class="block text-xs font-bold text-slate-500 mb-1">每分扣薪</label><input type="number" id="settingLatePenalty" class="w-full p-2 input-modern" value="0"></div></div><div class="text-[10px] text-slate-500 mt-1">* 設為 0 則依時薪比例扣款</div><button onclick="saveSalarySettings()" class="w-full bg-indigo-600 text-white py-2 rounded font-bold hover:bg-indigo-500 shadow mt-2"><i class="fa-solid fa-save mr-1"></i> 儲存規則</button></div></div></div>
             </div>
         </section>
 
-        <div id="historyModal" class="modal-overlay"><div class="modal-content"><div class="p-4 border-b bg-slate-100 flex justify-between items-center"><h3 id="historyEmployeeTitle" class="font-bold text-slate-800 text-lg">假勤數據中控</h3><button onclick="closeHistory()" class="text-slate-500 hover:text-red-500 text-xl"><i class="fa-solid fa-times"></i></button></div><div class="p-6 overflow-y-auto flex-1 bg-slate-50"><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="bg-white p-4 rounded-lg border border-blue-200 shadow-sm relative"><div class="absolute top-0 right-0 bg-blue-100 text-blue-800 text-[10px] px-2 py-1 font-bold">特休 (Annual)</div><div class="mt-2 space-y-2"><div class="flex justify-between items-center text-sm"><span class="text-slate-500">已使用</span><input type="number" id="adjAnnualUsed" class="border rounded w-16 text-center font-bold text-blue-700" step="0.125"></div></div></div><div class="bg-white p-4 rounded-lg border border-orange-200 shadow-sm relative"><div class="absolute top-0 right-0 bg-orange-100 text-orange-800 text-[10px] px-2 py-1 font-bold">補休 (Comp)</div><div class="mt-2 space-y-2"><div class="flex justify-between items-center text-sm"><span class="text-slate-500">餘額</span><input type="number" id="adjCompBalance" class="border rounded w-16 text-center font-bold text-orange-700" step="0.125"></div></div></div><div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative"><div class="absolute top-0 right-0 bg-gray-100 text-gray-800 text-[10px] px-2 py-1 font-bold">病/事假</div><div class="mt-2 space-y-1"><div class="flex justify-between items-center text-sm"><span class="text-slate-500">病假</span><input type="number" id="adjSickUsed" class="border rounded w-16 text-center font-bold text-gray-700" step="0.125"></div><div class="flex justify-between items-center text-sm"><span class="text-slate-500">事假</span><input type="number" id="adjPersonalUsed" class="border rounded w-16 text-center font-bold text-gray-700" step="0.125"></div></div></div></div><button onclick="saveAllAdjustments()" class="w-full bg-slate-800 text-white py-2 rounded mb-6 font-bold hover:bg-slate-700 shadow-md">儲存修正</button><h4 class="font-bold text-slate-700 mb-2">📜 申請紀錄 (含已核准管理)</h4><div class="overflow-x-auto bg-white rounded-lg border border-slate-200"><table class="w-full text-sm text-left table-fixed-layout"><thead class="bg-slate-100 text-slate-500 text-xs"><tr><th class="p-2">日期</th><th class="p-2">類型</th><th class="p-2">狀態</th><th class="p-2 text-right">管理</th></tr></thead><tbody id="historyTableBody" class="divide-y divide-slate-100"></tbody></table></div></div></div></div>
+        <div id="historyModal" class="modal-overlay"><div class="modal-content"><div class="hge-history-bar p-4 flex justify-between items-center"><h3 id="historyEmployeeTitle" class="font-bold text-lg">假勤數據中控</h3><div class="flex items-center gap-2"><button type="button" class="hge-jump" onclick="focusLegacyReview()"><i class="fa-solid fa-calculator mr-1"></i>快速核對特休</button><button onclick="closeHistory()" aria-label="關閉假勤資料" class="hge-close text-xl"><i class="fa-solid fa-times"></i></button></div></div><div class="hge-main-body p-6 overflow-y-auto flex-1 bg-slate-50"><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="bg-white p-4 rounded-lg border border-blue-200 shadow-sm relative"><div class="absolute top-0 right-0 bg-blue-100 text-blue-800 text-[10px] px-2 py-1 font-bold">特休 (Annual)</div><div class="mt-2 space-y-2"><div class="flex justify-between items-center text-sm"><span class="text-slate-500">另外已休</span><input type="number" id="adjAnnualUsed" class="border rounded w-16 text-center font-bold text-blue-700" step="0.125"></div></div></div><div class="bg-white p-4 rounded-lg border border-orange-200 shadow-sm relative"><div class="absolute top-0 right-0 bg-orange-100 text-orange-800 text-[10px] px-2 py-1 font-bold">補休 (Comp)</div><div class="mt-2 space-y-2"><div class="flex justify-between items-center text-sm"><span class="text-slate-500">餘額</span><input type="number" id="adjCompBalance" class="border rounded w-16 text-center font-bold text-orange-700" step="0.125"></div></div></div><div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative"><div class="absolute top-0 right-0 bg-gray-100 text-gray-800 text-[10px] px-2 py-1 font-bold">病/事假</div><div class="mt-2 space-y-1"><div class="flex justify-between items-center text-sm"><span class="text-slate-500">病假</span><input type="number" id="adjSickUsed" class="border rounded w-16 text-center font-bold text-gray-700" step="0.125"></div><div class="flex justify-between items-center text-sm"><span class="text-slate-500">事假</span><input type="number" id="adjPersonalUsed" class="border rounded w-16 text-center font-bold text-gray-700" step="0.125"></div></div></div></div><button onclick="saveAllAdjustments()" class="w-full bg-slate-800 text-white py-2 rounded mb-6 font-bold hover:bg-slate-700 shadow-md">儲存其他假勤人工修正（舊帳變動需再核對）</button><h4 class="font-bold text-slate-700 mb-2">📜 申請紀錄 (含已核准管理)</h4><div class="overflow-x-auto bg-white rounded-lg border border-slate-200"><table class="w-full text-sm text-left table-fixed-layout"><thead class="bg-slate-100 text-slate-500 text-xs"><tr><th class="p-2">日期</th><th class="p-2">類型</th><th class="p-2">狀態</th><th class="p-2 text-right">管理</th></tr></thead><tbody id="historyTableBody" class="divide-y divide-slate-100"></tbody></table></div></div></div></div>
         <div id="salaryModal" class="modal-overlay"><div class="modal-content max-w-lg"><div class="p-4 border-b bg-indigo-600 text-white flex justify-between items-center"><h3 class="font-bold">個別薪資設定</h3><button onclick="closeSalaryModal()" class="text-white hover:text-red-300"><i class="fa-solid fa-times"></i></button></div><div class="p-6 space-y-4 bg-white"><input type="hidden" id="salaryEmpId"><div class="bg-yellow-50 p-3 rounded text-xs text-yellow-800 border border-yellow-200"><i class="fa-solid fa-circle-exclamation mr-1"></i> 設定此處將會「覆蓋」全域預設值。</div><div><label class="block text-xs font-bold text-slate-500 mb-1">底薪</label><input type="number" id="indBaseSalary" class="w-full p-2 input-modern" placeholder="預設: 30000"></div><div><label class="block text-xs font-bold text-slate-500 mb-1">月工時</label><input type="number" id="indWorkHours" class="w-full p-2 input-modern" placeholder="預設: 240"></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-slate-500 mb-1">加班倍率1</label><input type="number" id="indOtRate1" class="w-full p-2 input-modern" placeholder="預設: 1.34"></div><div><label class="block text-xs font-bold text-slate-500 mb-1">加班倍率2</label><input type="number" id="indOtRate2" class="w-full p-2 input-modern" placeholder="預設: 1.67"></div></div><button onclick="saveIndividualSalary()" class="w-full bg-indigo-600 text-white py-2 rounded font-bold hover:bg-indigo-500 shadow mt-2">儲存個人設定</button></div></div></div>
         
         <div id="archiveEmployeeModal" class="modal-overlay"><div class="modal-content max-w-md"><div class="p-4 bg-slate-800 text-white font-bold">離職封存</div><div class="p-5 space-y-3"><input type="hidden" id="archiveEmpId"><div id="archiveEmpName" class="font-bold"></div><label class="block text-sm">離職日期<input type="date" id="archiveTerminationDate" class="block w-full p-2 border rounded mt-1"></label><label class="block text-sm">備註／核對依據<input type="text" id="archiveReason" maxlength="200" class="block w-full p-2 border rounded mt-1" placeholder="例如：離職日已與人事資料核對"></label><p class="text-xs text-amber-700">封存後停止登入、移出在職名單；原打卡與假單保留。未休特休與薪資結算須另行核對。</p><div class="flex gap-2"><button onclick="confirmArchiveEmployee()" class="flex-1 bg-slate-800 text-white p-2 rounded">確認封存</button><button onclick="closeArchiveEmployee()" class="flex-1 border p-2 rounded">取消</button></div></div></div></div>
@@ -356,13 +567,133 @@
             };
         })();
     </script>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, remove, update, get, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-
+    <script>
         const firebaseConfig = { apiKey: "AIzaSyCcSH0HQutt6rYcFWjCKOpTSWkBDeinyvw", authDomain: "homego-system.firebaseapp.com", databaseURL: "https://homego-system-default-rtdb.firebaseio.com", projectId: "homego-system", storageBucket: "homego-system.firebasestorage.app", messagingSenderId: "679007509034", appId: "1:679007509034:web:df50010c5ab8cd7f964153" };
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+
+        const HGE_LOCAL_PREVIEW_KEY = 'hge_local_preview_v5';
+        const HGE_MOCK_SEED = {
+            employees: {
+                ceo: { id: 'ceo', name: '楊翊晟', joinDate: '2022-01-01', hrRole: 'ceo', approvalPermissions: { car: true, sick: true, personal: true }, employmentStatus: 'active', gender: 'male', birthday: '1995-06-25', devices: ['preview-device'] },
+                mgr: { id: 'mgr', name: '主管示範', joinDate: '2024-03-01', hrRole: 'supervisor', approvalPermissions: { car: true, sick: true, personal: true }, employmentStatus: 'active', gender: 'female', birthday: '1994-02-18', devices: [] },
+                staff: { id: 'staff', name: '同仁示範', joinDate: '2026-02-10', hrRole: 'staff', approvalPermissions: { car: false, sick: false, personal: false }, employmentStatus: 'active', gender: 'female', birthday: '1998-09-08', devices: [] }
+            },
+            requests: {
+                demoLeave: { empId: 'staff', empName: '同仁示範', category: 'leave', type: '病假', date: '2026-10-20', endDate: '2026-10-20', days: 1, reason: '感冒就醫', status: 'pending', createdAt: Date.now() - 3600000 },
+                demoCar: { empId: 'staff', empName: '同仁示範', category: 'car', type: '公務車', date: '2026-10-21', endDate: '2026-10-21', days: 1, location: '台南市區帶看', reason: '帶看與送件', status: 'pending', createdAt: Date.now() - 1800000 }
+            },
+            attendance: {},
+            bulletin: { title: 'V5 離線預覽模式', content: '目前無法連到外部 Firebase 時，系統會自動切換成本機示範資料，方便先看畫面與流程。正式部署到可連網環境時，仍會使用真實資料。', date: new Date().toLocaleDateString('zh-TW') },
+            settings: { salary: { baseSalary: 30000, workHours: 240, otRate1: 1.34, otRate2: 1.67, lateBuffer: 10, latePenalty: 0 }, taskTypes: ['銀行估價回報', '建案進度回覆', '簽約排程', '謄本調查', '案件追蹤', '客戶回覆'] }
+        };
+
+        const cloneDeep = value => value === undefined ? null : JSON.parse(JSON.stringify(value));
+        const createMockRealtimeAPI = () => {
+            const listeners = [];
+            const randomKey = () => 'k_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+            const load = () => {
+                try { const raw = localStorage.getItem(HGE_LOCAL_PREVIEW_KEY); if (raw) return JSON.parse(raw); } catch (error) {}
+                return cloneDeep(HGE_MOCK_SEED);
+            };
+            let root = load();
+            const save = () => { try { localStorage.setItem(HGE_LOCAL_PREVIEW_KEY, JSON.stringify(root)); } catch (error) {} };
+            const parts = path => String(path || '').split('/').filter(Boolean);
+            const getPath = path => parts(path).reduce((acc, key) => acc == null ? undefined : acc[key], root);
+            const setPath = (path, value) => {
+                const keys = parts(path);
+                if (!keys.length) { root = value; save(); return; }
+                let node = root;
+                for (let i = 0; i < keys.length - 1; i++) {
+                    const key = keys[i];
+                    if (!node[key] || typeof node[key] !== 'object') node[key] = {};
+                    node = node[key];
+                }
+                node[keys[keys.length - 1]] = value;
+                save();
+            };
+            const removePath = path => {
+                const keys = parts(path);
+                if (!keys.length) { root = {}; save(); return; }
+                let node = root;
+                for (let i = 0; i < keys.length - 1; i++) {
+                    node = node?.[keys[i]];
+                    if (!node) return;
+                }
+                if (node && typeof node === 'object') delete node[keys[keys.length - 1]];
+                save();
+            };
+            const merge = (target, patch) => {
+                const base = target && typeof target === 'object' && !Array.isArray(target) ? cloneDeep(target) : {};
+                Object.entries(patch || {}).forEach(([key, value]) => {
+                    if (value && typeof value === 'object' && !Array.isArray(value)) base[key] = merge(base[key], value);
+                    else base[key] = value;
+                });
+                return base;
+            };
+            const snapshotOf = path => ({ val: () => cloneDeep(getPath(path)), exists: () => getPath(path) !== undefined, key: parts(path).slice(-1)[0] || null });
+            const notify = () => { listeners.forEach(fn => { try { fn(snapshotOf('')); } catch (error) { console.error(error); } }); };
+            const api = {
+                isMock: true,
+                ref(path = '') { return { _path: path }; },
+                set(refObj, value) { setPath(refObj._path, cloneDeep(value)); notify(); return Promise.resolve(); },
+                push(refObj, value) {
+                    const key = randomKey();
+                    const fullPath = [refObj._path, key].filter(Boolean).join('/');
+                    if (value !== undefined) setPath(fullPath, cloneDeep(value));
+                    save(); notify();
+                    return { key, _path: fullPath };
+                },
+                onValue(refObj, success) { listeners.push(success); setTimeout(() => success(snapshotOf(refObj._path || '')), 0); return () => {}; },
+                remove(refObj) { removePath(refObj._path); notify(); return Promise.resolve(); },
+                update(refObj, value) { const current = getPath(refObj._path); setPath(refObj._path, merge(current, cloneDeep(value))); notify(); return Promise.resolve(); },
+                get(refObj) { return Promise.resolve(snapshotOf(refObj._path)); },
+                runTransaction(refObj, updater) {
+                    const current = cloneDeep(getPath(refObj._path));
+                    const next = updater(current);
+                    if (next === undefined) return Promise.resolve({ committed: false, snapshot: snapshotOf(refObj._path) });
+                    setPath(refObj._path, cloneDeep(next)); notify();
+                    return Promise.resolve({ committed: true, snapshot: snapshotOf(refObj._path) });
+                },
+                serverTimestamp() { return Date.now(); },
+                exportRoot() { return cloneDeep(root); },
+                reset() { root = cloneDeep(HGE_MOCK_SEED); save(); notify(); }
+            };
+            return api;
+        };
+
+        const firebaseReady = !!(window.firebase && firebase.apps && firebase.database);
+        let usingMockDb = !firebaseReady;
+        let mockApi = null;
+        let app = null;
+        let db = null;
+        let ref, set, push, onValue, remove, update, get, runTransaction, serverTimestamp;
+
+        if (!usingMockDb) {
+            app = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+            ref = (dbOrRef, path) => (path === undefined ? dbOrRef.ref() : dbOrRef.ref(path));
+            set = (dbRef, value) => dbRef.set(value);
+            push = (dbRef, value) => dbRef.push(value);
+            onValue = (dbRef, success, error) => dbRef.on('value', success, error);
+            remove = dbRef => dbRef.remove();
+            update = (dbRef, value) => dbRef.update(value);
+            get = dbRef => dbRef.get();
+            runTransaction = (dbRef, updateFn) => dbRef.transaction(updateFn);
+            serverTimestamp = () => firebase.database.ServerValue.TIMESTAMP;
+            window.HGE_DATA_MODE = 'firebase';
+        } else {
+            mockApi = createMockRealtimeAPI();
+            db = mockApi;
+            ref = (dbOrRef, path) => dbOrRef.ref(path || '');
+            set = (dbRef, value) => mockApi.set(dbRef, value);
+            push = (dbRef, value) => mockApi.push(dbRef, value);
+            onValue = (dbRef, success, error) => mockApi.onValue(dbRef, success, error);
+            remove = dbRef => mockApi.remove(dbRef);
+            update = (dbRef, value) => mockApi.update(dbRef, value);
+            get = dbRef => mockApi.get(dbRef);
+            runTransaction = (dbRef, updateFn) => mockApi.runTransaction(dbRef, updateFn);
+            serverTimestamp = () => mockApi.serverTimestamp();
+            window.HGE_DATA_MODE = 'mock';
+        }
         const ADMIN_PASSWORD = "8888";
 
         let employees = {};
@@ -407,65 +738,163 @@
             const part = type => parts.find(p => p.type === type)?.value;
             return `${part('year')}-${part('month')}-${part('day')}`;
         };
-        const annualGrantForYears = years => years < 1 ? 3 : years === 1 ? 7 : years === 2 ? 10 : years < 5 ? 14 : years < 10 ? 15 : Math.min(30, years + 6);
-        const annualPeriodsThrough = (joinDate, throughDate) => {
-            if (!dateOnly(joinDate) || !dateOnly(throughDate) || throughDate < joinDate) return [];
-            const periods = [];
-            const sixMonths = addCalendarMonths(joinDate, 6);
-            if (sixMonths > throughDate) return [];
-            periods.push({ start:sixMonths, end:addCalendarMonths(joinDate, 12), grant:3, years:0.5 });
-            for (let years=1; years<=100; years++) {
-                const start = addCalendarMonths(joinDate, years * 12);
-                if (start > throughDate) break;
-                periods.push({ start, end:addCalendarMonths(joinDate, (years+1)*12), grant:annualGrantForYears(years), years });
-            }
-            return periods;
-        };
-        const annualPeriodUsage = (empId, period) => {
-            let used = 0, needsReview = false;
-            for (const request of Object.values(requests)) {
-                if (String(request.empId) !== String(empId) || request.type !== '特休' || request.status !== 'approved') continue;
-                const start = request.date, end = request.endDate || request.date;
-                if (!dateOnly(start) || !dateOnly(end)) { needsReview = true; continue; }
-                if (end < period.start || start >= period.end) continue;
-                if (start < period.start || end >= period.end) { needsReview = true; continue; }
-                const days = Number(request.days);
-                if (!Number.isFinite(days) || days < 0) { needsReview = true; continue; }
-                used += days;
-            }
-            return { used:Number(used.toFixed(3)), needsReview };
-        };
-        const annualLeaveState = (emp, asOf = todayTaipei()) => {
-            if (!employeeIdentityIsUnique(emp)) return { pending:true, reason:'員工編號缺漏或重複，假勤歸屬待核對', grant:null, period:null, unsettled:[] };
-            if (!dateOnly(emp?.joinDate)) return { pending:true, reason:'到職日未設定或格式不正確', grant:null, period:null, unsettled:[] };
-            const periods = annualPeriodsThrough(emp.joinDate, asOf);
-            if (!periods.length) return { pending:false, reason:'尚未滿六個月', grant:0, remaining:0, period:null, unsettled:[] };
-            let carryIn = 0;
-            const unsettled = [];
-            let state;
-            for (let index=0; index<periods.length; index++) {
-                const period = periods[index];
-                const usage = annualPeriodUsage(emp.id, period);
-                const adjustment = emp.annualLeaveAdjustments?.[period.start];
-                const legacyNeedsReview = index === periods.length - 1 && Number(emp.stats?.annual || 0) > 0 && !adjustment;
-                const extra = Number(adjustment?.additionalUsedDays || 0);
-                const remaining = Number((period.grant + carryIn - usage.used - extra).toFixed(3));
-                const usedTotal = usage.used + extra;
-                const priorCarryUnused = Number(Math.max(0, carryIn - usedTotal).toFixed(3));
-                const currentGrantUnused = Number(Math.max(0, period.grant - Math.max(0, usedTotal - carryIn)).toFixed(3));
-                const pending = usage.needsReview || legacyNeedsReview || (index === periods.length - 1 && !!emp.annualLeaveReviewRequired) || !Number.isFinite(extra) || extra < 0 || remaining < 0;
-                state = { period, grant:period.grant, approvedUsed:usage.used, additionalUsed:extra, carryIn, remaining, priorCarryUnused, currentGrantUnused, pending, reason:pending ? '舊已休數／跨週年假單／超額需核對' : '', unsettled };
-                if (index < periods.length - 1) {
-                    const closure = emp.annualLeaveClosures?.[period.start];
-                    if (period.end > '2026-09-27' && (pending || (remaining > 0 && !closure))) unsettled.push(period.start);
-                    carryIn = Number(closure?.carryDays || 0);
-                    if (!Number.isFinite(carryIn) || carryIn < 0) { carryIn = 0; unsettled.push(period.start); }
-                }
-            }
-            if (unsettled.length) { state.pending = true; state.reason = `前期特休 ${unsettled.length} 期尚待結算／遞延核對`; }
-            if (emp.joinDate.endsWith('-02-29')) { state.pending = true; state.reason = '2/29 到職的非閏年週年日需人工核對'; }
-            return state;
-        };
+         // 週年制特休：保留既有資料節點與已核准假單，特殊個人條件僅在核定後適用。
+         // 法定級距依勞基法第 38 條；部分工時參照勞動部 2025-09-05 指引。
+         const annualGrantForYears = years => years < 1 ? 3 : years === 1 ? 7 : years === 2 ? 10 : years < 5 ? 14 : years < 10 ? 15 : Math.min(30, years + 6);
+         const roundLeaveUp = value => Number((Math.ceil((value - 0.00000001) * 8) / 8).toFixed(3));
+         const getAnnualPolicy = emp => {
+             const saved = emp?.annualLeavePolicy || {};
+             const pattern = ['full-time','same-days-part-time','reduced-days'].includes(saved.workPattern) ? saved.workPattern : 'full-time';
+             const validSeniority = !!dateOnly(saved.seniorityDate) && !!dateOnly(emp?.joinDate) && saved.seniorityDate <= emp.joinDate;
+             return { seniorityDate:validSeniority ? saved.seniorityDate : emp?.joinDate,
+                 workPattern:pattern, weeklyHours: saved.weeklyHours === undefined || saved.weeklyHours === '' ? null : Number(saved.weeklyHours),
+                 fullTimeWeeklyHours: saved.fullTimeWeeklyHours === undefined || saved.fullTimeWeeklyHours === '' ? 40 : Number(saved.fullTimeWeeklyHours),
+                 note:saved.note || '', hasInvalidSeniority:!!saved.seniorityDate && !validSeniority,
+                 hasInvalidPattern:!!saved.workPattern && !['full-time','same-days-part-time','reduced-days'].includes(saved.workPattern) };
+         };
+         const calculateLegalLeaveGrant = (emp, originalGrant) => {
+             const policy = getAnnualPolicy(emp);
+             if (policy.workPattern !== 'reduced-days') return { days:originalGrant, ratio:1, review:policy.hasInvalidSeniority || policy.hasInvalidPattern };
+             const { weeklyHours, fullTimeWeeklyHours } = policy;
+             if (!Number.isFinite(weeklyHours) || !Number.isFinite(fullTimeWeeklyHours) || weeklyHours <= 0 || fullTimeWeeklyHours <= 0 || weeklyHours > fullTimeWeeklyHours) {
+                 return { days:originalGrant, ratio:1, review:true };
+             }
+             const ratio = weeklyHours / fullTimeWeeklyHours;
+             // 以 1/8 日向上取整，避免僅因顯示/進位而低於依工時比例計給的時數。
+             return { days:roundLeaveUp(originalGrant * ratio), ratio, review:false };
+         };
+         const annualPeriodsThrough = (employeeOrJoinDate, throughDate) => {
+             const emp = typeof employeeOrJoinDate === 'string' ? { joinDate:employeeOrJoinDate } : employeeOrJoinDate;
+             const actualJoin = emp?.joinDate;
+             const policy = getAnnualPolicy(emp);
+             const anchor = policy.seniorityDate;
+             if (!dateOnly(actualJoin) || !dateOnly(anchor) || !dateOnly(throughDate) || throughDate < actualJoin) return [];
+             const periods = [];
+             const append = (start,end,rawGrant,years) => {
+                 if (!start || !end || end <= actualJoin || start > throughDate) return;
+                 const calculated = calculateLegalLeaveGrant(emp,rawGrant);
+                 periods.push({ start, end, grant:calculated.days, standardGrant:rawGrant, ratio:calculated.ratio, needsReview:calculated.review, years });
+             };
+             append(addCalendarMonths(anchor,6),addCalendarMonths(anchor,12),3,0.5);
+             for (let years=1; years<=100; years++) {
+                 const start = addCalendarMonths(anchor,years*12);
+                 if (start > throughDate) break;
+                 append(start,addCalendarMonths(anchor,(years+1)*12),annualGrantForYears(years),years);
+             }
+             return periods;
+         };
+         const annualPeriodUsage = (empId, period, sourceRequests = requests) => {
+             let used = 0, needsReview = false;
+             for (const request of Object.values(sourceRequests || {})) {
+                 if (String(request?.empId) !== String(empId) || request.type !== '特休' || request.status !== 'approved') continue;
+                 const start = request.date, end = request.endDate || request.date;
+                 if (!dateOnly(start) || !dateOnly(end)) { needsReview = true; continue; }
+                 if (end < period.start || start >= period.end) continue;
+                 if (start < period.start || end >= period.end) { needsReview = true; continue; }
+                 const days = Number(request.days);
+                 if (!Number.isFinite(days) || days <= 0) { needsReview = true; continue; }
+                 used += days;
+             }
+             return { used:Number(used.toFixed(3)), needsReview };
+         };
+         // 舊 stats.annual 只有總數而無年份及日期，數值相同不等於可證明來源相同。
+         // 只允許使用者明確選擇歸屬後核定；同時保留核對時的假單指紋供後續覆核。
+         const annualApprovedEvidence = (empId, period, sourceRequests = requests) => {
+             if (!period) return [];
+             return Object.entries(sourceRequests || {}).filter(([,r]) =>
+                 r && String(r.empId) === String(empId) && r.type === '特休' && r.status === 'approved' &&
+                 dateOnly(r.date) && dateOnly(r.endDate || r.date) && r.date >= period.start &&
+                 (r.endDate || r.date) < period.end && Number.isFinite(Number(r.days)) && Number(r.days) > 0
+             ).map(([key,r]) => ({key, date:r.date, endDate:r.endDate || r.date, days:Number(r.days)}))
+              .sort((a,b) => String(a.key).localeCompare(String(b.key)));
+         };
+         const auditLegacyReview = (emp, period, adjustment, sourceRequests = requests) => {
+             const rawValue=emp?.stats?.annual;
+             const legacy = rawValue === undefined || rawValue === null || rawValue === '' ? 0 : Number(rawValue);
+             const audit = adjustment?.legacyReconciliation;
+             if (!Number.isFinite(legacy) || legacy < 0) return {required:true, valid:false, reason:'舊已休統計數值異常，需核對原始紀錄'};
+             if (legacy === 0 && !audit) return {required:false, valid:true, legacy:0};
+             if (!audit || audit.version !== 1 || !['included','separate','historical','manual'].includes(audit.disposition))
+                 return {required:true, valid:false, legacy, reason:`舊統計 ${legacy} 天缺乏可核對的期別與假單重疊依據`};
+             if (Number(audit.legacyValue) !== legacy || audit.periodStart !== period.start || audit.periodEnd !== period.end)
+                 return {required:true, valid:false, legacy, reason:'舊已休統計或期別與上次核定不同，需重新核對'};
+             if (!Number.isFinite(Number(adjustment?.additionalUsedDays)) || Math.abs(Number(adjustment.additionalUsedDays) - Number(audit.additionalUsedDays)) > 0.001)
+                 return {required:true, valid:false, legacy, reason:'額外已休天數在核定後變更，需重新核對'};
+             if (!Array.isArray(audit.approvedEvidence) || typeof audit.evidence !== 'string' || !audit.evidence.trim())
+                 return {required:true, valid:false, legacy, reason:'上次核定的證據紀錄不完整'};
+             if (audit.disposition === 'included') {
+                 const totalAtReview=audit.confirmedTotalDays===undefined||audit.confirmedTotalDays===null ? legacy : Number(audit.confirmedTotalDays);
+                 if (!Number.isFinite(totalAtReview)||totalAtReview<0||Math.abs(Number(audit.approvedUsedAtReview)+Number(audit.additionalUsedDays)-totalAtReview)>0.001)
+                     return {required:true,valid:false,legacy,reason:'已核定的本期累計已休與補認列日數不符，需重新核對'};
+             }
+             const currentEvidence=annualApprovedEvidence(emp.id,period,sourceRequests);
+             if (JSON.stringify(currentEvidence)!==JSON.stringify(audit.approvedEvidence))
+                 return {required:true,valid:false,legacy,reason:'本期核准假單後來新增、更改或作廢，需重新核對'};
+             for (const saved of audit.approvedEvidence) {
+                 const live = sourceRequests?.[saved.key];
+                 if (!live || live.status !== 'approved' || live.type !== '特休' ||
+                    live.date !== saved.date || (live.endDate || live.date) !== saved.endDate || Number(live.days) !== Number(saved.days))
+                     return {required:true, valid:false, legacy, reason:'核定時已存在的假單後來異動／作廢，需重新核對'};
+             }
+             return {required:true, valid:true, legacy, audit};
+         };
+         const annualLeaveState = (emp, asOf = todayTaipei(), sourceRequests = requests) => {
+             if (!employeeIdentityIsUnique(emp)) return { pending:true, reason:'員工編號缺漏或重複，假勤歸屬待核對', grant:null, period:null, unsettled:[] };
+             if (!dateOnly(emp?.joinDate)) return { pending:true, reason:'到職日未設定或格式不正確', grant:null, period:null, unsettled:[] };
+             const policy = getAnnualPolicy(emp);
+             if (policy.hasInvalidSeniority) return { pending:true, reason:'年資認列起算日無效或晚於到職日', grant:null, period:null, unsettled:[] };
+             const periods = annualPeriodsThrough(emp, asOf);
+             if (!periods.length) return { pending:false, reason:'尚未取得本次特休資格', grant:0, remaining:0, period:null, unsettled:[] };
+             let carryIn = 0;
+             const unsettled = [];
+             let state;
+             for (let index=0; index<periods.length; index++) {
+                 const period = periods[index];
+                 const usage = annualPeriodUsage(emp.id, period, sourceRequests);
+                 const adjustment = emp.annualLeaveAdjustments?.[period.start];
+                 const legacyAudit = index === periods.length - 1 ? auditLegacyReview(emp,period,adjustment,sourceRequests) : {required:false,valid:true};
+                 const legacyNeedsReview = legacyAudit.required && !legacyAudit.valid;
+                 const extraUsed = Number(adjustment?.additionalUsedDays || 0);
+                 const extraGranted = Number(adjustment?.additionalGrantedDays || 0);
+                 const granted = Number((period.grant + extraGranted).toFixed(3));
+                 const remaining = Number((granted + carryIn - usage.used - extraUsed).toFixed(3));
+                 const usedTotal = usage.used + extraUsed;
+                 const priorCarryUnused = Number(Math.max(0, carryIn - usedTotal).toFixed(3));
+                 const currentGrantUnused = Number(Math.max(0, granted - Math.max(0, usedTotal - carryIn)).toFixed(3));
+                 const reviewReasons = [];
+                 if (usage.needsReview) reviewReasons.push('有跨週年或日期／日數異常的已核准特休假單，需按期分攤');
+                 if (legacyNeedsReview) reviewReasons.push(legacyAudit.reason);
+                 if (period.needsReview) reviewReasons.push('個人年資或工時條件無效，需核定');
+                 if (index === periods.length - 1 && !!emp.annualLeaveReviewRequired) reviewReasons.push('到職日或個人條件已更動，本期尚待重新核定');
+                 if (!Number.isFinite(extraUsed) || extraUsed < 0 || !Number.isFinite(extraGranted) || extraGranted < 0)
+                     reviewReasons.push('本期個別加給／額外已休數字異常');
+                 if (remaining < -0.001) reviewReasons.push('依現有紀錄試算為負數，請核對假單與加給');
+                 const pending = reviewReasons.length > 0;
+                 state = { period, grant:granted, legalGrant:period.grant, standardGrant:period.standardGrant,
+                     extraGranted, approvedUsed:usage.used, additionalUsed:extraUsed, carryIn, remaining,
+                     priorCarryUnused, currentGrantUnused, pending,
+                     reason:reviewReasons.join('；'), reviewReasons, unsettled };
+                 if (index < periods.length - 1) {
+                     const closure = emp.annualLeaveClosures?.[period.start];
+                     if (closure && (!Number.isFinite(Number(closure.paidDays)) || !Number.isFinite(Number(closure.carryDays)) ||
+                         Math.abs(Number(closure.paidDays) + Number(closure.carryDays) - remaining) > 0.001)) unsettled.push(period.start);
+                     // 2026-09-27 為原系統歷史切點；舊期不自動視為未休並遞延。
+                     if (period.end > '2026-09-27' && (pending || (remaining > 0 && !closure))) unsettled.push(period.start);
+                     carryIn = Number(closure?.carryDays || 0);
+                     if (!Number.isFinite(carryIn) || carryIn < 0) { carryIn = 0; unsettled.push(period.start); }
+                 }
+             }
+             if (unsettled.length) {
+                 state.pending = true;
+                 state.reviewReasons.push(`前期特休 ${new Set(unsettled).size} 期尚待結算／遞延核對`);
+             }
+             if (policy.seniorityDate.endsWith('-02-29')) {
+                 state.pending = true;
+                 state.reviewReasons.push('2/29 年資起算日的非閏年週年須人工核對');
+             }
+             state.reason = state.reviewReasons.join('；');
+             return state;
+         };
 
         const DEFAULT_TASKS = ["地政過戶", "貸款", "結案資料整理", "過水電", "用印", "對保", "塗銷"];
         let taskOptions = DEFAULT_TASKS;
@@ -476,7 +905,11 @@
         const dgpaConfig = {
             holidays: [
                 '2024-01-01', '2024-02-08', '2024-02-09', '2024-02-12', '2024-02-13', '2024-02-14',
-                '2024-02-28', '2024-04-04', '2024-04-05', '2024-06-10', '2024-09-17', '2024-10-10'
+                '2024-02-28', '2024-04-04', '2024-04-05', '2024-06-10', '2024-09-17', '2024-10-10',
+                 // 115 年政府機關辦公日曆表；公司仍須依實際班表核對
+                 '2026-01-01','2026-02-16','2026-02-17','2026-02-18','2026-02-19','2026-02-20',
+                 '2026-02-27','2026-04-03','2026-04-06','2026-05-01','2026-06-19',
+                 '2026-09-25','2026-09-28','2026-10-09','2026-10-26','2026-12-25'
             ],
             workdays: [
                 '2024-02-17'
@@ -817,8 +1250,10 @@ window.HGEStability = (() => {
                 currentUserId = emp.id;
                 document.getElementById('loginSection').classList.add('hidden-section');
                 document.getElementById('employeeView').classList.remove('hidden-section');
-                renderEmployeeStats(emp);
-                window.renderEmployeePersonalCalendar();
+                 renderEmployeeStats(emp);
+             window.renderEmployeePersonalCalendar();
+                 window.renderSupervisorQueue();
+                 window.renderLeaveRequestHint();
                 return true;
             } catch (error) {
                 Swal.fire('無法登入', error.message, 'error');
@@ -1019,15 +1454,15 @@ window.HGEStability = (() => {
             }
 
             if (leaveMode === 'day') {
-                const s = new Date(startInput.value);
-                const e = new Date(endInput.value);
+const s = dateOnly(startInput.value);
+                 const e = dateOnly(endInput.value);
                 
                 let workingDays = 0;
                 let currentDate = new Date(s);
                 
                 while (currentDate <= e) {
-                    const dayOfWeek = currentDate.getDay();
-                    const dateStr = currentDate.toISOString().split('T')[0]; 
+const dayOfWeek = currentDate.getUTCDay();
+                     const dateStr = ymd(currentDate); 
                     
                     const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
                     const isNationalHoliday = dgpaConfig.holidays.includes(dateStr);
@@ -1039,15 +1474,26 @@ window.HGEStability = (() => {
                         workingDays++;
                     }
                     
-                    currentDate.setDate(currentDate.getDate() + 1);
+                    currentDate.setUTCDate(currentDate.getUTCDate() + 1);
                 }
                 
-                document.getElementById('leaveDays').value = workingDays;
-            }
-            updateImpactInfo();
-        };
+const policy=getAnnualPolicy(employeeById(currentUserId));
+                 document.getElementById('leaveDays').value = policy.workPattern==='reduced-days' ? '' : workingDays;
+             }
+             const calendarNote=document.getElementById('leaveDayEstimateNotice');
+             if(calendarNote){
+                 const startY=startInput.value.slice(0,4),endY=endInput.value.slice(0,4);
+                 calendarNote.textContent=getAnnualPolicy(employeeById(currentUserId)).workPattern==='reduced-days'
+                     ? '部分工時且每週工作日較少：無法從週一至週五推定實際排班，請手動填入實際請假日數並由主管核對。'
+                     : startY==='2026' && endY==='2026'
+                     ? '目前以 115 年政府辦公日曆與週休二日估算；實際休假天數須依公司國定假日／個人班表核對。'
+                     : '超出已核對的 115 年日曆，僅依週末與已建置日期估算，請依公司實際班表人工確認。';
+             }
+             updateImpactInfo();
+             window.renderLeaveRequestHint();
+         };
 
-        window.calcTimeDiff = () => {
+         window.calcTimeDiff = () => {
             const start = document.getElementById('leaveStartTime').value;
             const end = document.getElementById('leaveEndTime').value;
             if (start && end) {
@@ -1069,7 +1515,10 @@ window.HGEStability = (() => {
                 diff = Math.round(diff * 10) / 10;
                 document.getElementById('timeDiffDisplay').innerText = diff;
                 
-                document.getElementById('leaveDays').value = Number((diff / 8).toFixed(3));
+                const leavePolicy=getAnnualPolicy(employeeById(currentUserId));
+                 const hoursPerDay=leavePolicy.workPattern==='same-days-part-time' && Number.isFinite(leavePolicy.weeklyHours) && leavePolicy.weeklyHours>0
+                     ? leavePolicy.weeklyHours/5 : 8; // 同一週工作日預設五日；非五日制須人事核對
+                 document.getElementById('leaveDays').value = Number((diff / hoursPerDay).toFixed(3));
                 updateImpactInfo();
             }
         };
@@ -1101,7 +1550,15 @@ window.HGEStability = (() => {
                 durationStr = `${hours} 小時 (約 ${days} 天)`;
             }
 
-            if(!date || !endDateStr || !reason) return Swal.fire('錯誤', '請確認起訖日期與事由皆已填寫', 'warning');
+            if(!dateOnly(date) || !dateOnly(endDateStr) || endDateStr<date || !reason.trim()) return Swal.fire('錯誤', '請確認有效起訖日期與事由皆已填寫', 'warning');
+             if(leaveMode==='time' && date!==endDateStr) return Swal.fire('日期不一致', '小時區間僅支援同日，跨日請改用全天單位並核對天數。', 'warning');
+             if(!Number.isFinite(Number(days)) || Number(days)<=0) return Swal.fire('天數未確認', '請確認請假日數大於零；部分工時請依實際工作日填寫。', 'warning');
+             if(type==='特休') {
+                 const available=annualLeaveState(employeeById(currentUserId), date);
+                 if(!available.pending && available.period && Number(days)>Number(available.remaining)+0.0001) {
+                     return Swal.fire('超過本期可用特休', `目前本期已核定剩餘 ${available.remaining} 天；請調整天數，或向人事確認歷史核定／遞延資料。`, 'warning');
+                 }
+             }
 
             const empName = employeeById(currentUserId).name;
             const msg = `【請假申請】\n申請人：${empName}\n假別：${type}\n日期：${dateDisplay}${timeStr}\n長度：${durationStr}\n事由：${reason}`;
@@ -1225,6 +1682,7 @@ window.HGEStability = (() => {
         function downloadCSV(rows, filename) { let csvContent = "\uFEFF"; rows.forEach(row => { csvContent += row.join(",") + "\n"; }); const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); if (link.download !== undefined) { const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", filename); link.style.visibility = 'hidden'; document.body.appendChild(link); link.click(); document.body.removeChild(link); } }
         
         window.openSalaryModal = (empId) => {
+             if (!window.HGEDeviceControl.isAdmin()) return Swal.fire('沒有管理權限', '請從執行長管理後台操作。', 'warning');
             const emp = employeeById(empId); if(!emp) return;
             document.getElementById('salaryEmpId').value = empId;
             const s = emp.salarySettings || {};
@@ -1236,6 +1694,7 @@ window.HGEStability = (() => {
         };
         window.closeSalaryModal = () => document.getElementById('salaryModal').style.display = 'none';
         window.saveIndividualSalary = () => {
+             if (!window.HGEDeviceControl.isAdmin()) return Swal.fire('沒有管理權限', '請從執行長管理後台操作。', 'warning');
             const id = document.getElementById('salaryEmpId').value;
             const settings = { baseSalary: document.getElementById('indBaseSalary').value, workHours: document.getElementById('indWorkHours').value, otRate1: document.getElementById('indOtRate1').value, otRate2: document.getElementById('indOtRate2').value };
             update(ref(db, `${employeePath(id)}/salarySettings`), settings).then(() => { Swal.fire('成功', '個人薪資設定已儲存', 'success'); closeSalaryModal(); }).catch(error => Swal.fire('未儲存', error.message, 'error'));
@@ -1252,7 +1711,7 @@ window.HGEStability = (() => {
             document.getElementById('displaySalary').textContent = Number(value || 0).toLocaleString();
             window.calculateOvertime();
         };
-        window.updateImpactInfo = () => { if(!currentUserId) return; const type = document.getElementById('leaveType').value; const days = parseFloat(document.getElementById('leaveDays').value) || 0; const config = getSalaryConfig(currentUserId); const inputSalary = parseInt(document.getElementById('monthlySalary').value); const hourly = Math.round((inputSalary || config.base) / config.hours); const daily = hourly * 8; const card = document.getElementById('impactCard'); let ded = 0; card.classList.remove('impact-full','impact-half','impact-none'); if(['特休','補休','婚假'].includes(type)) { card.classList.add('impact-full'); document.getElementById('impactTitle').innerText="全薪"; document.getElementById('impactDesc').innerText="工資照給"; } else if(type==='病假') { card.classList.add('impact-half'); document.getElementById('impactTitle').innerText="半薪"; document.getElementById('impactDesc').innerText="扣除半薪"; ded = Math.round(daily * days * 0.5); } else { card.classList.add('impact-none'); document.getElementById('impactTitle').innerText="無薪"; if(type==='遲到' && config.latePen > 0) { document.getElementById('impactDesc').innerText="依設定扣款"; ded = Math.round(daily * days); } else { document.getElementById('impactDesc').innerText="依工時比例扣除"; ded = Math.round(daily * days); } } document.getElementById('impactAmount').innerText = ded.toLocaleString(); currentDeduction = ded; window.calculateOvertime(); };
+         window.updateImpactInfo = () => { if(!currentUserId) return; if(typeof window.renderLeaveRequestHint==='function') window.renderLeaveRequestHint(); const type = document.getElementById('leaveType').value; const days = parseFloat(document.getElementById('leaveDays').value) || 0; const config = getSalaryConfig(currentUserId); const inputSalary = parseInt(document.getElementById('monthlySalary').value); const hourly = Math.round((inputSalary || config.base) / config.hours); const daily = hourly * 8; const card = document.getElementById('impactCard'); let ded = 0; card.classList.remove('impact-full','impact-half','impact-none'); if(['特休','補休','婚假'].includes(type)) { card.classList.add('impact-full'); document.getElementById('impactTitle').innerText="全薪"; document.getElementById('impactDesc').innerText="工資照給"; } else if(type==='病假') { card.classList.add('impact-half'); document.getElementById('impactTitle').innerText="半薪"; document.getElementById('impactDesc').innerText="扣除半薪"; ded = Math.round(daily * days * 0.5); } else { card.classList.add('impact-none'); document.getElementById('impactTitle').innerText="無薪"; if(type==='遲到' && config.latePen > 0) { document.getElementById('impactDesc').innerText="依設定扣款"; ded = Math.round(daily * days); } else { document.getElementById('impactDesc').innerText="依工時比例扣除"; ded = Math.round(daily * days); } } document.getElementById('impactAmount').innerText = ded.toLocaleString(); currentDeduction = ded; window.calculateOvertime(); };
 
         function renderEmployeeStats(emp) {
             document.getElementById('punchEmployeeName').textContent = '打卡同仁：' + (emp.name || '未填姓名');
@@ -1261,9 +1720,52 @@ window.HGEStability = (() => {
             const avatarImg = document.getElementById('dashboardAvatarImg'); const avatarPlace = document.getElementById('dashboardAvatarPlaceholder');
             if (emp.avatar) { avatarImg.src = emp.avatar; avatarImg.classList.remove('hidden'); avatarPlace.classList.add('hidden'); } else { avatarImg.classList.add('hidden'); avatarPlace.classList.remove('hidden'); }
             const leave = annualLeaveState(emp);
-            document.getElementById('dashboardRemaining').innerText = leave.pending ? '待核對' : `${leave.remaining} 天`;
-            document.getElementById('dashboardTotal').innerText = leave.grant === null ? '待核對' : `${leave.grant} 天`;
-            document.getElementById('dashboardLeavePeriod').innerText = leave.period ? `本期 ${leave.period.start}～${addCalendarDays(leave.period.end,-1)}；已核准 ${leave.approvedUsed} 天${leave.pending ? '；' + leave.reason : ''}` : leave.reason;
+            const canEstimate = !!leave.period && Number.isFinite(leave.remaining);
+            document.getElementById('dashboardTotal').textContent = leave.grant === null || leave.grant === undefined ? '—' : `${leave.grant} 天`;
+            document.getElementById('dashboardRemaining').textContent = canEstimate ? `${leave.remaining} 天` : '—';
+            document.getElementById('dashboardRemainingLabel').textContent = leave.pending ? '帳面剩餘（試算）' : '本期剩餘';
+            document.getElementById('dashboardRemainingStatus').textContent = leave.pending ? '尚待人事核對' : canEstimate ? '依已核對資料計算' : '需補齊資料';
+            const remainingCard = document.getElementById('dashboardRemainingCard');
+            remainingCard.className = leave.pending ? 'bg-amber-50 border border-amber-200 rounded-xl p-3' : 'bg-green-50 border border-green-100 rounded-xl p-3';
+            document.getElementById('dashboardRemaining').className = leave.pending ? 'font-extrabold text-amber-900 text-2xl' : 'font-extrabold text-green-700 text-2xl';
+            document.getElementById('dashboardLeavePeriod').textContent = leave.period
+                ? `特休期別：${leave.period.start}～${addCalendarDays(leave.period.end, -1)}`
+                : (leave.reason || '尚無可計算的特休期別');
+            const details = document.getElementById('dashboardLeaveBreakdown');
+            if (canEstimate) {
+                details.replaceChildren();
+                const entries = [
+                    ['本期法定／工時給假', leave.legalGrant],
+                    ['個別核定加給', leave.extraGranted],
+                    ['前期核定遞延', leave.carryIn],
+                    ['已核准使用', -leave.approvedUsed],
+                    ['另外核定已休', -leave.additionalUsed]
+                ];
+                entries.forEach(([label, days]) => {
+                    const line = document.createElement('div');
+                    line.className = 'flex items-center justify-between gap-2 py-1';
+                    const name = document.createElement('span');
+                    name.textContent = label;
+                    const amount = document.createElement('strong');
+                    amount.textContent = `${days > 0 ? '+' : ''}${days} 天`;
+                    line.append(name, amount);
+                    details.appendChild(line);
+                });
+                const total = document.createElement('div');
+                total.className = 'flex items-center justify-between gap-2 border-t border-slate-200 mt-1 pt-2 font-bold text-slate-900';
+                const label = document.createElement('span');
+                label.textContent = leave.pending ? '本期帳面試算' : '本期剩餘餘額';
+                const amount = document.createElement('strong');
+                amount.textContent = `${leave.remaining} 天`;
+                total.append(label, amount);
+                details.appendChild(total);
+            } else {
+                details.textContent = leave.reason || '到職未滿六個月，尚無可計算的特休期別';
+            }
+            const reviewNote = document.getElementById('dashboardLeaveReviewNote');
+            reviewNote.classList.toggle('hidden', !leave.pending);
+            document.getElementById('dashboardLeaveReviewReason').textContent = leave.reason || '尚有未核對的假勤資料';
+            if (typeof window.renderLeaveRequestHint === 'function') window.renderLeaveRequestHint();
             document.getElementById('dashboardJoinDate').innerText = emp.joinDate || "未設定"; document.getElementById('dashboardTenure').innerText = calculateTenure(emp.joinDate);
             
             const tbody = document.getElementById('myRequestsTable'); 
@@ -1298,12 +1800,13 @@ window.HGEStability = (() => {
                 const salaryButton = salaryBtnVisible ? `<button onclick="openSalaryModal(decodeURIComponent('${keyToken}'))" class="text-indigo-600 mr-2" title="薪資"><i class="fa-solid fa-sack-dollar"></i></button>` : '';
                 const archiveButton = isActiveEmployee(emp) ? `<button onclick="openArchiveEmployee(decodeURIComponent('${keyToken}'))" class="text-slate-500 ml-3" title="離職封存">封存</button>` : `<button onclick="restoreEmployee(decodeURIComponent('${keyToken}'))" class="text-green-700 ml-3" title="復職需重新核對到職日與年資">復職</button>`;
                 const duplicateHint = identityCounts.get(`${emp.name || ''}|${emp.joinDate || ''}`) > 1 ? `<div class="text-[10px] text-amber-700">同名同日資料・鍵末碼 ${key.slice(-6)}</div>` : '';
-                tbody.innerHTML += `<tr class="border-b text-sm"><td class="p-3 font-bold text-slate-800 flex items-center">${avatarHTML} ${emp.name}${emp.loginDisabled === true && isActiveEmployee(emp)?'<span class="text-[10px] text-red-700 ml-2">登入停用</span>':''}${!isActiveEmployee(emp)?'<span class="text-[10px] text-slate-500 ml-2">已封存</span>':''}</td><td class="p-3"><div class="text-xs text-slate-500">${emp.joinDate||'--'}</div><div class="text-xs text-slate-400">${emp.terminationDate ? '離職 '+emp.terminationDate : calculateTenure(emp.joinDate)}</div>${duplicateHint}</td><td class="p-3">${leave.pending ? '待核對' : `剩:${leave.remaining}`}</td><td class="p-3">${devs || '未綁定'}</td><td class="p-3 text-right">${salaryButton}<button onclick="openHistory(decodeURIComponent('${keyToken}'))" class="text-blue-600" title="假勤核對"><i class="fa-solid fa-pen-to-square"></i></button>${archiveButton}</td></tr>`;
+                tbody.innerHTML += `<tr class="border-b text-sm"><td class="p-3 font-bold text-slate-800 flex items-center">${avatarHTML} ${emp.name}${emp.loginDisabled === true && isActiveEmployee(emp)?'<span class="text-[10px] text-red-700 ml-2">登入停用</span>':''}${!isActiveEmployee(emp)?'<span class="text-[10px] text-slate-500 ml-2">已封存</span>':''}</td><td class="p-3"><div class="text-xs text-slate-500">${emp.joinDate||'--'}</div><div class="text-xs text-slate-400">${emp.terminationDate ? '離職 '+emp.terminationDate : calculateTenure(emp.joinDate)}</div>${duplicateHint}</td><td class="p-3">${leave.period && Number.isFinite(leave.remaining) ? `<div class="font-bold ${leave.pending ? 'text-amber-800' : 'text-green-700'}">${leave.remaining} 天</div>${leave.pending ? '<div class="text-xs text-amber-700">試算・待核對</div>' : '<div class="text-xs text-slate-500">按現有紀錄計算</div>'}` : '<span class="text-xs text-amber-700">資料待補齊</span>'}</td><td class="p-3">${devs || '未綁定'}</td><td class="p-3 text-right">${salaryButton}<button onclick="openHistory(decodeURIComponent('${keyToken}'))" class="bg-blue-50 text-blue-800 border border-blue-100 rounded px-2 py-1 text-xs font-bold" title="到職日／認列年資／特休重算">特休設定</button>${archiveButton}</td></tr>`;
             });
             if (!visible.length) tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">${showArchived ? '目前沒有員工資料' : '目前沒有在職員工；勾選上方可檢視已封存同仁'}</td></tr>`;
         }
         document.getElementById('showArchivedEmp').addEventListener('change', renderAdminTable);
         window.saveSalarySettings = () => {
+             if (!window.HGEDeviceControl.isAdmin()) return Swal.fire('沒有管理權限', '請從執行長管理後台操作。', 'warning');
             const s = { baseSalary: document.getElementById('settingBaseSalary').value, workHours: document.getElementById('settingWorkHours').value, otRate1: document.getElementById('settingOtRate1').value, otRate2: document.getElementById('settingOtRate2').value, lateBuffer: document.getElementById('settingLateBuffer').value, latePenalty: document.getElementById('settingLatePenalty').value };
             update(ref(db, 'settings/salary'), s).then(() => Swal.fire('全域設定已儲存', '', 'success'));
         };
@@ -1405,6 +1908,7 @@ window.HGEStability = (() => {
             if(!currentUserId) return Swal.fire('錯誤', '請先登入', 'error');
             if (!isActiveEmployee(employeeById(currentUserId))) return Swal.fire('無法送出', '員工已封存，請聯絡管理員。', 'warning');
             const date = document.getElementById('carDate').value; // YYYY-MM-DD
+             if (!dateOnly(date)) return Swal.fire('日期尚未設定', '請先選擇公務車預約日期。', 'warning');
             const locations = document.getElementsByName('carLocation');
             const times = document.getElementsByName('carTime');
             
@@ -1433,7 +1937,7 @@ window.HGEStability = (() => {
                 
                 Swal.fire({
                     title: '預約申請已送出',
-                    text: '已發送 LINE 通知，請等待主管核准。',
+                    text: '申請已儲存；請確認已在 LINE 實際送出通知，並等待有權主管核准。',
                     icon: 'success',
                     confirmButtonText: '確定',
                     confirmButtonColor: '#4285F4'
@@ -1481,98 +1985,222 @@ window.HGEStability = (() => {
             setTimeout(() => Swal.fire('日誌已彙整', '請至 LINE 確認是否成功跳轉發送', 'success'), 500);
         };
 
-        window.renderApprovalQueue = () => { 
-            const t = document.getElementById('approvalTableBody'); 
-            t.innerHTML=''; 
-            const pendingReqs = Object.entries(requests).filter(([k,v])=>v.status==='pending');
+         const escapeUI = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+         const permissionNames = {car:'公務車',sick:'病假',personal:'事假'};
+         const reqPermission = request => request?.category === 'car' ? 'car' : request?.category === 'leave' && request.type === '病假' ? 'sick' : request?.category === 'leave' && request.type === '事假' ? 'personal' : null;
+         const supervisorMayReview = (emp, request) => isActiveEmployee(emp) && employeeIdentityIsUnique(emp) && emp?.loginDisabled !== true && emp.hrRole === 'supervisor' &&
+             emp.approvalPermissions?.[reqPermission(request)] === true && !!employeeById(request?.empId) && employeeIdentityIsUnique(employeeById(request?.empId)) &&
+             String(emp.id) !== String(request?.empId);
+         const currentSupervisor = () => currentUserId ? employeeById(currentUserId) : null;
+         window.renderLeaveRequestHint = () => {
+             const el=document.getElementById('employeeAnnualRequestHint');
+             if(!el || !currentUserId) return;
+             const type=document.getElementById('leaveType')?.value;
+             if(type!=='特休') {
+                 el.textContent = type==='病假'||type==='事假' ? `目前選擇「${type}」，送出後須由具有該假別核准權的主管或管理後台審核。` : `目前選擇「${type}」，送出後仍須依公司流程核准。`;
+                 return;
+             }
+             const emp=employeeById(currentUserId), leave=annualLeaveState(emp);
+             if(!emp || !leave.period) {el.textContent = '尚未取得特休期別；請先由人事核對到職日與認列年資。';return;}
+             el.textContent=leave.pending
+                 ? `本期特休帳面試算：給假 ${leave.grant} 天－已核准 ${leave.approvedUsed} 天－另外核定已休 ${leave.additionalUsed} 天＋前期核定遞延 ${leave.carryIn} 天＝${Number.isFinite(leave.remaining) ? leave.remaining + ' 天' : '無法試算'}。待核對：${leave.reason}。申請仍可送出待審，但不得直接視為核定可用額度。`
+                 : `本期 ${leave.period.start}～${addCalendarDays(leave.period.end,-1)}；共給 ${leave.grant} 天（含個別加給 ${leave.extraGranted} 天），已核准 ${leave.approvedUsed} 天，帳列餘額 ${leave.remaining} 天。特休期日原則上由同仁排定，審核以額度與紀錄核對為主。`;
+         };
+         window.renderAnnualOverview = (requested=false) => {
+             const body=document.getElementById('annualOverviewBody'), notice=document.getElementById('annualOverviewNotice');
+             if(!body || !notice) return;
+             const date=todayTaipei();
+             const entries=Object.entries(employees).filter(([,e])=>isActiveEmployee(e));
+             const summary={ok:0,review:0,ineligible:0};
+             if(!entries.length) { body.innerHTML='<tr><td colspan="8" class="p-3 text-slate-500">尚無在職員工。</td></tr>';notice.textContent='無可試算的在職員工。';return;}
+             body.innerHTML=entries.map(([key,emp])=>{
+                 const state=annualLeaveState(emp,date), policy=getAnnualPolicy(emp);
+                 const kind=policy.workPattern==='full-time'?'一般全時':policy.workPattern==='same-days-part-time'?'同天數短工時':'每週較少工作日';
+                 const term=state.period?`${state.period.start}～${addCalendarDays(state.period.end,-1)}`:'尚未取得資格';
+                 const status=state.pending?'試算餘額待核對':state.period?'依現有紀錄試算':'未滿六個月／待確認';
+                 if(state.pending) summary.review++;else if(state.period) summary.ok++;else summary.ineligible++;
+                 const keyToken=encodeURIComponent(key).replace(/'/g,'%27');
+                 return `<tr class="border-b border-slate-100 align-top hover:bg-slate-50"><td class="p-2 font-semibold text-slate-800">${escapeUI(emp.name||'未命名')}<div class="text-xs font-normal text-slate-500 mt-1">到職：${escapeUI(emp.joinDate||'未設定')}</div></td><td class="p-2 text-xs">${escapeUI(kind)}<div class="text-slate-500 mt-1">認列：${escapeUI(policy.seniorityDate||'未設定')}</div></td><td class="p-2 text-xs">${escapeUI(term)}</td><td class="p-2">${state.period?escapeUI(state.legalGrant)+' ＋ '+escapeUI(state.extraGranted):'—'}</td><td class="p-2">${state.period?escapeUI(state.approvedUsed)+' ＋ '+escapeUI(state.additionalUsed):'—'}</td><td class="p-2 ${state.pending?'text-amber-700':'font-bold text-green-700'}">${state.period && Number.isFinite(state.remaining) ? escapeUI(state.remaining) + ' 天' + (state.pending ? '<div class="text-[11px] font-normal">試算・待核對</div>' : '') : state.pending ? '無法試算' : '0 天'}</td><td class="p-2 text-xs ${state.pending?'text-amber-700':'text-slate-500'}">${escapeUI(status)}${state.pending?`<div class="mt-1 max-w-[240px]">${escapeUI(state.reason)}</div>`:''}</td><td class="p-2 text-right"><button type="button" onclick="openHistory(decodeURIComponent('${keyToken}'))" class="px-3 py-2 rounded-lg bg-blue-800 text-white text-xs hover:bg-blue-700 whitespace-nowrap">核對個人特休</button></td></tr>`;
+             }).join('');
+             notice.textContent=`試算基準：${date}｜在職 ${entries.length} 人：可計算 ${summary.ok} 人、需核對 ${summary.review} 人、尚未取得資格 ${summary.ineligible} 人。${requested?'已重新讀取目前畫面資料並計算，不更動任何原假單；若要同步最新伺服器名單，請重整網頁。':''}`;
+         };
 
-            const badge = document.getElementById('pendingCountBadge');
-            if(badge) {
-                badge.innerText = pendingReqs.length;
-                badge.style.display = pendingReqs.length > 0 ? 'inline-block' : 'none';
-            }
-            const noMsg = document.getElementById('noPendingMsg');
-            if(noMsg) noMsg.style.display = pendingReqs.length > 0 ? 'none' : 'block';
-
-            pendingReqs.forEach(([k,r])=>{ 
-                let dateDisplay = (r.endDate && r.endDate !== r.date) ? `${r.date} ~ ${r.endDate}` : r.date;
-                let timeDisplay = r.time ? `<div class="text-[10px] text-blue-600 font-bold bg-blue-50 px-1 py-0.5 rounded mt-0.5 inline-block"><i class="fa-regular fa-clock"></i> ${r.time}</div>` : '';
-                let detailsDisplay = r.reason ? `<div class="text-[10px] text-slate-500 truncate mt-0.5" title="${r.reason}">事由: ${r.reason}</div>` : (r.location ? `<div class="text-[10px] text-slate-500 truncate mt-0.5" title="${r.location}">地點: ${r.location}</div>` : '');
-
-                t.innerHTML+=`<tr class="border-b hover:bg-slate-50 transition">
-                    <td class="p-3 font-bold text-slate-700 w-1/4">${r.empName}</td>
-                    <td class="p-3 w-1/4">
-                        <span class="px-2 py-0.5 rounded text-[10px] bg-slate-100 border border-slate-200">${r.category==='car'?'🚗 用車':r.type}</span>
-                        ${detailsDisplay}
-                    </td>
-                    <td class="p-3 w-1/3">
-                        <div class="text-xs text-slate-700">${dateDisplay}</div>
-                        ${timeDisplay}
-                    </td>
-                    <td class="p-3 text-right w-1/6">
-                        <div class="flex justify-end gap-2">
-                            <button onclick="processRequest('${k}','approve')" class="bg-green-50 text-green-600 p-1.5 rounded hover:bg-green-100 border border-green-200 transition" title="核准"><i class="fa-solid fa-check"></i></button>
-                            <button onclick="processRequest('${k}','reject')" class="bg-red-50 text-red-600 p-1.5 rounded hover:bg-red-100 border border-red-200 transition" title="退回"><i class="fa-solid fa-times"></i></button>
-                        </div>
-                    </td>
-                </tr>`; 
-            }); 
-        };
-
-        window.processRequest = (k, s) => {
-            if (s === 'approve' && !isActiveEmployee(employeeById(requests[k]?.empId))) return Swal.fire('無法核准', '申請人已封存，須先核對原假單與離職結算。', 'warning');
-            if (s === 'approve' && requests[k]?.type === '特休') {
-                const req = requests[k], emp = employeeById(req.empId), leave = annualLeaveState(emp, req.date);
-                const days = Number(req.days);
-                if (!leave.period || leave.pending || !Number.isFinite(days) || days <= 0 || req.date < leave.period.start || (req.endDate || req.date) >= leave.period.end || days > leave.remaining + 0.001) {
-                    return Swal.fire('特休待核對', '此假單跨週年、餘額不足，或舊已休／期末資料尚未核定；請先至該同仁假勤數據中控核對，不直接核准。', 'warning');
-                }
-            }
-            update(ref(db, `requests/${k}`), { status: s === 'approve' ? 'approved' : 'rejected' }).then(() => {
-                if (s === 'approve') {
-                    const req = requests[k];
-                    let approvalLineText = "";
-
-                    if (req.category === 'car') {
-                        const dateObj = new Date(req.date);
-                        dateObj.setHours(9, 0, 0); 
-                        push(ref(db, 'attendance'), {
-                            empId: req.empId, empName: req.empName, type: '🚗 公務車', timestamp: dateObj.getTime(), dateStr: new Date(req.date).toLocaleDateString(), timeStr: req.time || "整日", location: req.location, status: '用車紀錄'
-                        });
-
-                        approvalLineText = `✨🎊 【核准通過】公務車預約 🎊✨\n\n申請同仁：${req.empName}\n使用日期：${req.date}\n時段：${req.time || "全日"}\n地點：${req.location}\n\n👑 主管已核准您的用車申請！\n🚗 祝您行程順利，平安歸來！`;
-
-                    } else if (req.category === 'leave') {
-                        approvalLineText = `✨🎊 【假單核准通過】 🎊✨\n\n申請同仁：${req.empName}\n假別：${req.type}\n時間：${req.date} ${req.endDate && req.endDate !== req.date ? '~ '+req.endDate : ''}\n事由：${req.reason}\n\n👑 主管已核准您的請假申請！\n🌟 祝您有個美好的一天！`;
-                    }
-
-                    const approvalLineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(approvalLineText)}`;
-
-                    Swal.fire({
-                        title: '已核准',
-                        text: '資料已成功更新，請點擊下方按鈕發送 LINE 通知給同仁。',
-                        icon: 'success',
-                        confirmButtonText: '<i class="fa-brands fa-line"></i> 發送 LINE 通知',
-                        confirmButtonColor: '#06c755'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            setTimeout(() => {
-                                const a = document.createElement('a');
-                                a.href = approvalLineUrl;
-                                a.target = '_blank';
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                            }, 300); 
-                        }
-                    });
-
-                } else {
-                    Swal.fire('已退回', '', 'info');
-                }
-                window.renderApprovalQueue();
-            });
-        };
+         let delegationRosterFingerprint = '';
+         window.renderDelegationRoster = () => {
+             const liveFingerprint = JSON.stringify(Object.entries(employees).map(([key,e])=>[key,e?.id,e?.name,e?.joinDate,e?.employmentStatus,e?.loginDisabled,e?.hrRole,e?.approvalPermissions]));
+             if (liveFingerprint === delegationRosterFingerprint) return;
+             delegationRosterFingerprint = liveFingerprint;
+             const selector = document.getElementById('delegationEmployeeSelect');
+             if (!selector) return;
+             const chosen = selector.value;
+             selector.replaceChildren(new Option('請選擇在職同仁',''));
+             Object.entries(employees).filter(([, e]) => isActiveEmployee(e)).forEach(([key,e]) => selector.add(new Option(`${e.name || '未命名'}｜${e.hrRole === 'supervisor' ? '主管' : '同仁'}`,key)));
+             selector.value = [...selector.options].some(o=>o.value===chosen) ? chosen : '';
+             const roster = document.getElementById('delegationRoster');
+             roster.replaceChildren();
+             const supervisors = Object.entries(employees).filter(([,emp]) => isActiveEmployee(emp) && emp.hrRole === 'supervisor');
+             supervisors.forEach(([key,emp]) => {
+                 const currentPermissions = Object.entries(permissionNames).filter(([type])=>emp.approvalPermissions?.[type] === true).map(([,name])=>name);
+                 const btn = document.createElement('button');
+                 btn.type='button';btn.className='rounded-lg border bg-amber-50 text-amber-900 px-3 py-2 hover:bg-amber-100';
+                 btn.textContent=`${emp.name}｜${currentPermissions.length ? currentPermissions.join('、') : '未授權個別核准'}`;
+                 btn.addEventListener('click',()=>{selector.value=key;window.loadDelegationEditor();});
+                 roster.appendChild(btn);
+             });
+             if (!supervisors.length) roster.textContent = '目前未指派主管。';
+             if (selector.value) window.loadDelegationEditor(false);
+         };
+         window.loadDelegationEditor = (resetMessage=true) => {
+             const key = document.getElementById('delegationEmployeeSelect').value;
+             const emp = employees[key];
+             document.getElementById('delegationRole').value = emp?.hrRole === 'supervisor' ? 'supervisor' : 'staff';
+             document.getElementById('delegateCar').checked = emp?.approvalPermissions?.car === true && emp?.hrRole === 'supervisor';
+             document.getElementById('delegateSick').checked = emp?.approvalPermissions?.sick === true && emp?.hrRole === 'supervisor';
+             document.getElementById('delegatePersonal').checked = emp?.approvalPermissions?.personal === true && emp?.hrRole === 'supervisor';
+             window.toggleDelegationEditor();
+             if (resetMessage) document.getElementById('delegationStatus').textContent = emp ? `正在設定：${emp.name}（到職 ${emp.joinDate || '未設定'}）` : '請先選擇同仁。';
+         };
+         window.toggleDelegationEditor = () => {
+             const enabled = document.getElementById('delegationRole').value === 'supervisor';
+             for (const id of ['delegateCar','delegateSick','delegatePersonal']) {
+                 const input=document.getElementById(id);
+                 input.disabled=!enabled;
+                 if (!enabled) input.checked=false;
+             }
+         };
+         window.saveSupervisorDelegation = async () => {
+             if (!window.HGEDeviceControl.isAdmin()) return Swal.fire('沒有權限', '主管指派只允許執行長管理後台操作。', 'warning');
+             const key = document.getElementById('delegationEmployeeSelect').value;
+             const emp = employees[key];
+             if (!key || !isActiveEmployee(emp) || emp.loginDisabled === true) return Swal.fire('同仁狀態不符', '僅可指派可登入的在職員工。', 'warning');
+             const role = document.getElementById('delegationRole').value;
+             const permissions = {car:role==='supervisor' && document.getElementById('delegateCar').checked,
+                 sick:role==='supervisor' && document.getElementById('delegateSick').checked,
+                 personal:role==='supervisor' && document.getElementById('delegatePersonal').checked};
+             const approved = await Swal.fire({title:`確認${role==='supervisor' ? '指派主管' : '撤銷主管'}：${emp.name}？`,
+                 text:`核准權限：${Object.entries(permissionNames).filter(([type])=>permissions[type]).map(([,name])=>name).join('、') || '無'}。特休仍由管理後台核准；撤權立即反映於主管工作台。`,
+                 showCancelButton:true,icon:'question',confirmButtonText:'確認儲存',cancelButtonText:'取消'});
+             if (!approved.isConfirmed) return;
+             try {
+                 const target=ref(db,`employees/${key}`);
+                 const result=await runTransaction(target, record => {
+                     if (!isActiveEmployee(record) || record.loginDisabled === true || String(record.id)!==String(emp.id)) return;
+                     const oldPerms = record.approvalPermissions || {};
+                     const oldRole=record.hrRole || 'staff';
+                     if (oldRole===role && Object.keys(permissions).every(type=>oldPerms[type]===permissions[type])) return;
+                     return {...record,hrRole:role,approvalPermissions:permissions,
+                         delegationUpdatedAt:serverTimestamp(),
+                         delegationHistory:[...(Array.isArray(record.delegationHistory)?record.delegationHistory:[]),
+                             {oldRole,newRole:role,oldPermissions:{car:oldPerms.car===true,sick:oldPerms.sick===true,personal:oldPerms.personal===true},newPermissions:permissions,actor:'執行長管理後台',at:serverTimestamp()}]};
+                 },{applyLocally:false});
+                 if (!result.committed) {
+                     const verify=await get(target);
+                     if (verify.exists() && verify.val().hrRole===role && Object.entries(permissions).every(([type,value])=>verify.val().approvalPermissions?.[type]===value)) return Swal.fire('權限已是設定值', '未新增重複的歷史紀錄。', 'info');
+                     throw new Error('同仁權限已變更或無須更新，請重新核對');
+                 }
+                 const saved=await get(target);
+                 if (!saved.exists() || saved.val().hrRole!==role || !Object.entries(permissions).every(([type,value])=>saved.val().approvalPermissions?.[type]===value)) throw new Error('資料庫尚未確認設定，請重新核對');
+                 employees[key]=saved.val();
+                 window.renderDelegationRoster();renderAdminTable();window.renderSupervisorQueue();
+                 document.getElementById('delegationStatus').textContent=`已確認 ${emp.name} 的主管身分與審核權限，異動歷程已保留。`;
+                 Swal.fire('已儲存並核對', `${emp.name} 的授權已寫入資料庫；特休核准權不受影響。`, 'success');
+             } catch(error) { Swal.fire('權限未儲存',error.message,'error'); }
+         };
+         window.renderSupervisorQueue = () => {
+             const panel = document.getElementById('supervisorApprovalPanel');
+             const emp=currentSupervisor();
+             if (!panel) return;
+             const canSee = !!currentUserId && isActiveEmployee(emp) && emp.loginDisabled !== true && emp.hrRole==='supervisor';
+             panel.classList.toggle('hidden',!canSee);
+             if (!canSee) return;
+             const allowed = Object.entries(permissionNames).filter(([key])=>emp.approvalPermissions?.[key]===true).map(([,name])=>name);
+             document.getElementById('supervisorPermissionsLabel').textContent = `目前授權：${allowed.join('、') || '暫無核准項目'}`;
+             const rows=Object.entries(requests).filter(([,req])=>req?.status==='pending' && supervisorMayReview(emp,req));
+             const list=document.getElementById('supervisorApprovalList');
+             if(!rows.length) {list.innerHTML='<p class="bg-slate-50 rounded p-4 text-slate-500">目前沒有您有權處理的待審申請。</p>';return;}
+             list.innerHTML=`<table class="w-full min-w-[560px] text-left"><thead class="bg-slate-100 text-xs text-slate-500"><tr><th class="p-3">同仁</th><th class="p-3">申請</th><th class="p-3">日期／說明</th><th class="p-3 text-right">審核</th></tr></thead><tbody>${rows.map(([key,req])=>{
+                 const period=req.endDate && req.endDate!==req.date ? `${req.date}～${req.endDate}` : req.date;
+                 const detail=req.reason || req.location || '';
+                 return `<tr class="border-b"><td class="p-3 font-semibold">${escapeUI(req.empName)}</td><td class="p-3">${escapeUI(reqPermission(req)==='car'?'公務車':req.type)}</td><td class="p-3 text-xs">${escapeUI(period)} ${escapeUI(req.time || '')}<div class="text-slate-500">${escapeUI(detail)}</div></td><td class="p-3 text-right whitespace-nowrap"><button onclick="processRequest('${key}','approve','supervisor')" class="bg-emerald-600 text-white px-3 py-2 rounded mr-2">核准</button><button onclick="processRequest('${key}','reject','supervisor')" class="bg-slate-100 px-3 py-2 rounded border">退回</button></td></tr>`;
+             }).join('')}</tbody></table>`;
+         };
+         window.renderApprovalQueue = () => {
+             const t=document.getElementById('approvalTableBody');
+             const pending=Object.entries(requests).filter(([,req])=>req?.status==='pending');
+             const badge=document.getElementById('pendingCountBadge');
+             badge.textContent=String(pending.length);badge.style.display=pending.length?'inline-block':'none';
+             document.getElementById('noPendingMsg').style.display=pending.length?'none':'block';
+             t.innerHTML=pending.map(([key,req])=>{
+                 const period=req.endDate && req.endDate!==req.date?`${req.date}～${req.endDate}`:req.date;
+                 const detail=req.reason || req.location || '';
+                 return `<tr class="border-b"><td class="p-3 font-bold text-slate-700">${escapeUI(req.empName)}</td><td class="p-3">${escapeUI(req.category==='car'?'🚗 用車':req.type)}<div class="text-xs text-slate-500">${escapeUI(detail)}</div></td><td class="p-3 text-xs">${escapeUI(period)}<div>${escapeUI(req.time || '')}</div></td><td class="p-3 text-right whitespace-nowrap"><button onclick="processRequest('${key}','approve','admin')" class="bg-green-50 text-green-700 p-2 rounded border mr-1" title="核准"><i class="fa-solid fa-check"></i></button><button onclick="processRequest('${key}','reject','admin')" class="bg-red-50 text-red-700 p-2 rounded border" title="退回"><i class="fa-solid fa-times"></i></button></td></tr>`;
+             }).join('');
+         };
+         window.processRequest = async (key, action, source='admin') => {
+             if (!['approve','reject'].includes(action)) return;
+             const isCEO = source==='admin' && window.HGEDeviceControl.isAdmin();
+             let managerToken=null, manager=null, actorName='執行長管理後台';
+             try {
+                 if (!isCEO) {
+                     if (source!=='supervisor') throw new Error('請先登入管理後台');
+                     managerToken=window.HGEDeviceControl.captureSession();
+                     const verified=await window.HGEDeviceControl.verifySession(managerToken);
+                     manager=verified.employee;
+                     if (!manager || String(manager.id)!==String(managerToken.employeeId) || !employeeIdentityIsUnique(manager) || manager.hrRole!=='supervisor' || manager.loginDisabled===true || !Object.values(manager.approvalPermissions || {}).some(value=>value===true)) {
+                         throw new Error('此帳號尚未完成主管授權，或原授權已被撤銷');
+                     }
+                     actorName=`主管 ${manager.name}`;
+                 }
+                 const incoming=requests[key];
+                 if (!incoming || incoming.status!=='pending') throw new Error('此申請已由其他人處理，請更新列表');
+                 if (!isCEO && !supervisorMayReview(manager,incoming)) throw new Error('您無此類別核准權限，或不得審核自己的申請');
+                 if(action==='approve' && !isActiveEmployee(employeeById(incoming.empId))) throw new Error('申請同仁已封存，先處理離職結算');
+                 // 使用整個 requests 節點交易：同時檢查其他已核准特休，避免併發審核超額。
+                 let rejectReason='';
+                 const employeeForAnnual = incoming.type==='特休' ? (await get(ref(db,employeePath(incoming.empId)))).val() : null;
+                 const result=await runTransaction(ref(db,'requests'),all=>{
+                     const row=all?.[key];
+                     if(!row || row.status!=='pending') {rejectReason='此單已被處理';return;}
+                     if(!isCEO && !supervisorMayReview(manager,row)) {rejectReason='不在主管授權範圍或為本人申請';return;}
+                     if(action==='approve' && row.type==='特休') {
+                         if(!isCEO || !employeeForAnnual || !isActiveEmployee(employeeForAnnual)) {rejectReason='特休僅執行長管理端可核定';return;}
+                         const state=annualLeaveState(employeeForAnnual,row.date,all);
+                         const days=Number(row.days);
+                         if(!state.period || state.pending || !Number.isFinite(days) || days<=0 ||
+                            row.date < employeeForAnnual.joinDate || row.date < state.period.start ||
+                            (row.endDate || row.date)>=state.period.end || days>state.remaining+0.0001) {
+                             rejectReason='特休申請跨週年、餘額不足或個人條件／舊已休待核對，請到假勤中控核對';return;
+                         }
+                     }
+                     const status=action==='approve'?'approved':'rejected';
+                     const event={action,status,actorId:isCEO?'ceo-admin':manager.id,actorName,at:serverTimestamp(),previousStatus:row.status};
+                     return {...all,[key]:{...row,status,approvedAt:serverTimestamp(),approvedById:event.actorId,approvedByName:actorName,
+                         approvalMode:isCEO?'ceo-admin':'delegated-supervisor',approvalHistory:[...(Array.isArray(row.approvalHistory)?row.approvalHistory:[]),event]}};
+                 },{applyLocally:false});
+                 if(!result.committed) throw new Error(rejectReason || '審核結果未確認，請重新讀取');
+                 const row=result.snapshot.val()?.[key];
+                 if(!row || row.status!==(action==='approve'?'approved':'rejected')) throw new Error('資料庫尚未回讀確認');
+                 let carWarning='';
+                 if(action==='approve' && row.category==='car') {
+                     const dateObj=dateOnly(row.date), fixedKey=`approved_car_${key}`;
+                     if(dateObj) {
+                         const timestamp=new Date(`${row.date}T09:00:00+08:00`).getTime();
+                         const carRecord={empId:row.empId,empName:row.empName,type:'🚗 公務車',
+                             timestamp,dateStr:row.date.replace(/-/g,'/'),timeStr:row.time || '整日',location:row.location || '',status:'用車紀錄',sourceRequestKey:key};
+                         try {await runTransaction(ref(db,`attendance/${fixedKey}`),old=>old===null?carRecord:undefined,{applyLocally:false});}
+                         catch(error){carWarning='；但用車行事曆寫入未確認，請主管核對：'+error.message;}
+                     } else carWarning='；申請日期格式錯誤，無法自動建立用車紀錄';
+                 }
+                 window.renderApprovalQueue();window.renderSupervisorQueue();
+                 if (action==='reject') return Swal.fire('已退回',`${actorName} 已處理。原申請及核准歷程保留。`,'success');
+                 const isCar=row.category==='car';
+                 const notice=isCar
+                     ? `【公務車預約已核准】\n申請同仁：${row.empName}\n日期：${row.date}\n時段：${row.time || '全日'}\n地點／用途：${row.location || ''}\n核准人：${actorName}`
+                     : `【請假申請已核准】\n申請同仁：${row.empName}\n假別：${row.type}\n日期：${row.date}${row.endDate && row.endDate!==row.date?'～'+row.endDate:''}\n事由：${row.reason || ''}\n核准人：${actorName}`;
+                 const response=await Swal.fire({title:'核准已寫入'+(carWarning?'（需核對用車紀錄）':''),text:`審核結果已保存${carWarning}。如需通知同仁，請按「開啟 LINE」，並自行確認訊息實際送出。`,icon:carWarning?'warning':'success',showCancelButton:true,confirmButtonText:'開啟 LINE',cancelButtonText:'關閉'});
+                 if(response.isConfirmed) window.open(`https://line.me/R/msg/text/?${encodeURIComponent(notice)}`,'_blank','noopener');
+             } catch(error) {Swal.fire('審核未完成',error.message,'error');}
+         };
 
         // [NEXUS 5.43 核心] 財會防護鎖定判斷
         window.checkPayrollLock = (dateStr) => {
@@ -1584,6 +2212,7 @@ window.HGEStability = (() => {
         };
 
         window.openHistory = (id) => {
+             if (!window.HGEDeviceControl.isAdmin()) return Swal.fire('沒有管理權限', '請從執行長管理後台操作。', 'warning');
             const entry = employeeEntryById(id);
             if (!entry) return Swal.fire('無法開啟', '員工資料鍵無法唯一辨識，請重新讀取並核對。', 'warning');
             id = entry[0];
@@ -1595,6 +2224,14 @@ window.HGEStability = (() => {
             document.getElementById('historyModal').style.display = 'flex'; 
         };
         
+        window.focusLegacyReview = () => {
+            const panel = document.getElementById('legacyReviewPanel');
+            const target = panel && !panel.classList.contains('hidden') ? panel : document.getElementById('annualManagerPanel');
+            if (!target) return;
+            target.scrollIntoView({behavior:'smooth',block:'start'});
+            const input = document.getElementById('legacyReviewTotalDays');
+            if (target === panel && input) window.setTimeout(()=>input.focus({preventScroll:true}),300);
+        };
         window.closeHistory = () => {
             document.getElementById('historyModal').style.display = 'none';
         };
@@ -1607,31 +2244,84 @@ window.HGEStability = (() => {
                 panel = document.createElement('div');
                 panel.id = 'annualManagerPanel';
                 panel.className = 'bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-sm space-y-2';
-                panel.innerHTML = `<div class="font-bold text-blue-900">週年制特休核對</div><div class="text-xs text-slate-600">每期到職週年自動給假；下方「額外已休」只填未出現在已核准假單的日數，避免重扣。舊統計原值保留，不自動搬入新年度。</div><label class="block">特休期別<select id="annualPeriodSelect" class="block w-full border rounded p-2 mt-1" onchange="renderAnnualManager(document.getElementById('historyModal').dataset.employeeId, this.value)"></select></label><div id="annualPeriodSummary" class="text-xs"></div><label class="block">核對原因<input type="text" id="annualAdjustmentReason" maxlength="200" class="block w-full border rounded p-2 mt-1" placeholder="例如：與原核准假單及舊已休數核對"></label><div id="annualClosureBox" class="border-t border-blue-200 pt-2 space-y-2 hidden"><div class="font-bold">期末未休處理（實際給付仍須登載工資清冊）</div><div class="grid grid-cols-2 gap-2"><label>已給付日數<input type="number" id="annualPaidDays" min="0" step="0.125" class="w-full border rounded p-2"></label><label>雙方同意遞延日數<input type="number" id="annualCarryDays" min="0" step="0.125" class="w-full border rounded p-2"></label></div><label>給付／遞延依據<input type="text" id="annualClosureNote" maxlength="200" class="block w-full border rounded p-2 mt-1"></label><button onclick="saveAnnualClosure()" class="bg-amber-700 text-white rounded px-3 py-2">記錄本期期末處理</button></div>`;
+                panel.innerHTML = `<div class="font-bold text-blue-900">週年制特休核對</div><div class="text-xs text-slate-600">每人依入職日、年資認列與工時型態計算；法定特休與個別加給分開顯示。額外已休僅填未出現在已核准假單的日數。原申請與舊統計全部保留，不自動挪移到新年度。</div><label class="block">特休期別<select id="annualPeriodSelect" class="block w-full border rounded p-2 mt-1" onchange="renderAnnualManager(document.getElementById('historyModal').dataset.employeeId, this.value)"></select></label><div id="annualPeriodSummary" class="text-xs"></div><div class="rounded-lg bg-amber-50 border border-amber-200 p-2 text-xs text-amber-900">核對步驟：先確認到職日及個人條件；選本期；「額外已休」若無漏列請填 0；填入核對原因後按下方「核定本期特休與假勤修正」。如顯示前期未結算，須再核對相關期別。特休原則上由勞工排定，主管以額度與紀錄核對為主。</div><div class="grid grid-cols-2 gap-2"><label>個別加給日數（本期）<input type="number" id="annualExtraGranted" min="0" step="0.125" class="w-full border rounded p-2" placeholder="0"></label><div class="text-xs text-slate-500 self-center">額外已休（原表格）只算未列於假單者，切勿重複扣除。</div></div><label class="block">核對原因<input type="text" id="annualAdjustmentReason" maxlength="200" class="block w-full border rounded p-2 mt-1" placeholder="例如：與原核准假單及舊已休數核對"></label><div id="annualClosureBox" class="border-t border-blue-200 pt-2 space-y-2 hidden"><div class="font-bold">期末未休處理（實際給付仍須登載工資清冊）</div><div class="grid grid-cols-2 gap-2"><label>已給付日數<input type="number" id="annualPaidDays" min="0" step="0.125" class="w-full border rounded p-2"></label><label>雙方同意遞延日數<input type="number" id="annualCarryDays" min="0" step="0.125" class="w-full border rounded p-2"></label></div><label>給付／遞延依據<input type="text" id="annualClosureNote" maxlength="200" class="block w-full border rounded p-2 mt-1"></label><button onclick="saveAnnualClosure()" class="bg-amber-700 text-white rounded px-3 py-2">記錄本期期末處理</button></div>`;
+                panel.querySelector('#annualPeriodSummary').insertAdjacentHTML('afterend', `
+
+                    <section id="legacyReviewPanel" class="mt-3 space-y-3" aria-label="舊特休已休數快速核定">
+                        <div class="hge-legacy-header">
+                            <div><h4 class="text-lg font-extrabold text-blue-950">本期特休｜快速核對</h4><p class="hge-small-info">選擇舊帳性質、確認日數，系統直接計算，不必自己換算。</p></div>
+                            <span id="legacyReviewStatus" class="text-xs font-bold rounded-full bg-amber-100 text-amber-900 px-3 py-1">待核對</span>
+                        </div>
+                        <div class="hge-legacy-kpis" aria-live="polite">
+                            <div class="hge-legacy-kpi"><span class="hge-kpi-label">本期應給</span><strong id="legacyKpiGrant">—</strong></div>
+                            <div class="hge-legacy-kpi"><span class="hge-kpi-label">舊系統已休</span><strong id="legacyKpiOriginal">—</strong></div>
+                            <div class="hge-legacy-kpi"><span class="hge-kpi-label">已核准假單</span><strong id="legacyKpiApproved">—</strong></div>
+                            <div class="hge-legacy-kpi"><span class="hge-kpi-label">原已額外認列</span><strong id="legacyKpiExtra">—</strong></div>
+                        </div>
+                        <div id="legacyReviewSource" class="text-xs bg-slate-50 rounded-lg p-3 text-slate-700">讀取假單明細中…</div>
+                        <div id="legacyReviewChoices" class="space-y-3">
+                            <label class="hge-primary-choice"><input type="radio" name="legacyReviewChoice" value="included" onchange="renderLegacyReviewPreview()"><span><strong class="text-blue-950 text-[15px]">舊系統數字是本期已休總數，已包含核准假單</strong><small class="block text-slate-600 mt-1 leading-6">這是最常見的對帳方式。系統會用「累計已休－已核准假單」自動認列差額，不重複扣假。</small></span></label>
+                            <div class="hge-entry" id="legacyReviewIncludedBox">
+                                <label for="legacyReviewTotalDays" class="block font-bold text-slate-700 text-sm mb-2">請確認本期累計實際已休（天）</label>
+                                <div class="flex items-center gap-3 flex-wrap"><input id="legacyReviewTotalDays" type="number" min="0" max="365" step="0.125" inputmode="decimal" onfocus="selectLegacyIncluded()" oninput="selectLegacyIncluded()"><span class="hge-small-info flex-1">可直接更正核對後的日數。<b>原始舊值保留，不會被覆寫。</b></span></div>
+                                <p id="legacyChangedValueNotice" class="hge-small-info mt-2"></p>
+                            </div>
+                            <details class="hge-legacy-advanced" id="legacyReviewAdvanced">
+                                <summary>不是「本期總數」？展開其他核對方式</summary>
+                                <div class="py-1">
+                                    <label class="hge-legacy-choice"><input type="radio" name="legacyReviewChoice" value="separate" onchange="renderLegacyReviewPreview()"><span><strong>舊系統數字是本期「另外已休」</strong><small>舊數字與新核准假單不重疊，兩者都要扣除。</small></span></label>
+                                    <label class="hge-legacy-choice"><input type="radio" name="legacyReviewChoice" value="historical" onchange="renderLegacyReviewPreview()"><span><strong>舊系統數字是過去年度資料</strong><small>不扣本期舊數字；仍保留舊紀錄供追溯。</small></span></label>
+                                    <label class="hge-legacy-choice"><input type="radio" name="legacyReviewChoice" value="manual" onchange="renderLegacyReviewPreview()"><span><strong>需自行認列其他額外已休日數</strong><small>只填未列在新核准假單的日數。</small></span></label>
+                                    <div class="hge-entry mx-3 mb-3" id="legacyReviewManualBox"><label for="legacyReviewManualDays" class="block text-sm font-bold text-slate-700 mb-1">另外已休（天）</label><input id="legacyReviewManualDays" type="number" min="0" max="365" step="0.125" inputmode="decimal" placeholder="例如：1.375" onfocus="selectLegacyManual()" oninput="selectLegacyManual()"><div class="hge-small-info mt-1">輸入本期確實漏登、且不包含已核准假單的日數。</div></div>
+                                </div>
+                            </details>
+                        </div>
+                        <div id="legacyReviewPreview" class="hge-legacy-preview" aria-live="polite"><p class="text-sm text-slate-600">請選擇核對方式，這裡將自動計算剩餘天數。</p></div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <label class="text-sm font-bold text-slate-700">核對依據來源（必選）<select id="legacyReviewEvidenceSource" class="mt-1" onchange="renderLegacyReviewPreview()"><option value="">— 請選擇依據 —</option><option value="人事特休紀錄">人事特休紀錄</option><option value="紙本假單或特休簿">紙本假單／特休簿</option><option value="薪資或考勤清冊">薪資／考勤清冊</option><option value="執行長親自核對">執行長親自核對</option><option value="其他核對依據">其他核對依據</option></select></label>
+                            <label class="text-sm font-bold text-slate-700">補充備註（依需要填寫）<textarea id="legacyReviewEvidence" rows="2" maxlength="300" class="mt-1" placeholder="例如：核對哪一份資料、哪個月或核對人"></textarea></label>
+                        </div>
+                        <label class="hge-confirm-ack"><input id="legacyReviewAcknowledged" type="checkbox" onchange="renderLegacyReviewPreview()"><span id="legacyReviewAckText">我已核實本期舊帳的歸屬與日數，確認不會重複扣假。</span></label>
+                        <div class="hge-review-foot"><button type="button" id="legacyReviewConfirm" onclick="confirmLegacyAnnualReview()" class="w-full rounded-xl bg-blue-900 text-white font-bold py-3 px-4 hover:bg-blue-800" disabled>請先選擇歸屬並勾選已核對</button><p id="legacyReviewActionHint" class="text-[11px] text-slate-600 mt-2 leading-5">核定會保留原本的 9 天、已核准假單、核對前後值與修改紀錄。示範模式不會更新正式資料庫。</p></div>
+                    </section>`);
                 const joinBox = document.createElement('div');
-                joinBox.innerHTML = `<div class="border-t border-blue-200 pt-2"><label class="block">核定到職日<input type="date" id="annualJoinDate" class="block w-full border rounded p-2 mt-1"></label><label class="block mt-2">更正依據<input type="text" id="annualJoinReason" maxlength="200" class="block w-full border rounded p-2 mt-1" placeholder="例如：與勞動契約核對"></label><button onclick="saveEmployeeJoinDate()" class="bg-blue-800 text-white rounded px-3 py-2 mt-2">更正到職日並重核特休</button></div>`;
-                panel.insertBefore(joinBox, panel.querySelector('label'));
+                joinBox.innerHTML = `<div class="border-t border-blue-200 pt-2"><div class="font-bold text-blue-900 mb-2">個人特休條件</div><p class="text-xs text-amber-800 mb-2">年資認列需有人事／契約依據；部分工時只有每週工作日較少時才採工時比例。特殊或變動班表請人工核對。</p><label class="block">核定到職日<input type="date" id="annualJoinDate" class="block w-full border rounded p-2 mt-1"></label><label class="block mt-2">更正依據<input type="text" id="annualJoinReason" maxlength="200" class="block w-full border rounded p-2 mt-1" placeholder="例如：與勞動契約核對"></label><button onclick="saveEmployeeJoinDate()" class="bg-blue-800 text-white rounded px-3 py-2 mt-2">更正到職日並重核特休</button><div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-4"><label>特休年資認列起算日<input type="date" id="annualSeniorityDate" class="w-full border rounded p-2 mt-1"></label><label>工時／給假類型<select id="annualWorkPattern" onchange="toggleAnnualWorkPattern()" class="w-full border rounded p-2 mt-1"><option value="full-time">一般全時（法定級距）</option><option value="same-days-part-time">部分工時：每週工作日相同、每日較短（不折日數）</option><option value="reduced-days">部分工時：每週工作日較少（按工時比例）</option></select></label></div><div id="annualWeeklyHoursBox" class="grid grid-cols-2 gap-2 mt-2 hidden"><label>個人每週正常工時<input type="number" id="annualWeeklyHours" min="0.125" max="168" step="0.125" class="w-full border rounded p-2 mt-1" placeholder="例如 24"></label><label>全時人員每週正常工時<input type="number" id="annualFullTimeHours" min="0.125" max="168" step="0.125" class="w-full border rounded p-2 mt-1" value="40"></label></div><label class="block mt-2">人事核定依據<input id="annualPolicyReason" class="w-full border rounded p-2 mt-1" maxlength="200" placeholder="例：勞動契約、工時表、承認前年資之書面約定"></label><button onclick="saveAnnualPolicy()" class="bg-emerald-700 text-white rounded px-3 py-2 mt-2">儲存個別條件並重新試算</button><div id="annualPolicyLivePreview" role="status" class="bg-white rounded border border-blue-100 text-blue-950 p-3 text-xs mt-3">調整日期或工時後，將在此顯示本期試算。</div><div class="text-xs mt-2 text-slate-600">僅更改給假試算條件，舊假單、歷史核定、已給付日數不會被刪除；異動後須核對受影響的期別。</div></div>`;
+                 panel.insertBefore(joinBox, panel.querySelector('#annualClosureBox'));
+                 for (const input of joinBox.querySelectorAll('#annualJoinDate,#annualSeniorityDate,#annualWorkPattern,#annualWeeklyHours,#annualFullTimeHours')) {
+                     input.addEventListener('input',()=>window.renderAnnualPolicyPreview());
+                     input.addEventListener('change',()=>window.renderAnnualPolicyPreview());
+                 }
                 const saveButton = modal.querySelector('button[onclick="saveAllAdjustments()"]');
                 saveButton.parentNode.insertBefore(panel, saveButton);
             }
             const identityUnique = employeeIdentityIsUnique(emp);
             panel.querySelectorAll('input, select, button').forEach(control => { control.disabled = !identityUnique; });
-            ['adjAnnualUsed','adjCompBalance','adjSickUsed','adjPersonalUsed'].forEach(field => { const control = document.getElementById(field); if (control) { control.disabled = !identityUnique; if (!identityUnique) control.value = ''; } });
+            ['adjAnnualUsed','adjCompBalance','adjSickUsed','adjPersonalUsed','annualExtraGranted'].forEach(field => { const control = document.getElementById(field); if (control) { control.disabled = !identityUnique; if (!identityUnique) control.value = ''; } });
             const saveButton = modal.querySelector('button[onclick="saveAllAdjustments()"]');
             if (saveButton) saveButton.disabled = !identityUnique;
             if (!identityUnique) {
                 document.getElementById('annualPeriodSelect').innerHTML = '';
                 document.getElementById('annualPeriodSummary').textContent = '員工編號缺漏或重複，假勤歸屬待核對；暫停特休調整與結算。';
                 document.getElementById('annualClosureBox').classList.add('hidden');
+                document.getElementById('legacyReviewPanel')?.classList.add('hidden');
                 return;
             }
+            document.getElementById('legacyReviewPanel')?.classList.remove('hidden');
             const asOf = emp.employmentStatus === 'archived' && emp.terminationDate ? emp.terminationDate : todayTaipei();
-            document.getElementById('annualJoinDate').value = emp.joinDate || '';
-            document.getElementById('annualJoinReason').value = '';
-            const periods = annualPeriodsThrough(emp.joinDate, asOf);
+document.getElementById('annualJoinDate').value = emp.joinDate || '';
+             document.getElementById('annualJoinReason').value = '';
+             const policy = getAnnualPolicy(emp);
+             document.getElementById('annualSeniorityDate').value = policy.seniorityDate || '';
+             document.getElementById('annualWorkPattern').value = policy.workPattern;
+             document.getElementById('annualWeeklyHours').value = policy.weeklyHours ?? '';
+             document.getElementById('annualFullTimeHours').value = policy.fullTimeWeeklyHours;
+             document.getElementById('annualPolicyReason').value = '';
+             window.toggleAnnualWorkPattern();
+             window.renderAnnualPolicyPreview();
+            const periods = annualPeriodsThrough(emp, asOf);
             const select = document.getElementById('annualPeriodSelect');
             select.innerHTML = '';
-            for (const period of periods.filter((p,i) => p.end > '2026-09-27' || i === periods.length-1)) {
+            for (const period of periods) {
                 const option = document.createElement('option'); option.value = period.start;
                 option.textContent = `${period.start}～${addCalendarDays(period.end,-1)}（${period.grant}天）`;
                 select.appendChild(option);
@@ -1642,8 +2332,9 @@ window.HGEStability = (() => {
             const state = annualLeaveState(emp, chosen);
             const adjustment = emp.annualLeaveAdjustments?.[chosen];
             document.getElementById('adjAnnualUsed').value = adjustment ? adjustment.additionalUsedDays : '';
+             document.getElementById('annualExtraGranted').value = adjustment ? (adjustment.additionalGrantedDays || 0) : 0;
             document.getElementById('annualAdjustmentReason').value = adjustment?.reason || '';
-            document.getElementById('annualPeriodSummary').textContent = `法定給假 ${state.grant} 天；已核准假單 ${state.approvedUsed} 天；額外已休 ${state.additionalUsed} 天；${state.pending ? '餘額待核對：'+state.reason : '本期餘額 '+state.remaining+' 天'}。舊總已休欄位 ${emp.stats?.annual ?? '無'} 天，未自動重扣。`;
+            document.getElementById('annualPeriodSummary').textContent = `原法定級距 ${state.standardGrant} 天；工時條件計給 ${state.legalGrant} 天；本期額外加給 ${state.extraGranted} 天；本期共給 ${state.grant} 天；已核准假單 ${state.approvedUsed} 天；額外已休 ${state.additionalUsed} 天；前期經核定遞延 ${state.carryIn} 天；${state.pending ? '本期帳面試算 '+state.remaining+' 天（尚待核對：'+state.reason+'）' : '本期剩餘 '+state.remaining+' 天'}。舊總已休欄位 ${emp.stats?.annual ?? '無'} 天，未自動重扣。`;
             const closed = emp.annualLeaveClosures?.[chosen];
             const canClose = state.period.end <= asOf || emp.employmentStatus === 'archived';
             document.getElementById('annualClosureBox').classList.toggle('hidden', !canClose);
@@ -1653,8 +2344,355 @@ window.HGEStability = (() => {
             document.getElementById('adjCompBalance').value = emp.stats?.compBalance ?? '';
             document.getElementById('adjSickUsed').value = emp.stats?.sickUsed ?? '';
             document.getElementById('adjPersonalUsed').value = emp.stats?.personalUsed ?? '';
+            window.renderLegacyReview(id, chosen);
         };
+         // 以三種可回溯的情境解決舊 stats.annual 與 Firebase 已核准假單重疊的歧義。
+         // 沒有來源日期的歷史統計，絕不能僅因數值相同就自動決定已休歸屬。
+         const reviewDraft = {id:null,periodStart:null,choice:'',legacy:null};
+         const previewDays = (choice,legacy,approved,manual,confirmedTotal = legacy) => {
+             if (choice === 'included') return Number.isFinite(confirmedTotal) && approved <= confirmedTotal ? Number((confirmedTotal - approved).toFixed(3)) : NaN;
+             if (choice === 'separate') return legacy;
+             if (choice === 'historical') return 0;
+             if (choice === 'manual') return Number(manual);
+             return NaN;
+         };
+         window.renderLegacyReview = (id, start) => {
+             const panel=document.getElementById('legacyReviewPanel');
+             const emp=employeeById(id);
+             if (!panel || !emp || !start) return;
+             const periods=annualPeriodsThrough(emp,emp.employmentStatus==='archived'&&emp.terminationDate?emp.terminationDate:todayTaipei());
+             const period=periods.find(p=>p.start===start);
+             if (!period) {panel.classList.add('hidden');return;}
+             const legacy = Number(emp.stats?.annual || 0);
+             const adjustment=emp.annualLeaveAdjustments?.[start];
+             const audit=auditLegacyReview(emp,period,adjustment);
+             const state=annualLeaveState(emp,start);
+             const usage=annualPeriodUsage(emp.id,period);
+             const evidence=annualApprovedEvidence(emp.id,period);
+             const saved=audit.audit;
+             const changed=reviewDraft.id!==id||reviewDraft.periodStart!==start||reviewDraft.legacy!==legacy;
+             if (changed) {
+                 reviewDraft.id=id;reviewDraft.periodStart=start;reviewDraft.legacy=legacy;reviewDraft.choice='';
+                 panel.querySelectorAll('input[name="legacyReviewChoice"]').forEach(input=>input.checked=false);
+                 // 原舊值作為草稿預設，不會自動核定或改寫資料庫。
+                 document.getElementById('legacyReviewTotalDays').value=String(audit.valid && saved?.disposition==='included' ? saved.confirmedTotalDays??legacy : legacy);
+                 document.getElementById('legacyReviewManualDays').value=String(audit.valid && saved?.disposition==='manual' ? saved.additionalUsedDays : '');
+                 document.getElementById('legacyReviewEvidence').value='';
+                 document.getElementById('legacyReviewEvidenceSource').value='';
+                 document.getElementById('legacyReviewAcknowledged').checked=false;
+                 const existingChoice = audit.valid && saved?.disposition;
+                 const matching=panel.querySelector(`input[name="legacyReviewChoice"][value="${existingChoice}"]`);
+                 if (matching) {
+                     matching.checked=true;
+                     if (existingChoice!=='included') document.getElementById('legacyReviewAdvanced').open=true;
+                 } else {
+                     document.getElementById('legacyReviewAdvanced').open=false;
+                 }
+             }
+             const currentGrant=period.grant+Number(adjustment?.additionalGrantedDays||0);
+             const setKpi=(name,value)=>{const el=document.getElementById(name);if(el)el.textContent=`${value} 天`;};
+             setKpi('legacyKpiGrant',currentGrant);
+             setKpi('legacyKpiOriginal',legacy);
+             setKpi('legacyKpiApproved',usage.used);
+             setKpi('legacyKpiExtra',Number(adjustment?.additionalUsedDays||0));
+             panel.classList.toggle('hidden',!(legacy>0||!!adjustment?.legacyReconciliation));
+             if (legacy<=0&&!adjustment?.legacyReconciliation) return;
+             const source=document.getElementById('legacyReviewSource');
+             source.replaceChildren();
+             const summary=document.createElement('div');
+             summary.className='font-bold text-slate-800';
+             summary.textContent=`原系統已休統計：${legacy} 天 ｜ 本期 ${period.start}～${addCalendarDays(period.end,-1)} 已核准：${usage.used} 天（${evidence.length} 筆）`;
+             source.appendChild(summary);
+             if (evidence.length) {
+                 const detail=document.createElement('details');
+                 detail.className='mt-2 text-xs text-slate-600';
+                 const heading=document.createElement('summary');
+                 heading.textContent=`展開查看已核准假單明細（${evidence.length} 筆）`;
+                 heading.className='cursor-pointer font-semibold text-blue-800 py-1';
+                 detail.appendChild(heading);
+                 const list=document.createElement('div');
+                 list.className='hge-evidence-list mt-2 space-y-1';
+                 evidence.forEach(row=>{
+                     const entry=document.createElement('div');
+                     entry.textContent=`• ${row.date}${row.endDate!==row.date?'～'+row.endDate:''}：${row.days} 天`;
+                     list.appendChild(entry);
+                 });
+                 detail.appendChild(list);
+                 source.appendChild(detail);
+             }
+             const note=document.createElement('div');
+             note.className='mt-2 text-amber-800';
+             note.textContent='注意：舊統計沒有附帶日期或所屬週年期間，系統無法單靠數字判斷是否包含本期已核准日數。';
+             source.appendChild(note);
+             const status=document.getElementById('legacyReviewStatus');
+             if (audit.valid) {
+                 status.className='text-xs font-bold rounded-full bg-green-100 text-green-900 px-3 py-1';
+                 status.textContent='舊數據已對帳';
+             } else {
+                 status.className='text-xs font-bold rounded-full bg-amber-100 text-amber-900 px-3 py-1';
+                 status.textContent='需要核對舊統計';
+             }
+             if (saved && audit.valid) {
+                 const confirmed=document.createElement('div');
+                 confirmed.className='mt-3 rounded-lg bg-green-50 border border-green-200 p-2 text-green-900';
+                 const pathLabel={included:'本期總量包含新假單',separate:'本期另計',historical:'前期或歷史紀錄',manual:'人工實際核定'}[saved.disposition]||saved.disposition;
+                 confirmed.textContent=`已核對：${pathLabel}；本期額外已休 ${saved.additionalUsedDays} 天；當時依據：${saved.evidence}。${state.pending?'仍有其他待核事項：'+state.reason:'本期已無系統待核項目。'}`;
+                 source.appendChild(confirmed);
+             } else if (!audit.valid && audit.reason) {
+                 const warning=document.createElement('div');
+                 warning.className='mt-2 rounded-lg bg-amber-50 border border-amber-200 p-2';
+                 warning.textContent='尚待核對：'+audit.reason;
+                 source.appendChild(warning);
+             }
+             window.renderLegacyReviewPreview();
+         };
+         window.selectLegacyIncluded = () => {
+             const radio=document.querySelector('input[name="legacyReviewChoice"][value="included"]');
+             if (radio) radio.checked=true;
+             window.renderLegacyReviewPreview();
+         };
+         window.selectLegacyManual = () => {
+             const radio=document.querySelector('input[name="legacyReviewChoice"][value="manual"]');
+             if (radio) radio.checked=true;
+             window.renderLegacyReviewPreview();
+         };
+         window.renderLegacyReviewPreview = () => {
+             const box=document.getElementById('legacyReviewPreview');
+             if (!box) return;
+             const emp=employeeById(currentModalEmpId);
+             const start=document.getElementById('annualPeriodSelect')?.value;
+             if (!emp||!start) return;
+             const period=annualPeriodsThrough(emp,emp.employmentStatus==='archived'&&emp.terminationDate?emp.terminationDate:todayTaipei()).find(p=>p.start===start);
+             if (!period) return;
+             const selected=document.querySelector('input[name="legacyReviewChoice"]:checked')?.value||'';
+             reviewDraft.choice=selected;
+             const legacy=Number(emp.stats?.annual||0);
+             const used=annualPeriodUsage(emp.id,period).used;
+             const totalRaw=document.getElementById('legacyReviewTotalDays')?.value||'';
+             const confirmedTotal=totalRaw.trim()===''?NaN:Number(totalRaw);
+             const manualRaw=document.getElementById('legacyReviewManualDays')?.value||'';
+             const extra=previewDays(selected,legacy,used,manualRaw.trim()===''?NaN:Number(manualRaw),confirmedTotal);
+             const validExtra=Number.isFinite(extra)&&extra>=0&&extra<=365&&Number.isInteger(Math.round(extra*1000)/125);
+             const adjustment=emp.annualLeaveAdjustments?.[start];
+             const granted=Number((period.grant+Number(adjustment?.additionalGrantedDays||0)).toFixed(3));
+             const asOf=emp.employmentStatus==='archived'&&emp.terminationDate?emp.terminationDate:todayTaipei();
+             const currentState=annualLeaveState(emp,asOf);
+             const carry=Number(currentState.period?.start===start?currentState.carryIn:0);
+             const remaining=validExtra?Number((granted+carry-used-extra).toFixed(3)):NaN;
+             const included=document.getElementById('legacyReviewIncludedBox');
+             const manual=document.getElementById('legacyReviewManualBox');
+             included?.classList.toggle('hidden',!!selected&&selected!=='included');
+             manual?.classList.toggle('hidden',selected!=='manual');
+             const changed=document.getElementById('legacyChangedValueNotice');
+             if(changed) changed.textContent=Number.isFinite(confirmedTotal)&&Math.abs(confirmedTotal-legacy)>0.001
+                 ? `與原始 ${legacy} 天不同：核定僅更新本期補認列的日數，原始值仍完整保留，請在依據中說明差異。`
+                 : `與舊系統原始 ${legacy} 天相同；你也可以直接更正核對後的本期累計數。`;
+             const ackText=document.getElementById('legacyReviewAckText');
+             if(ackText) ackText.textContent=selected==='included'
+                 ? `我已確認「${emp.name}」本期累計已休 ${Number.isFinite(confirmedTotal)?confirmedTotal:'—'} 天，已包含系統核准 ${used} 天，沒有重複扣除。`
+                 : `我已確認「${emp.name}」的舊統計歸屬與本期補認列日數，並核對原始資料。`;
+             box.replaceChildren();
+             const heading=document.createElement('div');
+             heading.className='text-xs font-bold text-blue-800';heading.textContent='確認前試算';box.appendChild(heading);
+             if(!selected || !validExtra){
+                 const line=document.createElement('div');
+                 line.className='mt-2 text-sm text-slate-700';
+                 line.textContent=!selected?'請選擇舊資料的歸屬，再確認本期已休日數。':
+                    selected==='included'?'累計已休必須大於或等於已核准假單，並且符合 0.125 天的單位。':'請先輸入有效的額外已休日數（以 0.125 天為單位）。';
+                 box.appendChild(line);
+             } else {
+                 const desc=document.createElement('p');desc.className='text-sm text-slate-700 leading-6 mt-2';
+                 desc.textContent=`本期給假 ${granted} ＋ 前期核定遞延 ${carry} － 系統已核准 ${used} － 本次補認列 ${extra} ＝ ${remaining} 天`;
+                 const result=document.createElement('div');result.className='hge-result mt-1';result.textContent=`${remaining} 天`;
+                 const trail=document.createElement('p');trail.className='hge-small-info mt-1';
+                 trail.textContent=`將用新補認列 ${extra} 天，取代原本額外已休 ${Number(adjustment?.additionalUsedDays||0)} 天；原統計 ${legacy} 天與假單皆保留。`;
+                 const formula=document.createElement('span');formula.className='hidden';formula.textContent=`＝ ${remaining} 天`;
+                 box.append(desc,result,trail,formula);
+                 if(remaining<0){const error=document.createElement('p');error.className='mt-2 font-bold text-red-700';error.textContent='剩餘天數為負，不能直接核定。';box.appendChild(error);}
+             }
+             const acknowledged=!!document.getElementById('legacyReviewAcknowledged')?.checked;
+             const source=document.getElementById('legacyReviewEvidenceSource')?.value||'';
+             const ready=!!selected&&validExtra&&remaining>=-0.001&&acknowledged;
+             const button=document.getElementById('legacyReviewConfirm');
+             const busy=!!window.__hgeLegacyReviewBusy;
+             if(button){
+                 button.disabled=!ready||busy;
+                 button.textContent=busy?'正在儲存核定…':ready?'核對完成，確認核定本期特休':'請先選擇歸屬並勾選已核對';
+             }
+             const hint=document.getElementById('legacyReviewActionHint');
+             if(hint){
+                 hint.textContent=!ready?'確認歸屬、日數及核對聲明後即可核定；舊值與核准假單不會被清除。':
+                     source?'已選核對依據，按下核定後仍需最後確認並通過資料庫回讀。':'還需選擇「核對依據來源」，才能正式核定。';
+             }
+         };
+         window.confirmLegacyAnnualReview = async () => {
+             if (!window.HGEDeviceControl?.isAdmin()) return Swal.fire('無核定權限','請先通過管理後台身分驗證。','warning');
+             if (window.__hgeLegacyReviewBusy) return;
+             const id=currentModalEmpId;
+             const emp=employeeById(id);
+             const start=document.getElementById('annualPeriodSelect')?.value;
+             const choice=document.querySelector('input[name="legacyReviewChoice"]:checked')?.value||'';
+             const confirmedSource=String(document.getElementById('legacyReviewEvidenceSource')?.value||'').trim();
+             const note=String(document.getElementById('legacyReviewEvidence')?.value||'').trim();
+             const accepted=!!document.getElementById('legacyReviewAcknowledged')?.checked;
+             if (!emp||!employeeIdentityIsUnique(emp)||!isActiveEmployee(emp)) return Swal.fire('無法核定','請確認在職員工身分與唯一編號。','warning');
+             if (!choice) return Swal.fire('請選擇資料歸屬','必須先確認舊已休統計的來源，才能核定。','warning');
+             if (!accepted) return Swal.fire('請先完成核對','請先勾選已核實資料，才能核定此位同仁特休。','warning');
+             if (!confirmedSource) return Swal.fire('請選擇核對依據','請選擇實際用來核對的紀錄來源，避免後續無法追溯。','warning');
+             const asOf=todayTaipei();
+             const period=annualPeriodsThrough(emp,asOf).find(p=>p.start===start);
+             if (!period) return Swal.fire('期別不符','請重開假勤中控，選本期再核對。','warning');
+             const oldValue=Number(emp.stats?.annual||0);
+             const observedUsage=annualPeriodUsage(emp.id,period);
+             if (observedUsage.needsReview) return Swal.fire('假單待人工核對','有跨週年或無效假單，請先核對假單；不直接核定。','warning');
+             const manualRaw=document.getElementById('legacyReviewManualDays').value;
+             const totalRaw=document.getElementById('legacyReviewTotalDays').value.trim();
+             const confirmedTotal=totalRaw===''?NaN:Number(totalRaw);
+             const extra=previewDays(choice,oldValue,observedUsage.used,manualRaw===''?NaN:Number(manualRaw),confirmedTotal);
+             const evidence=`${confirmedSource}；核定${choice==='included'?'本期累計已休 '+confirmedTotal+' 天，包含核准 '+observedUsage.used+' 天':
+                 choice==='separate'?'本期另外已休 '+oldValue+' 天':choice==='historical'?'舊統計屬歷史期別':'本期另外實際已休 '+extra+' 天'}${note?'；備註：'+note:''}`;
+             if (!Number.isFinite(extra)||extra<0||extra>365||!Number.isInteger(extra*8)) return Swal.fire('已休日數無效','請確認已休天數；最小單位為 0.125 天。','warning');
+             const additionalGranted=Number(emp.annualLeaveAdjustments?.[start]?.additionalGrantedDays||0);
+             const beforeExtra=Number(emp.annualLeaveAdjustments?.[start]?.additionalUsedDays||0);
+             const state=annualLeaveState(emp,asOf);
+             if (state.period?.start!==start) return Swal.fire('請選擇現行期別','只有目前特休期別可使用快速對帳，舊期請到期末結算處理。','warning');
+             const total=Number((state.grant+state.carryIn-observedUsage.used-extra).toFixed(3));
+             if (total<-0.001) return Swal.fire('試算不足','採此歸屬會使餘額為負，請核對原始資料後再處理。','warning');
+             if (window.HGE_DATA_MODE==='mock') {
+                 const ack=await Swal.fire({title:'目前為示範資料模式',text:'本次確認只會儲存在瀏覽器的模擬資料，不能當作公司正式核定。仍要測試嗎？',showCancelButton:true,confirmButtonText:'僅測試',cancelButtonText:'取消',icon:'warning'});
+                 if (!ack.isConfirmed) return;
+             }
+             const confirmation=await Swal.fire({title:`核定 ${emp.name} 本期特休？`,html:`<div class="text-left text-sm leading-7">原始舊已休：<b>${oldValue}</b> 天｜系統已核准：<b>${observedUsage.used}</b> 天<br>${choice==='included'?`本期核認累計已休：<b>${confirmedTotal}</b> 天<br>`:''}本次補認列：<b>${extra}</b> 天（取代既有 ${beforeExtra} 天）<br>本期核定後試算餘額：<b>${total}</b> 天<br><span class="text-amber-800">核對來源：${confirmedSource}。請確認本次歸屬與日數都正確。</span></div>`,showCancelButton:true,icon:'question',confirmButtonText:'確認核定並留存',cancelButtonText:'返回修改'});
+             if (!confirmation.isConfirmed) return;
+             window.__hgeLegacyReviewBusy=true;
+             const btn=document.getElementById('legacyReviewConfirm');if(btn) btn.disabled=true;
+             try {
+                 // 先抓取一次最新假單。正式資料採 SDK 訊息來源；無法核實資料庫寫入時不回報成功。
+                 const requestSnap=await get(ref(db,'requests'));
+                 const sourceReqs=requestSnap.val()||{};
+                 const usage=annualPeriodUsage(emp.id,period,sourceReqs);
+                 const rows=annualApprovedEvidence(emp.id,period,sourceReqs);
+                 const sameRows=JSON.stringify(rows)===JSON.stringify(annualApprovedEvidence(emp.id,period,requests));
+                 if (usage.needsReview||!sameRows||Math.abs(usage.used-observedUsage.used)>0.001) throw new Error('假單在核對期間已有異動，請重新打開後再確認');
+                 const dest=ref(db,employeePath(id));
+                 const originalAdjust=JSON.stringify(emp.annualLeaveAdjustments?.[start]||{});
+                 let invalidReason='';
+                 const tx=await runTransaction(dest, record=>{
+                     if (!record||!isActiveEmployee(record)||String(record.id)!==String(emp.id)||record.joinDate!==emp.joinDate){invalidReason='員工身分或到職日已異動';return;}
+                     const latestPeriods=annualPeriodsThrough(record,asOf);
+                     if (latestPeriods[latestPeriods.length-1]?.start!==start){invalidReason='特休週年期別已更改';return;}
+                     if (Number(record.stats?.annual||0)!==oldValue){invalidReason='舊已休統計已變更';return;}
+                     const old=record.annualLeaveAdjustments?.[start]||{};
+                     if (JSON.stringify(old)!==originalAdjust){invalidReason='同仁假勤核定資料已變更';return;}
+                     const note={version:1,periodStart:start,periodEnd:period.end,legacyValue:oldValue,
+                         approvedUsedAtReview:usage.used,approvedEvidence:rows,disposition:choice,
+                         additionalUsedDays:extra,confirmedTotalDays:choice==='included'?confirmedTotal:null,
+                         evidenceSource:confirmedSource,evidence,confirmedBy:'管理後台核定者',confirmedAt:serverTimestamp()};
+                     const next={...old,additionalUsedDays:extra,additionalGrantedDays:additionalGranted,
+                         reason:`舊數據對帳(${choice})：${evidence}`,confirmedAt:serverTimestamp(),legacyReconciliation:note,
+                         history:[...(Array.isArray(old.history)?old.history:[]),
+                             {action:'reconcile-legacy-annual',previousAdditionalUsedDays:old.additionalUsedDays??null,
+                                 nextAdditionalUsedDays:extra,originalLegacyValue:oldValue,approvedUsedAtReview:usage.used,
+                                 disposition:choice,confirmedTotalDays:choice==='included'?confirmedTotal:null,evidenceSource:confirmedSource,evidence,at:serverTimestamp()}]};
+                     return {...record,annualLeaveAdjustments:{...(record.annualLeaveAdjustments||{}),[start]:next},
+                         annualLeaveReviewRequired:latestPeriods[latestPeriods.length-1].start===start?false:!!record.annualLeaveReviewRequired};
+                 },{applyLocally:false});
+                 if (!tx.committed) throw new Error(invalidReason||'核定交易未完成，請重新核對');
+                 const verify=await get(dest);
+                 if (!verify.exists()) throw new Error('資料庫無法回讀，暫不可認定已核定');
+                 const saved=verify.val();
+                 const rec=saved?.annualLeaveAdjustments?.[start]?.legacyReconciliation;
+                 if (!rec||rec.evidence!==evidence||rec.legacyValue!==oldValue||rec.disposition!==choice||rec.additionalUsedDays!==extra||rec.evidenceSource!==confirmedSource||
+                     (choice==='included'&&Number(rec.confirmedTotalDays)!==confirmedTotal)) throw new Error('核定資料庫回讀未一致，請先重新確認');
+                 employees[employeeKeyById(id)]=saved;
+                 const latestRequestSnap=await get(ref(db,'requests'));
+                 const latestRequests=latestRequestSnap.val()||{};
+                 const resultState=annualLeaveState(saved,asOf,latestRequests);
+                 window.renderAnnualManager(id,start);
+                 renderAdminTable();window.renderAnnualOverview();
+                 if (currentUserId&&String(currentUserId)===String(emp.id)) renderEmployeeStats(saved);
+                 await Swal.fire('已儲存核定',resultState.pending?`舊 ${oldValue} 天已完成對帳，但仍有其他待核事項：${resultState.reason}`:`本期核定餘額 ${resultState.remaining} 天。舊紀錄與本期假單均已保留。`,'success');
+             } catch (error) { await Swal.fire('尚未核定',`${error.message}。請勿依舊試算數字核假。`,'error'); }
+             finally {window.__hgeLegacyReviewBusy=false;if(btn) btn.disabled=false;}
+         };
+         window.openMyAnnualReconcile=async()=>{
+             const id=currentUserId;
+             if (!id) return;
+             if (!window.HGEDeviceControl.isAdmin()) await window.checkAdminLogin();
+             if (!window.HGEDeviceControl.isAdmin()) return;
+             window.openHistory(employeeKeyById(id));
+             document.getElementById('legacyReviewPanel')?.scrollIntoView?.({block:'nearest',behavior:'instant'});
+         };
+         window.toggleAnnualWorkPattern = () => {
+             const pattern = document.getElementById('annualWorkPattern')?.value;
+             document.getElementById('annualWeeklyHoursBox')?.classList.toggle('hidden', pattern === 'full-time');
+             if (typeof window.renderAnnualPolicyPreview==='function') window.renderAnnualPolicyPreview();
+         };
+         window.renderAnnualPolicyPreview = () => {
+             const box=document.getElementById('annualPolicyLivePreview');
+             const emp=employeeById(currentModalEmpId);
+             if(!box || !emp) return;
+             const joinDate=document.getElementById('annualJoinDate')?.value;
+             const seniorityDate=document.getElementById('annualSeniorityDate')?.value || joinDate;
+             const workPattern=document.getElementById('annualWorkPattern')?.value || 'full-time';
+             const rawWeekly=document.getElementById('annualWeeklyHours')?.value;
+             const rawFull=document.getElementById('annualFullTimeHours')?.value;
+             if(!dateOnly(joinDate) || !dateOnly(seniorityDate) || seniorityDate>joinDate) {
+                 box.textContent='試算待確認：到職日與年資認列起算日須有效，且認列起算日不得晚於到職日。';return;
+             }
+             if(workPattern!=='full-time' && (!Number.isFinite(Number(rawWeekly)) || Number(rawWeekly)<=0 || !Number.isFinite(Number(rawFull)) || Number(rawFull)<=0 || Number(rawWeekly)>Number(rawFull))) {
+                 box.textContent='試算待確認：部分工時須填入有效的個人每週正常工時及全時工時。';return;
+             }
+             const simulated={...emp,joinDate,annualLeavePolicy:{...(emp.annualLeavePolicy||{}), seniorityDate, workPattern, weeklyHours:workPattern==='full-time'?null:Number(rawWeekly), fullTimeWeeklyHours:workPattern==='full-time'?40:Number(rawFull)}};
+             const state=annualLeaveState(simulated,emp.employmentStatus==='archived'&&emp.terminationDate?emp.terminationDate:todayTaipei());
+             box.textContent=state.period
+                 ? `依輸入條件，本期 ${state.period.start}～${addCalendarDays(state.period.end,-1)}；法定／工時計給 ${state.legalGrant} 天、已記錄個別加給 ${state.extraGranted} 天，合計 ${state.grant} 天；已核准請假 ${state.approvedUsed} 天。${state.pending?'需人事核對：'+state.reason:'試算餘額 '+state.remaining+' 天'}。這是預覽，不會改動原紀錄。`
+                 : `尚無可計算的特休期間（${state.reason||'可能未滿六個月'}）。`;
+         };
+         window.saveAnnualPolicy = async () => {
+             if (!window.HGEDeviceControl.isAdmin()) return Swal.fire('沒有權限', '須使用執行長管理後台設定人事條件。', 'warning');
+             const emp = employeeById(currentModalEmpId), id = currentModalEmpId;
+             if (!employeeIdentityIsUnique(emp)) return Swal.fire('假勤歸屬待核對', '員工編號缺漏或重複，請先處理員工資料。', 'warning');
+             const seniorityDate = document.getElementById('annualSeniorityDate').value;
+             const workPattern = document.getElementById('annualWorkPattern').value;
+             const rawWeekly = document.getElementById('annualWeeklyHours').value.trim();
+             const rawFull = document.getElementById('annualFullTimeHours').value.trim();
+             const weeklyHours = rawWeekly === '' ? null : Number(rawWeekly);
+             const fullTimeWeeklyHours = Number(rawFull);
+             const reason = document.getElementById('annualPolicyReason').value.trim();
+             if (!dateOnly(seniorityDate) || seniorityDate > emp.joinDate) return Swal.fire('年資日期不正確', '年資認列起算日須有效且不得晚於到職日。', 'warning');
+             if (!['full-time','same-days-part-time','reduced-days'].includes(workPattern)) return Swal.fire('工時類型無效', '', 'warning');
+             if (workPattern !== 'full-time' && (!Number.isFinite(weeklyHours) || weeklyHours <= 0 || !Number.isFinite(fullTimeWeeklyHours) || fullTimeWeeklyHours <= 0 || weeklyHours > fullTimeWeeklyHours))
+                 return Swal.fire('工時設定不正確', '請核對個人及一般全時每週正常工時，須大於 0 且不得超過全時。', 'warning');
+             if (!reason) return Swal.fire('請填核對依據', '此項牽涉個人特休權益，須有書面或人事核定依據。', 'warning');
+             const old = getAnnualPolicy(emp);
+             const changed = old.seniorityDate !== seniorityDate || old.workPattern !== workPattern ||
+                 (workPattern !== 'full-time' && (Number(old.weeklyHours) !== Number(weeklyHours) || old.fullTimeWeeklyHours !== fullTimeWeeklyHours));
+             if (!changed) return Swal.fire('條件相同', '沒有改變特休計算條件。', 'info');
+             const confirm = await Swal.fire({ title:'確認更改個人特休條件？', text:'年資、工時比例及歷史期別會重新試算；原核准假單保留，未核對期別不直接視為可用餘額。', showCancelButton:true, icon:'warning', confirmButtonText:'確認並保留紀錄' });
+             if (!confirm.isConfirmed) return;
+             try {
+                 const target = ref(db, employeePath(id));
+                 const result = await runTransaction(target, record => {
+                     if (!record || record.employmentStatus === 'archived') return;
+                     const oldPolicy = record.annualLeavePolicy || {};
+                     const nextPolicy = { seniorityDate, workPattern,
+                         weeklyHours:workPattern === 'full-time' ? null : weeklyHours,
+                         fullTimeWeeklyHours, note:reason, updatedAt:serverTimestamp(),
+                         history:[...(Array.isArray(oldPolicy.history) ? oldPolicy.history : []),
+                             {previous:{seniorityDate:oldPolicy.seniorityDate || record.joinDate, workPattern:oldPolicy.workPattern || 'full-time', weeklyHours:oldPolicy.weeklyHours ?? null, fullTimeWeeklyHours:oldPolicy.fullTimeWeeklyHours ?? 40},
+                                 next:{seniorityDate,workPattern,weeklyHours:workPattern==='full-time'?null:weeklyHours,fullTimeWeeklyHours},reason,at:serverTimestamp()}] };
+                     return { ...record, annualLeavePolicy:nextPolicy, annualLeaveReviewRequired:true };
+                 }, {applyLocally:false});
+                 if (!result.committed) throw new Error('同仁資料已變更或不在職');
+                 employees[employeeKeyById(id)] = result.snapshot.val();
+                 window.renderAnnualManager(id);
+                 renderAdminTable();window.renderAnnualOverview();
+                 Swal.fire('已更新試算條件' , '個人原始資料與修改歷程已保留。請核對受影響期別的加給、已休及期末結清後，再核定餘額。', 'success');
+             } catch (error) { Swal.fire('未儲存', error.message, 'error'); }
+         };
         window.saveEmployeeJoinDate = async () => {
+             if (!window.HGEDeviceControl.isAdmin()) return Swal.fire('沒有管理權限', '請從執行長管理後台操作。', 'warning');
             if (!employeeIdentityIsUnique(employeeById(currentModalEmpId))) return Swal.fire('假勤歸屬待核對', '員工編號缺漏或重複，暫停調整與結算，請先核對原始資料。', 'warning');
             const id = currentModalEmpId, emp = employeeById(id);
             const joinDate = document.getElementById('annualJoinDate').value;
@@ -1668,8 +2706,13 @@ window.HGEStability = (() => {
                 const target = ref(db, employeePath(id));
                 const result = await runTransaction(target, record => {
                     if (!record) return;
-                    return { ...record, joinDate, annualLeaveReviewRequired:true,
-                        employmentHistory:[...(Array.isArray(record.employmentHistory) ? record.employmentHistory : []), { action:'join-date-corrected', previousJoinDate:record.joinDate || '', newJoinDate:joinDate, reason, at:serverTimestamp() }] };
+const policy=record.annualLeavePolicy || {};
+                     const autoSeniority = policy.seniorityDate === record.joinDate;
+                     return { ...record, joinDate, annualLeaveReviewRequired:true,
+                         ...(autoSeniority ? {annualLeavePolicy:{...policy,seniorityDate:joinDate,
+                             history:[...(Array.isArray(policy.history)?policy.history:[]),
+                                 {action:'hire-date-correction',oldSeniorityDate:record.joinDate,newSeniorityDate:joinDate,reason,at:serverTimestamp()}]}} : {}),
+                         employmentHistory:[...(Array.isArray(record.employmentHistory) ? record.employmentHistory : []), { action:'join-date-corrected', previousJoinDate:record.joinDate || '', newJoinDate:joinDate, reason, at:serverTimestamp() }] };
                 }, { applyLocally:false });
                 if (!result.committed) throw new Error('員工資料已變更');
                 employees[employeeKeyById(id)] = result.snapshot.val();
@@ -1679,13 +2722,16 @@ window.HGEStability = (() => {
             } catch (error) { Swal.fire('更正未完成', error.message, 'error'); }
         };
         window.saveAllAdjustments = async () => {
+             if (!window.HGEDeviceControl.isAdmin()) return Swal.fire('沒有管理權限', '請從執行長管理後台操作。', 'warning');
             if (!employeeIdentityIsUnique(employeeById(currentModalEmpId))) return Swal.fire('假勤歸屬待核對', '員工編號缺漏或重複，暫停調整與結算，請先核對原始資料。', 'warning');
             const id = currentModalEmpId, emp = employeeById(id);
             const start = document.getElementById('annualPeriodSelect').value;
             const raw = document.getElementById('adjAnnualUsed').value.trim();
             const reason = document.getElementById('annualAdjustmentReason').value.trim();
-            const extra = Number(raw);
-            if (!emp || !start || raw === '' || !Number.isFinite(extra) || extra < 0 || extra > 30 || !reason) return Swal.fire('請完成核對', '額外已休日數（可填 0）及核對原因必填；只填不在已核准假單內的日數。', 'warning');
+const extra = Number(raw);
+             const grantedRaw = document.getElementById('annualExtraGranted').value.trim();
+             const grantedExtra = Number(grantedRaw);
+             if (!emp || !start || raw === '' || grantedRaw === '' || !Number.isFinite(grantedExtra) || grantedExtra < 0 || grantedExtra > 365 || !Number.isFinite(extra) || extra < 0 || extra > 365 || !reason) return Swal.fire('請完成核對', '額外已休日數（可填 0）及核對原因必填；只填不在已核准假單內的日數。', 'warning');
             const fields = [['adjCompBalance','compBalance'],['adjSickUsed','sickUsed'],['adjPersonalUsed','personalUsed']];
             const statChanges = {};
             for (const [input,key] of fields) {
@@ -1701,21 +2747,23 @@ window.HGEStability = (() => {
                 const result = await runTransaction(target, record => {
                     if (!record) return;
                     const asOf = record.employmentStatus === 'archived' && record.terminationDate ? record.terminationDate : todayTaipei();
-                    const periods = annualPeriodsThrough(record.joinDate, asOf);
+                    const periods = annualPeriodsThrough(record, asOf);
                     if (!periods.some(p => p.start === start)) return;
                     const before = record.annualLeaveAdjustments?.[start];
-                    const entry = { additionalUsedDays:extra, reason, confirmedAt:serverTimestamp(),
-                        history:[...(Array.isArray(before?.history) ? before.history : []), { previousAdditionalUsedDays:before?.additionalUsedDays ?? null, nextAdditionalUsedDays:extra, reason, at:serverTimestamp() }] };
+                    const entry = { ...before, additionalUsedDays:extra, additionalGrantedDays:grantedExtra, reason, confirmedAt:serverTimestamp(),
+                        history:[...(Array.isArray(before?.history) ? before.history : []), { previousAdditionalUsedDays:before?.additionalUsedDays ?? null, nextAdditionalUsedDays:extra,
+                             previousAdditionalGrantedDays:before?.additionalGrantedDays ?? null, nextAdditionalGrantedDays:grantedExtra, reason, at:serverTimestamp() }] };
                     return { ...record, annualLeaveAdjustments:{ ...(record.annualLeaveAdjustments || {}), [start]:entry }, stats:{ ...(record.stats || {}), ...statChanges }, annualLeaveReviewRequired:periods[periods.length-1].start === start ? false : !!record.annualLeaveReviewRequired };
                 }, { applyLocally:false });
                 if (!result.committed) throw new Error('員工資料或特休期別已改變');
                 employees[employeeKeyById(id)] = result.snapshot.val();
-                window.renderAnnualManager(id, start);
-                renderAdminTable();
-                Swal.fire('已儲存核對', '舊已休總數保留原值；本期僅加計核定的額外已休。', 'success');
+                 window.renderAnnualManager(id, start);
+                 renderAdminTable();window.renderAnnualOverview();
+                 Swal.fire('已儲存核對' , '原核准假單與舊已休總數保留；本期額外加給及額外已休已分開紀錄。', 'success');
             } catch (error) { Swal.fire('未儲存', error.message, 'error'); }
         };
         window.saveAnnualClosure = async () => {
+             if (!window.HGEDeviceControl.isAdmin()) return Swal.fire('沒有管理權限', '請從執行長管理後台操作。', 'warning');
             if (!employeeIdentityIsUnique(employeeById(currentModalEmpId))) return Swal.fire('假勤歸屬待核對', '員工編號缺漏或重複，暫停調整與結算，請先核對原始資料。', 'warning');
             const id = currentModalEmpId, emp = employeeById(id), start = document.getElementById('annualPeriodSelect').value;
             if (!emp || !start) return;
@@ -1790,6 +2838,7 @@ window.HGEStability = (() => {
 
         // 開啟單據編輯 Modal
         window.openReqEdit = (key) => {
+             if (!window.HGEDeviceControl.isAdmin()) return Swal.fire('沒有管理權限', '請從執行長管理後台操作。', 'warning');
             const req = requests[key];
             if(!req) return;
             
@@ -1820,6 +2869,7 @@ window.HGEStability = (() => {
 
         // [NEXUS MODIFIED] 假單儲存即時更新日曆
         window.saveReqEdit = () => {
+             if (!window.HGEDeviceControl.isAdmin()) return Swal.fire('沒有管理權限', '請從執行長管理後台操作。', 'warning');
             const key = document.getElementById('editReqKey').value;
             const original = requests[key];
             const updates = {
@@ -1843,6 +2893,7 @@ window.HGEStability = (() => {
 
         // 作廢而非刪除，保留特休／用車的原申請與異動原因。
         window.deleteRequestRecord = async (key) => {
+             if (!window.HGEDeviceControl.isAdmin()) return Swal.fire('沒有管理權限', '請從執行長管理後台操作。', 'warning');
             const req = requests[key];
             if(req && checkPayrollLock(req.date)) {
                 Swal.fire({
@@ -1883,6 +2934,7 @@ window.HGEStability = (() => {
 
         window.unbindDevice = async (id, idx) => { try { const path = employeePath(id); const deviceRef = ref(db, `${path}/devices`); await runTransaction(deviceRef, value => { const next = Array.isArray(value) ? [...value] : []; next.splice(idx, 1); return next; }); Swal.fire('已撤銷裝置', '員工資料保留，請同仁重新登入。', 'success'); } catch (error) { Swal.fire('撤銷失敗', error.message, 'error'); } };
         window.openArchiveEmployee = id => {
+             if (!window.HGEDeviceControl.isAdmin()) return Swal.fire('沒有管理權限', '請從執行長管理後台操作。', 'warning');
             const emp = employeeById(id); if (!isActiveEmployee(emp)) return;
             if (String(currentUserId) === String(emp.id)) return Swal.fire('不可封存自己', '請由其他管理者核對操作。', 'warning');
             document.getElementById('archiveEmpId').value = id;
@@ -1893,6 +2945,7 @@ window.HGEStability = (() => {
         };
         window.closeArchiveEmployee = () => { document.getElementById('archiveEmployeeModal').style.display = 'none'; };
         window.confirmArchiveEmployee = async () => {
+             if (!window.HGEDeviceControl.isAdmin()) return Swal.fire('沒有管理權限', '請從執行長管理後台操作。', 'warning');
             const id = document.getElementById('archiveEmpId').value;
             const terminationDate = document.getElementById('archiveTerminationDate').value;
             const reason = document.getElementById('archiveReason').value.trim();
@@ -1907,6 +2960,9 @@ window.HGEStability = (() => {
                 const result = await runTransaction(target, record => {
                     if (!isActiveEmployee(record)) return;
                     return { ...window.HGEDeviceControl.archiveRecord(record,employeeKeyById(id)), employmentStatus:'archived', terminationDate, archiveReason:reason, archivedAt:serverTimestamp(), devices:[],
+                         hrRole:'staff',approvalPermissions:{car:false,sick:false,personal:false},
+                         delegationHistory:[...(Array.isArray(record.delegationHistory)?record.delegationHistory:[]),
+                             {action:'archival-revocation',previousRole:record.hrRole||'staff',previousPermissions:record.approvalPermissions||{},at:serverTimestamp()}],
                         employmentHistory:[...(Array.isArray(record.employmentHistory) ? record.employmentHistory : []), { action:'archived', terminationDate, reason, at:serverTimestamp() }] };
                 }, { applyLocally:false });
                 if (!result.committed) throw new Error('員工狀態已改變');
@@ -1920,6 +2976,7 @@ window.HGEStability = (() => {
             } catch (error) { Swal.fire('封存未完成', error.message, 'error'); }
         };
         window.restoreEmployee = async id => {
+             if (!window.HGEDeviceControl.isAdmin()) return Swal.fire('沒有管理權限', '請從執行長管理後台操作。', 'warning');
             const emp = employeeById(id); if (emp?.employmentStatus !== 'archived') return;
             const input = await Swal.fire({ title:`復職：${emp.name}`, text:'請輸入重新到職日期 YYYY-MM-DD；舊紀錄保留，新週年從重新到職日計算。年資如依法須合併，請先由人事核定。', input:'text', inputPlaceholder:'YYYY-MM-DD', showCancelButton:true });
             if (!input.isConfirmed) return;
@@ -1929,7 +2986,8 @@ window.HGEStability = (() => {
                 const target = ref(db, employeePath(id));
                 const result = await runTransaction(target, record => {
                     if (record?.employmentStatus !== 'archived') return;
-                    return { ...record, employmentStatus:'active', joinDate:newJoinDate, reinstatedAt:serverTimestamp(), devices:[],
+                    return { ...record, employmentStatus:'active', joinDate:newJoinDate, reinstatedAt:serverTimestamp(), devices:[], hrRole:'staff', approvalPermissions:{car:false,sick:false,personal:false},
+                         hrRole:'staff',approvalPermissions:{car:false,sick:false,personal:false},
                         annualLeaveReviewRequired:true,
                         employmentHistory:[...(Array.isArray(record.employmentHistory) ? record.employmentHistory : []), { action:'restored', previousJoinDate:record.joinDate || '', newJoinDate, at:serverTimestamp() }] };
                 }, { applyLocally:false });
@@ -1942,11 +3000,12 @@ window.HGEStability = (() => {
             } catch (error) { Swal.fire('復職未完成', error.message, 'error'); }
         };
         window.addEmployee = async () => {
+             if (!window.HGEDeviceControl.isAdmin()) return Swal.fire('沒有管理權限', '請從執行長管理後台操作。', 'warning');
             const name = document.getElementById('newAdminName').value.trim();
             const joinDate = document.getElementById('newAdminDate').value;
             if (!name || !dateOnly(joinDate)) return Swal.fire('資料未完成', '請輸入姓名及有效到職日期。', 'warning');
             try {
-                await push(ref(db,'employees'),{name,joinDate,id:Date.now(),employmentStatus:'active',gender:document.getElementById('newAdminGender').value,birthday:document.getElementById('newAdminBirthday').value || ''});
+                await push(ref(db,'employees'),{name,joinDate,id:Date.now(),hrRole:'staff',approvalPermissions:{car:false,sick:false,personal:false},employmentStatus:'active',gender:document.getElementById('newAdminGender').value,birthday:document.getElementById('newAdminBirthday').value || ''});
                 Swal.fire('已新增', '特休將依到職日按週年計算。', 'success');
             } catch (error) { Swal.fire('未新增', error.message, 'error'); }
         };
@@ -1987,6 +3046,7 @@ window.HGEStability = (() => {
         };
 
         window.openAdminEdit = (key) => {
+             if (!window.HGEDeviceControl.isAdmin()) return Swal.fire('沒有管理權限', '請從執行長管理後台操作。', 'warning');
             const record = attendance[key];
             if(!record) return;
             document.getElementById('editAttKey').value = key;
@@ -2021,6 +3081,7 @@ window.HGEStability = (() => {
             if (!saved.exists() || saved.val().status !== changes.status) throw new Error('資料庫未確認修正');
         };
         window.saveAdminEdit = async () => {
+             if (!window.HGEDeviceControl.isAdmin()) return Swal.fire('沒有管理權限', '請從執行長管理後台操作。', 'warning');
             const key = document.getElementById('editAttKey').value;
             const status = document.getElementById('editAttStatus').value;
             const timeStr = document.getElementById('editAttTime').value.trim();
@@ -2036,6 +3097,7 @@ window.HGEStability = (() => {
         };
 
         window.deleteAttendance = async () => {
+             if (!window.HGEDeviceControl.isAdmin()) return Swal.fire('沒有管理權限', '請從執行長管理後台操作。', 'warning');
             const key = document.getElementById('editAttKey').value;
             const reason = document.getElementById('editAttReason').value.trim();
             if (!reason) return Swal.fire('請填原因', '作廢也須保留核對依據。', 'warning');
@@ -2067,7 +3129,8 @@ window.HGEStability = (() => {
             }); 
         };
 
-        window.saveBulletin = () => { set(ref(db, 'bulletin'), { title: document.getElementById('adminBulletinTitle').value, content: document.getElementById('adminBulletinContent').value, date: new Date().toLocaleDateString() }); Swal.fire('公告已更新'); };
+        window.saveBulletin = () => {
+             if (!window.HGEDeviceControl.isAdmin()) return Swal.fire('沒有管理權限', '請從執行長管理後台操作。', 'warning'); set(ref(db, 'bulletin'), { title: document.getElementById('adminBulletinTitle').value, content: document.getElementById('adminBulletinContent').value, date: new Date().toLocaleDateString() }); Swal.fire('公告已更新'); };
         
         // 初始化設定今天日期
         document.getElementById('leaveDate').value = todayTaipei(); 
@@ -2724,6 +3787,9 @@ window.HGEDeviceControl = (() => {
     const stateMessage = state => ({blocked:'這台公機或員工已停止登入，請由管理員恢復或轉交。',archived:'原使用者已離職封存，請由管理員把公機轉交給在職同仁。',conflict:'公機歸屬或員工編號有重複，請由管理員核對；不會自行判定是哪一位。',invalid:'公機識別或員工資料尚未就緒，請重新整理後再試。'})[state.state] || '本公機尚未配發，請選擇本人或由管理員處理。';
     async function readEmployees() {
         if(options.readEmployees) return wait(options.readEmployees,'核對公機使用者');
+        if (window.HGE_DATA_MODE === 'mock') {
+            return wait(async()=>{ const snap = await get(ref(db,'employees')); const value = snap.val(); if(!value||typeof value!=='object'||Array.isArray(value)) throw new Error('員工資料未完成讀取'); return value; },'核對公機使用者');
+        }
         return wait(async()=>{
             const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),options.deadlineMs||15000);
             try {
@@ -2760,7 +3826,13 @@ window.HGEDeviceControl = (() => {
             employees=latest;clearSession('此公機或員工已停用／改配，請由管理員核對後重新進入。');render();
             throw new Error('伺服器已變更公機使用者或登入狀態，尚未送出這次操作');
         }
-        return resolved;
+        const employee = resolved.ownerKey != null ? latest[resolved.ownerKey] : null;
+        if (!employee || String(employee.id) !== String(token.employeeId) || employee.loginDisabled === true || employee.employmentStatus === 'archived') {
+            clearSession('員工已停用或原指派異動，請重新登入並核對');
+            throw new Error('伺服器員工狀態已變更，尚未完成此操作');
+        }
+        // Always return the freshly read employee, not a guessed property on device resolution.
+        return { ...resolved, employee: { ...employee }, employeeKey: resolved.ownerKey };
     }
     function render() {
         const state=snapshot();
@@ -2884,11 +3956,31 @@ window.HGEDeviceControl = (() => {
     }
     return Object.freeze({install,onSnapshot,authorizeAdmin,captureSession,assertSession,verifySession,applyCommand,archiveRecord,isAdmin:()=>admin,refresh:async()=>{employees=await readEmployees();window.updateEmpSelect();onSnapshot();}});
 })();
-
         window.HGEDeviceControl.install();
         window.__hgeModuleReady = true;
-        onValue(ref(db), (snapshot) => {
-            const data = snapshot.val() || {};
+
+        const setSystemBadges = ({ modeText, modeClass, dataText, dataClass } = {}) => {
+            const modeBadge = document.getElementById('systemModeBadge');
+            const dataBadge = document.getElementById('systemDataBadge');
+            if (modeBadge && modeText) {
+                modeBadge.className = `status-pill ${modeClass || 'status-pill-sync'}`;
+                modeBadge.innerHTML = `<i class="fa-solid fa-rotate"></i> ${modeText}`;
+            }
+            if (dataBadge && dataText) {
+                dataBadge.className = `status-pill ${dataClass || 'status-pill-warn'}`;
+                dataBadge.innerHTML = `<i class="fa-solid fa-database"></i> ${dataText}`;
+            }
+            const sourceTitle = document.getElementById('dataSourceTitle');
+            const sourceDesc = document.getElementById('dataSourceDesc');
+            const uiModeTitle = document.getElementById('uiModeTitle');
+            const uiModeDesc = document.getElementById('uiModeDesc');
+            if (sourceTitle) sourceTitle.textContent = window.HGE_DATA_MODE === 'mock' ? '資料來源：離線預覽資料' : '資料來源：Firebase 即時資料';
+            if (sourceDesc) sourceDesc.textContent = window.HGE_DATA_MODE === 'mock' ? '目前預覽器或環境無法載入外部資源，因此改用本機示範資料。' : '目前已連接正式資料來源，可使用即時同步。';
+            if (uiModeTitle) uiModeTitle.textContent = `畫面模式：${window.HGE_DATA_MODE === 'mock' ? '預覽備援模式' : '正式連線模式'}`;
+            if (uiModeDesc) uiModeDesc.textContent = modeText ? `目前系統狀態：${modeText}。` : '正在檢查系統狀態。';
+        };
+
+        const applyRootData = (data = {}, source = 'stream') => {
             employees = data.employees || {};
             requests = data.requests || {};
             attendance = data.attendance || {};
@@ -2898,10 +3990,10 @@ window.HGEDeviceControl = (() => {
                 document.getElementById('loginSection').classList.remove('hidden-section');
             }
             bulletin = data.bulletin || { title: "尚無公告", content: "", date: "" };
-            settings = data.settings || {}; 
+            settings = data.settings || {};
             taskOptions = data.settings?.taskTypes || DEFAULT_TASKS;
 
-            if(settings.salary) {
+            if (settings.salary) {
                 document.getElementById('settingBaseSalary').value = settings.salary.baseSalary || 30000;
                 document.getElementById('settingWorkHours').value = settings.salary.workHours || 240;
                 document.getElementById('settingOtRate1').value = settings.salary.otRate1 || 1.34;
@@ -2910,10 +4002,9 @@ window.HGEDeviceControl = (() => {
                 document.getElementById('settingLatePenalty').value = settings.salary.latePenalty || 0;
             }
 
-            renderLogForm(); 
-            window.renderCarForm(); 
-            
-            // Birthday greeting is local display only; opening the page never publishes a bulletin.
+            renderLogForm();
+            window.renderCarForm();
+
             const todayString = todayTaipei().slice(5);
             const birthdayNames = Object.values(employees).filter(emp => isActiveEmployee(emp) && typeof emp.birthday === 'string' && emp.birthday.slice(5) === todayString).map(emp => emp.name);
             const birthdayGreeting = document.getElementById('birthdayGreeting');
@@ -2923,19 +4014,60 @@ window.HGEDeviceControl = (() => {
 
             updateEmpSelect(); updateAdminFilterSelect(); renderBulletin(); renderActivityFeed();
             if (currentUserId && employeeById(currentUserId)) { renderEmployeeStats(employeeById(currentUserId)); window.renderEmployeePersonalCalendar(); }
-            renderAdminTable(); window.renderApprovalQueue(); renderAttendanceLog(); window.renderMonthCalendar();
+            renderAdminTable(); window.renderDelegationRoster(); window.renderAnnualOverview(); window.renderApprovalQueue(); window.renderSupervisorQueue(); renderAttendanceLog(); window.renderMonthCalendar();
             window.HGEDeviceControl.onSnapshot();
-            
-            if (currentModalEmpId && document.getElementById('historyModal').style.display === 'flex') {
-                window.renderHistoryTable(currentModalEmpId);
-            }
+            if (currentModalEmpId && document.getElementById('historyModal').style.display === 'flex') window.renderHistoryTable(currentModalEmpId);
 
+            const count = Object.values(employees).filter(emp => isActiveEmployee(emp)).length;
+            setSystemBadges({
+                modeText: source === 'mock' ? '離線示範：非正式人事資料' : source === 'stream' ? '已連上即時同步' : '已載入資料（備援模式）',
+                modeClass: source === 'stream' ? 'status-pill-online' : source === 'mock' ? 'status-pill-warn' : 'status-pill-sync',
+                dataText: count ? `已讀取 ${count} 位在職同仁` : '尚未讀到在職同仁資料',
+                dataClass: count ? 'status-pill-online' : 'status-pill-warn'
+            });
+        };
+
+        let bootstrapPromise = null;
+        const bootstrapRootData = async (reason = 'initial') => {
+            if (bootstrapPromise) return bootstrapPromise;
+            bootstrapPromise = (async () => {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), 15000);
+                try {
+                    setSystemBadges({ modeText: reason === 'initial' ? '正在初始化' : '正在重新讀取', modeClass: 'status-pill-sync', dataText: '正在取得員工與設定資料', dataClass: 'status-pill-sync' });
+                    if (window.HGE_DATA_MODE === 'mock' && db?.exportRoot) {
+                        const data = db.exportRoot();
+                        applyRootData(data || {}, 'mock');
+                        return data || {};
+                    }
+                    const url = firebaseConfig.databaseURL.replace(/\/$/, '') + '/.json?_=' + Date.now();
+                    const response = await fetch(url, { cache: 'no-store', signal: controller.signal });
+                    if (!response.ok) throw new Error(`資料讀取失敗 (${response.status})`);
+                    const data = await response.json();
+                    applyRootData(data || {}, 'bootstrap');
+                    return data || {};
+                } finally {
+                    clearTimeout(timer);
+                    bootstrapPromise = null;
+                }
+            })().catch(error => {
+                window.HGEReadiness.snapshotError();
+                const status = document.getElementById('loginStatusMsg');
+                if (status) { status.classList.remove('hidden'); status.textContent = `資料讀取失敗：${error.message}。請重新整理；若急需打卡，請先通知主管保留實際時間。`; }
+                setSystemBadges({ modeText: '初始化失敗', modeClass: 'status-pill-warn', dataText: '無法讀取資料，請重新整理', dataClass: 'status-pill-warn' });
+                throw error;
+            });
+            return bootstrapPromise;
+        };
+
+        bootstrapRootData('initial').catch(() => {});
+        onValue(ref(db), (snapshot) => {
+            applyRootData(snapshot.val() || {}, window.HGE_DATA_MODE === 'mock' ? 'mock' : 'stream');
         }, (error) => {
-            window.HGEReadiness.snapshotError();
             const status = document.getElementById('loginStatusMsg');
-            if (status) { status.classList.remove('hidden'); status.textContent = `員工資料讀取失敗：${error.message}。請重新整理；急需打卡時立即通知主管保留實際時間。`; }
-            const notice = document.getElementById('punchNotice');
-            if (notice) { notice.textContent = `資料庫連線失敗：${error.message}。尚未確認打卡，請立即通知主管。`; notice.className = 'mt-3 text-sm text-red-700 font-bold'; }
+            if (status) { status.classList.remove('hidden'); status.textContent = `即時同步失敗：${error.message}。系統將嘗試改用備援讀取模式。`; }
+            setSystemBadges({ modeText: '即時同步中斷', modeClass: 'status-pill-warn', dataText: '改用備援讀取模式', dataClass: 'status-pill-warn' });
+            if (window.HGE_DATA_MODE !== 'mock') bootstrapRootData('retry').catch(() => {});
         });
     </script>
 </body>
