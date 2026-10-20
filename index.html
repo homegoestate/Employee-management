@@ -904,8 +904,9 @@
                  : null;
              for (const fresh of postReview) {
                  const live = sourceRequests?.[fresh.key];
-                 // The historic-only legacy total cannot overlap new leave in this period.
-                 // Such newly approved leave is accounted for as current-period usage.
+                 // For an explicitly verified historical-only legacy total, newly
+                 // approved leave inside the current period cannot overlap that old
+                 // total. It is always debited from the current period instead.
                  if (audit.disposition === 'historical') continue;
                  // Backdated approvals may have already been included in legacy totals.
                  if (!approvedDate || !Number.isFinite(Number(live?.approvedAt)) ||
