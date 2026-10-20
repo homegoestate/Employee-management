@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>宏國地政｜易丞地政－特休快速核定・主管授權 V8（2026.10.20）</title>
+    <title>宏國地政｜易丞地政－特休核定同步・主管授權修復 V9（2026.10.20）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -160,7 +160,7 @@
                 <div class="w-10 h-10 bg-white text-blue-900 rounded-lg flex items-center justify-center font-bold text-lg serif shadow-lg">宏</div>
                 <div>
                     <h1 class="text-base md:text-lg font-bold tracking-wider serif">宏國地政 | 易丞地政</h1>
-                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">公機・特休快速核定・主管授權 V8 2026.10.20</p>
+                    <p class="text-[10px] text-blue-200 tracking-widest uppercase">公機・特休同步・主管審核 V9 2026.10.20</p>
                 </div>
             </div>
             <div class="flex bg-blue-900/50 rounded-full p-1">
@@ -278,9 +278,22 @@
                         </div>
                         <div id="punchNotice" role="status" aria-live="polite" class="mt-3 text-sm text-slate-600">上／下班各按一次，請等候「已寫入並核對」。定位失敗時可登記為「待覆核」，須由主管確認。</div>
                     </div>
+            <div id="supervisorQuickEntry" class="hidden glass-panel p-4 border-l-4 border-emerald-600">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <p class="text-sm font-extrabold text-slate-900"><i class="fa-solid fa-user-shield text-emerald-700 mr-1"></i>主管授權審核</p>
+                        <p id="supervisorQuickSummary" class="text-xs text-slate-600 mt-1">正在確認目前的審核權限…</p>
+                    </div>
+                    <button id="supervisorQuickOpen" type="button" onclick="openSupervisorApprovals()" class="px-5 py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl">
+                        <i class="fa-solid fa-clipboard-check mr-1"></i>直接處理待審申請
+                        <span id="supervisorQuickCount" class="ml-1 bg-white/20 rounded-full px-2 py-0.5 text-xs">0</span>
+                    </button>
+                </div>
+                <p class="text-xs text-emerald-800 mt-2">以本人已登入的主管身分處理授權事項；不需再次輸入執行長管理密碼。</p>
+            </div>
             <div id="supervisorApprovalPanel" class="glass-panel p-5 md:p-6 border-t-4 border-emerald-600 hidden" aria-live="polite">
                 <div class="flex flex-wrap justify-between gap-3 items-center mb-3"><h3 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-user-check text-emerald-700 mr-2"></i>主管審核工作台</h3><span id="supervisorPermissionsLabel" class="text-xs text-slate-500"></span></div>
-                <p class="text-xs text-slate-600 mb-4">執行長指派後，主管在此直接核准公務車、病假及事假；不得審核自己的申請。特休、補休、婚假、人事異動不在本授權範圍內。</p><div class="text-xs text-blue-800 bg-blue-50 border border-blue-100 rounded p-2 mb-3">提醒：這裡的核准會回寫原有申請紀錄，LINE 僅為另行發送的通知，不等於已送達。</div>
+                <p class="text-xs text-slate-600 mb-4">已受授權的主管，使用目前已登入的本人身分即可核准公務車、病假或事假，不需執行長密碼。不可自核；特休、補休、婚假及人事異動仍由管理後台處理。</p><div class="text-xs text-blue-800 bg-blue-50 border border-blue-100 rounded p-2 mb-3">提醒：這裡的核准會回寫原有申請紀錄，LINE 僅為另行發送的通知，不等於已送達。</div>
                 <div id="supervisorApprovalList" class="overflow-x-auto text-sm"><p class="text-slate-500 text-sm">讀取審核資料中…</p></div>
             </div>
             <div id="birthdayGreeting" role="status" class="hidden rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"></div>
@@ -380,7 +393,8 @@
                             <div class="font-bold mb-1"><i class="fa-solid fa-circle-exclamation mr-1"></i>試算不等於已核定餘額</div>
                             <p id="dashboardLeaveReviewReason"></p>
                             <p class="mt-1 text-amber-900/80">請確認舊紀錄與已核准假單有無重疊；未核定前，試算數字不可視為正式餘額。</p>
-                            <button type="button" id="employeeReconcileButton" onclick="openMyAnnualReconcile()" class="w-full mt-3 min-h-11 px-3 py-2.5 rounded-lg bg-blue-900 text-white hover:bg-blue-800 font-bold text-sm">進入管理核對並核定</button>
+                            <button type="button" id="employeeReconcileButton" onclick="openMyAnnualReconcile()" class="hidden w-full mt-3 min-h-11 px-3 py-2.5 rounded-lg bg-blue-900 text-white hover:bg-blue-800 font-bold text-sm">進入人事管理核對特休</button>
+                            <p id="employeeReconcileNotice" class="hidden text-xs text-slate-600 mt-2">特休資料由管理後台核定；一般同仁與授權主管無須操作管理員驗證。</p>
                         </div>
                         <div class="mt-4 border-t pt-2 w-full"><button onclick="registerWebAuthn()" class="w-full bg-slate-100 text-slate-600 text-xs py-2 rounded hover:bg-slate-200 flex items-center justify-center gap-1"><i class="fa-solid fa-link"></i> 綁定此裝置 (FaceID/指紋)</button></div>
                         <div id="legalInfoCard" class="hidden absolute inset-0 bg-white/95 backdrop-blur z-20 rounded-xl p-4 flex flex-col justify-center text-left border border-blue-200"><h4 class="font-bold text-blue-800 mb-2 border-b pb-1">📜 勞基法第38條</h4><ul class="text-xs space-y-1 text-slate-600 list-disc pl-4"><li>6月-1年: 3日</li><li>1-2年: 7日</li><li>2-3年: 10日</li><li>3-5年: 14日</li><li>5-10年: 15日</li><li>10年以上: +1/年 (上限30)</li></ul><button onclick="toggleLegalInfo()" class="mt-4 w-full bg-slate-100 text-slate-500 text-xs py-1 rounded hover:bg-slate-200">關閉</button></div>
@@ -452,7 +466,11 @@
                     </div>
                     <p id="delegationStatus" class="text-xs text-slate-600 mt-3" role="status">選擇員工後可核定或撤銷主管及各項審核權限。特休一律不授權主管。</p>
                     <div id="delegationRoster" class="mt-4 flex flex-wrap gap-2 text-xs text-slate-600"></div>
-                    <p class="text-xs text-amber-800 border-t mt-4 pt-3">權限設定寫入原有 Firebase 員工資料，並保留異動歷程。本 HTML 的管理密碼與公機綁定不是伺服器端身分驗證；正式權限防護需搭配 Firebase Authentication / Database Rules。</p>
+                    <p class="text-xs text-slate-600 border-t mt-4 pt-3">主管授權可隨時調整或撤銷。變更後，主管工作台依最新設定顯示可核准的項目，每筆核准都會保存承辦人與操作紀錄。</p>
+                    <details class="mt-2 text-xs text-slate-500">
+                        <summary class="cursor-pointer py-2 font-semibold">資訊管理員｜查看資料庫安全設定說明</summary>
+                        <p class="leading-6 p-3 rounded-lg bg-slate-50 border border-slate-200">此頁面的登入與職務設定仍須配合 Firebase Authentication 及 Database Rules 才能形成伺服器強制授權；前端判斷不能替代資料庫安全規則。正式啟用主管寫入權限前，須完成規則驗證。</p>
+                    </details>
                  </div>
                 <div id="annualOverviewPanel" class="lg:col-span-3 glass-panel p-5 md:p-6 border-t-4 border-blue-700 scroll-mt-24">
                     <div class="flex flex-wrap justify-between items-start gap-2 mb-3">
@@ -827,16 +845,35 @@
                  if (!Number.isFinite(totalAtReview)||totalAtReview<0||Math.abs(Number(audit.approvedUsedAtReview)+Number(audit.additionalUsedDays)-totalAtReview)>0.001)
                      return {required:true,valid:false,legacy,reason:'已核定的本期累計已休與補認列日數不符，需重新核對'};
              }
-             const currentEvidence=annualApprovedEvidence(emp.id,period,sourceRequests);
-             if (JSON.stringify(currentEvidence)!==JSON.stringify(audit.approvedEvidence))
-                 return {required:true,valid:false,legacy,reason:'本期核准假單後來新增、更改或作廢，需重新核對'};
-             for (const saved of audit.approvedEvidence) {
+             // Protect the reconciled baseline while allowing ordinary newly-approved future leave.
+             // Do not double-count those new approvals in the original cumulative legacy total.
+             const baseline = audit.approvedEvidence;
+             const currentEvidence = annualApprovedEvidence(emp.id,period,sourceRequests);
+             const oldByKey = new Map(baseline.map(item => [item.key,item]));
+             for (const saved of baseline) {
                  const live = sourceRequests?.[saved.key];
                  if (!live || live.status !== 'approved' || live.type !== '特休' ||
-                    live.date !== saved.date || (live.endDate || live.date) !== saved.endDate || Number(live.days) !== Number(saved.days))
-                     return {required:true, valid:false, legacy, reason:'核定時已存在的假單後來異動／作廢，需重新核對'};
+                     live.date !== saved.date || (live.endDate || live.date) !== saved.endDate ||
+                     Number(live.days) !== Number(saved.days)) {
+                     return {required:true,valid:false,legacy,reason:'已核定的歷史假單被更改或作廢，需要重新核對'};
+                 }
              }
-             return {required:true, valid:true, legacy, audit};
+             const postReview = currentEvidence.filter(row => !oldByKey.has(row.key));
+             const confirmedAt = Number(audit.confirmedAt);
+             const approvedDate = Number.isFinite(confirmedAt) && confirmedAt > 0
+                 ? new Date(confirmedAt).toLocaleDateString('sv-SE',{timeZone:'Asia/Taipei'})
+                 : null;
+             for (const fresh of postReview) {
+                 const live = sourceRequests?.[fresh.key];
+                 // Backdated approvals may have already been included in legacy totals.
+                 if (!approvedDate || !Number.isFinite(Number(live?.approvedAt)) ||
+                     Number(live.approvedAt) < confirmedAt || fresh.date < approvedDate) {
+                     return {required:true,valid:false,legacy,
+                         reason:'核定後新增較早日期／來源不明的已核准假單，可能與舊已休重疊，需再對帳'};
+                 }
+             }
+             return {required:true,valid:true,legacy,audit,postReviewCount:postReview.length,
+                 newlyApprovedDays:Number(postReview.reduce((sum,row)=>sum+Number(row.days),0).toFixed(3))};
          };
          const annualLeaveState = (emp, asOf = todayTaipei(), sourceRequests = requests) => {
              if (!employeeIdentityIsUnique(emp)) return { pending:true, reason:'員工編號缺漏或重複，假勤歸屬待核對', grant:null, period:null, unsettled:[] };
@@ -885,8 +922,11 @@
                  }
              }
              if (unsettled.length) {
-                 state.pending = true;
-                 state.reviewReasons.push(`前期特休 ${new Set(unsettled).size} 期尚待結算／遞延核對`);
+                 // Previous-period payment/settlement is an HR task, not necessarily
+                 // a reason to freeze a separately granted current-year leave quota.
+                 // No unverified carry-forward is silently imported (carryIn stays zero).
+                 state.settlementReviewRequired = true;
+                 state.settlementReviewReason = `前期特休 ${new Set(unsettled).size} 期尚待結算／遞延核對（不自動遞延）`;
              }
              if (policy.seniorityDate.endsWith('-02-29')) {
                  state.pending = true;
@@ -1764,7 +1804,12 @@ const policy=getAnnualPolicy(employeeById(currentUserId));
             }
             const reviewNote = document.getElementById('dashboardLeaveReviewNote');
             reviewNote.classList.toggle('hidden', !leave.pending);
-            document.getElementById('dashboardLeaveReviewReason').textContent = leave.reason || '尚有未核對的假勤資料';
+            document.getElementById('dashboardLeaveReviewReason').textContent = [leave.reason,
+                leave.settlementReviewReason].filter(Boolean).join('；') || '尚有未核對的假勤資料';
+            const reconcileBtn=document.getElementById('employeeReconcileButton');
+            const reconcileHint=document.getElementById('employeeReconcileNotice');
+            reconcileBtn?.classList.toggle('hidden',!window.HGEDeviceControl?.isAdmin?.());
+            reconcileHint?.classList.toggle('hidden',!!window.HGEDeviceControl?.isAdmin?.() || !leave.pending);
             if (typeof window.renderLeaveRequestHint === 'function') window.renderLeaveRequestHint();
             document.getElementById('dashboardJoinDate').innerText = emp.joinDate || "未設定"; document.getElementById('dashboardTenure').innerText = calculateTenure(emp.joinDate);
             
@@ -2106,16 +2151,37 @@ const policy=getAnnualPolicy(employeeById(currentUserId));
                  Swal.fire('已儲存並核對', `${emp.name} 的授權已寫入資料庫；特休核准權不受影響。`, 'success');
              } catch(error) { Swal.fire('權限未儲存',error.message,'error'); }
          };
+         window.openSupervisorApprovals = async () => {
+             try {
+                 const token = window.HGEDeviceControl.captureSession();
+                 const result = await window.HGEDeviceControl.verifySession(token);
+                 const emp = result.employee;
+                 if (!isActiveEmployee(emp) || emp.hrRole !== 'supervisor' ||
+                     !Object.keys(permissionNames).some(key => emp.approvalPermissions?.[key] === true))
+                     throw new Error('目前沒有可使用的主管審核授權，請由執行長在管理後台確認');
+                 window.renderSupervisorQueue();
+                 document.getElementById('supervisorApprovalPanel')?.scrollIntoView({behavior:'smooth',block:'start'});
+             } catch (error) {
+                 Swal.fire('主管審核未開啟',error.message,'warning');
+             }
+         };
          window.renderSupervisorQueue = () => {
              const panel = document.getElementById('supervisorApprovalPanel');
-             const emp=currentSupervisor();
+             const quick = document.getElementById('supervisorQuickEntry');
+             const emp = currentSupervisor();
              if (!panel) return;
-             const canSee = !!currentUserId && isActiveEmployee(emp) && emp.loginDisabled !== true && emp.hrRole==='supervisor';
-             panel.classList.toggle('hidden',!canSee);
-             if (!canSee) return;
-             const allowed = Object.entries(permissionNames).filter(([key])=>emp.approvalPermissions?.[key]===true).map(([,name])=>name);
-             document.getElementById('supervisorPermissionsLabel').textContent = `目前授權：${allowed.join('、') || '暫無核准項目'}`;
-             const rows=Object.entries(requests).filter(([,req])=>req?.status==='pending' && supervisorMayReview(emp,req));
+             const canSee = !!currentUserId && isActiveEmployee(emp) && emp.loginDisabled !== true &&
+                 emp.hrRole === 'supervisor';
+             const allowed = canSee ? Object.entries(permissionNames)
+                 .filter(([key])=>emp.approvalPermissions?.[key] === true).map(([,name])=>name) : [];
+             const rows = canSee ? Object.entries(requests)
+                 .filter(([,req])=>req?.status === 'pending' && supervisorMayReview(emp,req)) : [];
+             panel.classList.toggle('hidden', !canSee || allowed.length===0);
+             quick?.classList.toggle('hidden', !canSee || allowed.length===0);
+             if(!canSee || !allowed.length) return;
+             document.getElementById('supervisorPermissionsLabel').textContent=`目前授權：${allowed.join('、')}`;
+             document.getElementById('supervisorQuickSummary').textContent=`可核准 ${allowed.join('、')}；待審 ${rows.length} 筆`;
+             document.getElementById('supervisorQuickCount').textContent=String(rows.length);
              const list=document.getElementById('supervisorApprovalList');
              if(!rows.length) {list.innerHTML='<p class="bg-slate-50 rounded p-4 text-slate-500">目前沒有您有權處理的待審申請。</p>';return;}
              list.innerHTML=`<table class="w-full min-w-[560px] text-left"><thead class="bg-slate-100 text-xs text-slate-500"><tr><th class="p-3">同仁</th><th class="p-3">申請</th><th class="p-3">日期／說明</th><th class="p-3 text-right">審核</th></tr></thead><tbody>${rows.map(([key,req])=>{
@@ -2177,7 +2243,20 @@ const policy=getAnnualPolicy(employeeById(currentUserId));
                      return {...all,[key]:{...row,status,approvedAt:serverTimestamp(),approvedById:event.actorId,approvedByName:actorName,
                          approvalMode:isCEO?'ceo-admin':'delegated-supervisor',approvalHistory:[...(Array.isArray(row.approvalHistory)?row.approvalHistory:[]),event]}};
                  },{applyLocally:false});
-                 if(!result.committed) throw new Error(rejectReason || '審核結果未確認，請重新讀取');
+                 if(!result.committed) {
+                     if (isCEO && incoming?.type==='特休' && /特休申請|舊已休待核對/.test(rejectReason)) {
+                         const advice=await Swal.fire({title:'此特休需要先核對帳面餘額',
+                             text:`${rejectReason}。可直接開啟 ${incoming.empName} 的假勤中控核對，完成後再按核准。`,
+                             icon:'warning',showCancelButton:true,
+                             confirmButtonText:'前往核對該同仁特休',cancelButtonText:'稍後處理'});
+                         if(advice.isConfirmed) {
+                             window.openHistory(employeeKeyById(incoming.empId));
+                             document.getElementById('legacyReviewPanel')?.scrollIntoView?.({block:'nearest'});
+                         }
+                         return;
+                     }
+                     throw new Error(rejectReason || '審核結果未確認，請重新讀取');
+                 }
                  const row=result.snapshot.val()?.[key];
                  if(!row || row.status!==(action==='approve'?'approved':'rejected')) throw new Error('資料庫尚未回讀確認');
                  let carWarning='';
@@ -2191,7 +2270,12 @@ const policy=getAnnualPolicy(employeeById(currentUserId));
                          catch(error){carWarning='；但用車行事曆寫入未確認，請主管核對：'+error.message;}
                      } else carWarning='；申請日期格式錯誤，無法自動建立用車紀錄';
                  }
+                 // Update UI from the committed transaction snapshot immediately; live listener catches up later.
+                 requests = result.snapshot.val() || {};
+                 const freshApplicant=employeeById(row.empId);
+                 if (freshApplicant && currentUserId && String(row.empId) === String(currentUserId)) renderEmployeeStats(freshApplicant);
                  window.renderApprovalQueue();window.renderSupervisorQueue();
+                 window.renderAnnualOverview();renderAdminTable();
                  if (action==='reject') return Swal.fire('已退回',`${actorName} 已處理。原申請及核准歷程保留。`,'success');
                  const isCar=row.category==='car';
                  const notice=isCar
@@ -2436,7 +2520,7 @@ document.getElementById('annualJoinDate').value = emp.joinDate || '';
                  const confirmed=document.createElement('div');
                  confirmed.className='mt-3 rounded-lg bg-green-50 border border-green-200 p-2 text-green-900';
                  const pathLabel={included:'本期總量包含新假單',separate:'本期另計',historical:'前期或歷史紀錄',manual:'人工實際核定'}[saved.disposition]||saved.disposition;
-                 confirmed.textContent=`已核對：${pathLabel}；本期額外已休 ${saved.additionalUsedDays} 天；當時依據：${saved.evidence}。${state.pending?'仍有其他待核事項：'+state.reason:'本期已無系統待核項目。'}`;
+                 confirmed.textContent=`已核對：${pathLabel}；本期額外已休 ${saved.additionalUsedDays} 天；當時依據：${saved.evidence}。${audit.newlyApprovedDays ? '核定後新增核准假單 '+audit.newlyApprovedDays+' 天，已另外扣除、不重複核定舊帳。' : ''}${state.pending?'仍有其他待核事項：'+state.reason:'本期舊帳已完成核對。'}`;
                  source.appendChild(confirmed);
              } else if (!audit.valid && audit.reason) {
                  const warning=document.createElement('div');
@@ -2615,12 +2699,13 @@ document.getElementById('annualJoinDate').value = emp.joinDate || '';
              } catch (error) { await Swal.fire('尚未核定',`${error.message}。請勿依舊試算數字核假。`,'error'); }
              finally {window.__hgeLegacyReviewBusy=false;if(btn) btn.disabled=false;}
          };
-         window.openMyAnnualReconcile=async()=>{
-             const id=currentUserId;
-             if (!id) return;
-             if (!window.HGEDeviceControl.isAdmin()) await window.checkAdminLogin();
-             if (!window.HGEDeviceControl.isAdmin()) return;
-             window.openHistory(employeeKeyById(id));
+         window.openMyAnnualReconcile = async () => {
+             if(!currentUserId) return;
+             if(!window.HGEDeviceControl.isAdmin()) {
+                 return Swal.fire('此項由人事核定',
+                    '特休對帳須由管理後台辦理。受授權主管核准公務車、病假、事假，請使用上方「主管授權審核」入口，無須管理員密碼。','info');
+             }
+             window.openHistory(employeeKeyById(currentUserId));
              document.getElementById('legacyReviewPanel')?.scrollIntoView?.({block:'nearest',behavior:'instant'});
          };
          window.toggleAnnualWorkPattern = () => {
