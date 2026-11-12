@@ -4127,7 +4127,7 @@ window.HGEDeviceControl = (() => {
         if(first&&!admin&&state.state==='bound')window.loadEmployeeDashboard(state.ownerKey);
     }
     async function applyCommand(input,needsAdmin=false) {
-        if(needsAdmin&&!admin)throw new Error('請先從管理後台輸入原管理密碼');
+        if(needsAdmin&&!admin)throw new Error('請用管理員帳號登入後，再從管理後台操作');
         if(actionBusy)throw new Error('上一個裝置操作尚未完成，請稍候');
         const command={...input,admin:needsAdmin,operationId:newOperation(),at:Date.now()};
         actionBusy=true;
