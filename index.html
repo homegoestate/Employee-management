@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
         
@@ -165,7 +166,7 @@
             </div>
             <div class="flex bg-blue-900/50 rounded-full p-1">
                 <button onclick="switchView('employee')" id="btnEmp" class="px-4 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all bg-white text-blue-900 shadow-sm">同仁專區</button>
-                <button onclick="checkAdminLogin()" id="btnAdm" class="px-4 py-1.5 rounded-full text-xs md:text-sm font-medium text-blue-200 hover:text-white transition-all">管理後台</button>
+                <button onclick="checkAdminLogin()" id="btnAdm" class="px-4 py-1.5 rounded-full text-xs md:text-sm font-medium text-blue-200 hover:text-white transition-all">管理後台</button><button onclick="hgeSignOut()" id="btnHgeSignOut" class="px-4 py-1.5 rounded-full text-xs md:text-sm font-medium text-blue-200 hover:text-white transition-all">登出</button>
             </div>
         </div>
     </header>
@@ -723,7 +724,78 @@
             serverTimestamp = () => mockApi.serverTimestamp();
             window.HGE_DATA_MODE = 'mock';
         }
-        const ADMIN_PASSWORD = "8888";
+        // ---- Firebase Auth gate (phase 1, 2026-11-12) ----
+        // No database read happens until the signed-in account is confirmed in access/<uid>.
+        // Passwords live only in Firebase Authentication; admin rights come from access/<uid>/admin.
+        const hgAuth = usingMockDb ? null : firebase.auth();
+        if (hgAuth && ['localhost','127.0.0.1'].includes(location.hostname) && new URLSearchParams(location.search).get('emulator') === '1') {
+            hgAuth.useEmulator('http://127.0.0.1:9099');
+            db.useEmulator('127.0.0.1', 9000);
+            window.HGE_EMULATOR_REST = { base: 'http://127.0.0.1:9000', ns: 'homego-system-default-rtdb' };
+        }
+        window.HGEAccess = usingMockDb ? { active: true, admin: true, mock: true } : null;
+        window.hgeIdToken = async () => (hgAuth && hgAuth.currentUser ? hgAuth.currentUser.getIdToken() : null);
+        const hgeLoginKey = v => String(v || '').trim().toLowerCase().replace(/\s+/g, ' ').replace(/[.#$\[\]\/]/g, '_');
+        async function hgeLoadAccess(user) {
+            const snap = await db.ref('access/' + user.uid).get();
+            const access = snap.exists() ? snap.val() : null;
+            if (!access || access.active !== true) throw new Error('此帳號目前沒有員工系統使用權限，請聯絡楊翊晟。');
+            return access;
+        }
+        function hgeLoginErrorText(error) {
+            const code = String(error && error.code || '');
+            if (code.includes('invalid') || code.includes('wrong-password') || code.includes('user-not-found')) return '帳號或密碼錯誤。';
+            if (code.includes('too-many')) return '嘗試次數過多，請稍後再試。';
+            if (code.includes('disabled')) return '此帳號已停用，請聯絡楊翊晟。';
+            if (code.includes('network')) return '目前無法連線，請確認網路後再試。';
+            return (error && error.message) || '登入失敗，請稍後再試。';
+        }
+        async function hgePromptLogin(notice) {
+            while (true) {
+                const result = await Swal.fire({
+                    title: '員工系統登入',
+                    html: '<p style="font-size:13px;color:#475569;margin:0 0 6px">' + (notice || '請用總管理的帳號與密碼登入。這台裝置之後會保持登入。') + '</p>' +
+                        '<input id="hgeLoginUser" class="swal2-input" placeholder="帳號（例如英文別名）" autocomplete="username">' +
+                        '<input id="hgeLoginPass" type="password" class="swal2-input" placeholder="密碼" autocomplete="current-password">',
+                    confirmButtonText: '登入', allowOutsideClick: false, allowEscapeKey: false, focusConfirm: false, showLoaderOnConfirm: true,
+                    preConfirm: async () => {
+                        const name = document.getElementById('hgeLoginUser').value.trim();
+                        const pass = document.getElementById('hgeLoginPass').value;
+                        if (!name || !pass) { Swal.showValidationMessage('請輸入帳號與密碼'); return false; }
+                        try {
+                            let email = null;
+                            for (const key of [...new Set([name, name.replace(/\s+/g, '')].map(hgeLoginKey))]) {
+                                const snap = await db.ref('loginIndex/' + key).get();
+                                if (snap.exists() && typeof snap.val() === 'string') { email = snap.val(); break; }
+                            }
+                            if (!email) throw new Error('帳號或密碼錯誤。');
+                            await hgAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+                            const cred = await hgAuth.signInWithEmailAndPassword(email, pass);
+                            try { return await hgeLoadAccess(cred.user); }
+                            catch (error) { await hgAuth.signOut().catch(() => {}); throw error; }
+                        } catch (error) {
+                            Swal.showValidationMessage(hgeLoginErrorText(error));
+                            return false;
+                        }
+                    }
+                });
+                if (result.isConfirmed && result.value) return result.value;
+            }
+        }
+        window.HGEAuthGate = usingMockDb ? Promise.resolve(window.HGEAccess) : (async () => {
+            const existing = await new Promise(resolve => { const stop = hgAuth.onAuthStateChanged(user => { stop(); resolve(user); }); });
+            if (existing) {
+                try { window.HGEAccess = await hgeLoadAccess(existing); return window.HGEAccess; }
+                catch (error) { await hgAuth.signOut().catch(() => {}); window.HGEAccess = await hgePromptLogin(error.message); return window.HGEAccess; }
+            }
+            window.HGEAccess = await hgePromptLogin();
+            return window.HGEAccess;
+        })();
+        window.hgeSignOut = async () => {
+            if (!hgAuth) return;
+            const answer = await Swal.fire({ title: '登出員工系統？', text: '登出後這台裝置需要重新輸入帳號密碼。', showCancelButton: true, confirmButtonText: '登出', cancelButtonText: '取消' });
+            if (answer.isConfirmed) { await hgAuth.signOut().catch(() => {}); location.reload(); }
+        };
 
         let employees = {};
         let requests = {};
@@ -1081,12 +1153,18 @@ window.HGEStability = (() => {
             try {
                 const record = await databaseWait(async () => {
                     if (options.serverRead) return options.serverRead(key, { signal: controller.signal });
-                    const base = String(firebaseConfig.databaseURL || '').replace(/\/+$/, '');
-                    if (!base.startsWith('https://')) throw new Error('資料庫網址未設定，無法向伺服器核對');
+                    const emu = window.HGE_EMULATOR_REST;
+                    const base = emu ? emu.base : String(firebaseConfig.databaseURL || '').replace(/\/+$/, '');
+                    if (!emu && !base.startsWith('https://')) throw new Error('資料庫網址未設定，無法向伺服器核對');
                     // Firebase SDK get() can fall back to cached data offline.
                     // A direct uncached read must succeed before claiming success.
                     // Use only the existing database URL/access; no new credentials.
-                    const response = await fetch(`${base}/attendance/${encodeURIComponent(key)}.json`, {
+                    const idToken = window.hgeIdToken ? await window.hgeIdToken() : null;
+                    const params = [];
+                    if (emu) params.push(`ns=${encodeURIComponent(emu.ns)}`);
+                    if (idToken) params.push(`auth=${encodeURIComponent(idToken)}`);
+                    const authQuery = params.length ? `?${params.join('&')}` : '';
+                    const response = await fetch(`${base}/attendance/${encodeURIComponent(key)}.json${authQuery}`, {
                         method: 'GET', cache: 'no-store', signal: controller.signal
                     });
                     if (!response.ok) throw new Error(`資料庫伺服器核對失敗（HTTP ${response.status}）`);
@@ -1390,8 +1468,9 @@ window.HGEStability = (() => {
             }
         };
         window.checkAdminLogin = async () => {
-            const { value: pass } = await Swal.fire({ title: '管理員驗證', input: 'password', showCancelButton: true });
-            if (pass === ADMIN_PASSWORD) { window.HGEDeviceControl.authorizeAdmin(); window.switchView('admin'); } else if(pass) Swal.fire('錯誤', '密碼不正確', 'error');
+            const access = await window.HGEAuthGate;
+            if (access && access.admin === true) { window.HGEDeviceControl.authorizeAdmin(); window.switchView('admin'); }
+            else Swal.fire('沒有權限', '只有管理員帳號可以進入管理後台。', 'error');
         };
         window.switchAppTab = (tab) => {
             ['leave','car','log'].forEach(t => {
@@ -4102,7 +4181,7 @@ window.HGEDeviceControl = (() => {
         };
         const originalSwitch=window.switchView;
         window.switchView=view=>{
-            if(view==='admin'&&!admin){message('請先由管理後台輸入原管理密碼。');return;}
+            if(view==='admin'&&!admin){message('請用管理員帳號登入後再進入管理後台。');return;}
             if(view==='employee')admin=false;
             originalSwitch(view);
             if(view==='employee'){actor=null;const state=snapshot();if(state.state==='bound')window.loadEmployeeDashboard(state.ownerKey);else render();}
@@ -4250,14 +4329,17 @@ window.HGEDeviceControl = (() => {
             return bootstrapPromise;
         };
 
-        bootstrapRootData('initial').catch(() => {});
-        onValue(ref(db), (snapshot) => {
-            applyRootData(snapshot.val() || {}, window.HGE_DATA_MODE === 'mock' ? 'mock' : 'stream');
-        }, (error) => {
-            const status = document.getElementById('loginStatusMsg');
-            if (status) { status.classList.remove('hidden'); status.textContent = `即時同步失敗：${error.message}。系統將嘗試改用備援讀取模式。`; }
-            setSystemBadges({ modeText: '即時同步中斷', modeClass: 'status-pill-warn', dataText: '改用備援讀取模式', dataClass: 'status-pill-warn' });
-            if (window.HGE_DATA_MODE !== 'mock') bootstrapRootData('retry').catch(() => {});
+        // Start reading data only after the account is signed in and confirmed.
+        window.HGEAuthGate.then(() => {
+            bootstrapRootData('initial').catch(() => {});
+            onValue(ref(db), (snapshot) => {
+                applyRootData(snapshot.val() || {}, window.HGE_DATA_MODE === 'mock' ? 'mock' : 'stream');
+            }, (error) => {
+                const status = document.getElementById('loginStatusMsg');
+                if (status) { status.classList.remove('hidden'); status.textContent = `即時同步失敗：${error.message}。系統將嘗試改用備援讀取模式。`; }
+                setSystemBadges({ modeText: '即時同步中斷', modeClass: 'status-pill-warn', dataText: '改用備援讀取模式', dataClass: 'status-pill-warn' });
+                if (window.HGE_DATA_MODE !== 'mock') bootstrapRootData('retry').catch(() => {});
+            });
         });
     </script>
 </body>
