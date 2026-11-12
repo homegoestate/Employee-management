@@ -253,7 +253,7 @@
         <section id="loginSection" class="w-full glass-panel p-10 text-center max-w-xl mx-auto mt-6 fade-in-up">
             <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 text-2xl"><i class="fa-solid fa-shield-halved"></i></div>
             <h2 class="text-2xl font-bold text-slate-800 mb-2">身分驗證系統</h2>
-            <p class="text-slate-500 mb-6 text-sm leading-7">請先選擇本人完成裝置綁定。若是公用手機，由管理後台指派或移交即可，不必手動刪除舊裝置。</p>
+            <p class="text-slate-500 mb-6 text-sm leading-7">登入後會自動帶入本人資料。若沒有自動進入，請按下方「進入系統」。</p>
             <div class="space-y-4">
                 <div id="userSelectContainer">
                     <select id="empSelect" onchange="tryBindAndLogin()" class="w-full p-3 pl-4 text-lg input-modern cursor-pointer text-center font-bold text-slate-700 disabled:opacity-50" disabled><option value="">-- 讀取資料中 --</option></select>
@@ -261,7 +261,7 @@
                 </div>
                 <p id="deviceLoginSummary" class="mb-3 text-xs text-slate-500">正在核對公機使用者…</p>
                 <div id="deviceLockedMsg" class="hidden p-4 bg-slate-50 border border-slate-200 rounded-lg">
-                    <div class="text-center"><i class="fa-solid fa-lock text-2xl text-blue-600 mb-2"></i><div class="text-sm font-bold text-slate-700">已記住這台公機</div><div class="text-xs text-slate-500 mt-1">專屬使用者：<span id="lockedUserName" class="font-bold text-blue-800 text-lg block mt-1">--</span></div><button onclick="loadEmployeeDashboard()" class="mt-3 w-full bg-blue-600 text-white text-xs py-2 rounded hover:bg-blue-700">進入系統</button></div>
+                    <div class="text-center"><i class="fa-solid fa-lock text-2xl text-blue-600 mb-2"></i><div class="text-sm font-bold text-slate-700">已登入</div><div class="text-xs text-slate-500 mt-1">使用者：<span id="lockedUserName" class="font-bold text-blue-800 text-lg block mt-1">--</span></div><button onclick="loadEmployeeDashboard()" class="mt-3 w-full bg-blue-600 text-white text-xs py-2 rounded hover:bg-blue-700">進入系統</button></div>
                 </div>
                 <div id="loginDataNotice" role="status" aria-live="polite" class="hidden rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"><p id="loginDataNoticeText"></p><button type="button" onclick="window.location.reload()" class="mt-2 rounded bg-blue-700 px-4 py-2 font-bold text-white">重新讀取</button></div>
                 <div id="loginStatusMsg" class="text-sm text-blue-600 font-bold hidden mt-2"><i class="fa-solid fa-spinner fa-spin"></i> 驗證中...</div>
@@ -1400,14 +1400,18 @@ window.HGEStability = (() => {
         window.loadEmployeeDashboard = fid => {
             try {
                 if (!initDeviceId().persistent) throw storageError();
-                let targetId = fid;
-                const owners = Object.entries(employees).filter(([, emp]) => (emp.devices || []).includes(myDeviceId));
-                if (owners.length > 1) throw new Error('此裝置同時綁定多位同仁，請由管理員核對裝置歸屬');
-                if (!targetId) targetId = owners.length === 1 ? owners[0][0] : document.getElementById('empSelect').value;
+                // Phase 2: the signed-in account is the identity; only that person's dashboard can open.
+                const accountKey = window.HGEAccess && window.HGEAccess.empKey;
+                let targetId = accountKey || fid;
+                if (!accountKey) {
+                    const owners = Object.entries(employees).filter(([, emp]) => (emp.devices || []).includes(myDeviceId));
+                    if (owners.length > 1) throw new Error('此裝置同時綁定多位同仁，請由管理員核對裝置歸屬');
+                    if (!targetId) targetId = owners.length === 1 ? owners[0][0] : document.getElementById('empSelect').value;
+                }
                 const emp = targetId && employeeById(targetId);
                 if (!isActiveEmployee(emp)) throw new Error('員工資料尚未完成讀取或已封存，請重新整理或聯絡管理員');
                 assertUniqueEmployeeId(emp);
-                if (!(emp.devices || []).includes(myDeviceId)) throw new Error('本裝置尚未完成本人綁定，請先選擇姓名完成綁定');
+                if (!accountKey && !(emp.devices || []).includes(myDeviceId)) throw new Error('本裝置尚未完成本人綁定，請先選擇姓名完成綁定');
                 currentUserId = emp.id;
                 document.getElementById('loginSection').classList.add('hidden-section');
                 document.getElementById('employeeView').classList.remove('hidden-section');
@@ -1513,6 +1517,14 @@ window.HGEStability = (() => {
             const container = document.getElementById('userSelectContainer');
             const lockedMsg = document.getElementById('deviceLockedMsg');
             const lockedName = document.getElementById('lockedUserName');
+            // Phase 2: identity comes from the signed-in account, so there is no name picker.
+            if (window.HGEAccess && window.HGEAccess.empKey) {
+                container?.classList.add('hidden');
+                const own = employees[window.HGEAccess.empKey];
+                if (lockedMsg) lockedMsg.classList.remove('hidden');
+                if (lockedName) lockedName.textContent = own ? own.name : '';
+                return;
+            }
             const selectedKey = select.value;
             select.innerHTML = '';
             const placeholder = document.createElement('option');
@@ -4050,7 +4062,17 @@ window.HGEDeviceControl = (() => {
     const wait = (fn,label) => window.HGEStability.withDeadline(fn, options.deadlineMs || 15000,label);
     const message = text => { const box=document.getElementById('loginStatusMsg'); box.textContent=text;box.classList.remove('hidden'); };
     const newOperation = () => 'op_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,12);
-    const snapshot = () => engine().resolve(employees,myDeviceId);
+    // Phase 2 (2026-11-12): the signed-in account decides who the user is.
+    // access/<uid>.empKey points at the user's own employees/<key>; no device binding needed.
+    const accountKey = () => (window.HGEAccess && window.HGEAccess.empKey) || null;
+    const accountState = key => {
+        const emp = employees[key];
+        if (!emp) return { state: 'invalid' };
+        if (emp.employmentStatus === 'archived') return { state: 'archived', ownerKey: key };
+        if (emp.loginDisabled === true) return { state: 'blocked', ownerKey: key };
+        return { state: 'bound', ownerKey: key, employeeId: emp.id, revision: Number(emp.deviceRevision || 0) };
+    };
+    const snapshot = () => accountKey() ? accountState(accountKey()) : engine().resolve(employees,myDeviceId);
     const keyOf = id => employeeKeyById(id);
     const signature = state => `${state.state}|${state.ownerKey||''}|${state.revision||0}|${state.employeeId??''}`;
     const stateMessage = state => ({blocked:'這台公機或員工已停止登入，請由管理員恢復或轉交。',archived:'原使用者已離職封存，請由管理員把公機轉交給在職同仁。',conflict:'公機歸屬或員工編號有重複，請由管理員核對；不會自行判定是哪一位。',invalid:'公機識別或員工資料尚未就緒，請重新整理後再試。'})[state.state] || '本公機尚未配發，請選擇本人或由管理員處理。';
@@ -4058,6 +4080,15 @@ window.HGEDeviceControl = (() => {
         if(options.readEmployees) return wait(options.readEmployees,'核對公機使用者');
         if (window.HGE_DATA_MODE === 'mock') {
             return wait(async()=>{ const snap = await get(ref(db,'employees')); const value = snap.val(); if(!value||typeof value!=='object'||Array.isArray(value)) throw new Error('員工資料未完成讀取'); return value; },'核對公機使用者');
+        }
+        // Colleagues may only read their own employee record; keep everyone else from the roster.
+        if (accountKey() && !admin && window.HGEAccess?.admin !== true) {
+            return wait(async () => {
+                const key = accountKey();
+                const own = (await get(ref(db, 'employees/' + key))).val();
+                if (!own || typeof own !== 'object') throw new Error('員工資料尚未由 Firebase 確認，請重新整理或通知管理員');
+                return { ...employees, [key]: own };
+            },'核對登入同仁');
         }
         // Use the Firebase SDK, not unauthenticated REST: SDK reads can carry the
         // currently authenticated Firebase session when Rules are enabled.
@@ -4089,7 +4120,7 @@ window.HGEDeviceControl = (() => {
         assertSession(token);
         const latest=await readEmployees();
         assertSession(token);
-        const resolved=engine().resolve(latest,myDeviceId);
+        const resolved=accountKey() ? (() => { const saved=employees; employees=latest; try { return accountState(accountKey()); } finally { employees=saved; } })() : engine().resolve(latest,myDeviceId);
         if(signature(resolved)!==token.signature) {
             employees=latest;clearSession('此公機或員工已停用／改配，請由管理員核對後重新進入。');render();
             throw new Error('伺服器已變更公機使用者或登入狀態，尚未送出這次操作');
@@ -4111,7 +4142,8 @@ window.HGEDeviceControl = (() => {
             message(stateMessage(state));
         }
         const stamp=document.getElementById('deviceLoginSummary');
-        if(stamp)stamp.textContent=state.state==='bound' ? `已記住：${employees[state.ownerKey]?.name||'同仁'}｜${window.HGEStability.initDeviceId().storageKind==='session'?'目前只能在這個分頁記住；請使用一般瀏覽模式':'下次用同一瀏覽器開啟會直接進入'}` : '首次選擇本人即可記住；公機移交請從管理後台配發。';
+        if(stamp&&accountKey())stamp.textContent=state.state==='bound' ? `目前登入：${employees[state.ownerKey]?.name||'同仁'}` : stateMessage(state);
+        else if(stamp)stamp.textContent=state.state==='bound' ?`已記住：${employees[state.ownerKey]?.name||'同仁'}｜${window.HGEStability.initDeviceId().storageKind==='session'?'目前只能在這個分頁記住；請使用一般瀏覽模式':'下次用同一瀏覽器開啟會直接進入'}` : '首次選擇本人即可記住；公機移交請從管理後台配發。';
         const panelState=JSON.stringify(employees);
         if(admin&&panelState!==lastPanelState) {
             lastPanelState=panelState;
@@ -4149,6 +4181,7 @@ window.HGEDeviceControl = (() => {
     async function bindSelected() {
         if(loginBusy)return;
         const select=document.getElementById('empSelect'),key=select.value;
+        if(accountKey()){window.loadEmployeeDashboard(accountKey());return;}
         if(!key)return;
         loginBusy=true;select.disabled=true;
         try {
@@ -4329,11 +4362,109 @@ window.HGEDeviceControl = (() => {
             return bootstrapPromise;
         };
 
+        // ---- Phase 2 privacy (2026-11-12) ----
+        // roster/<empKey>     : public fields of every colleague (name, id, birthday MM-DD, role flags)
+        // leaveBoard/<reqKey> : approved leave/outings without reasons, for the "today" board
+        // Both are rebuilt from the full data by the administrator (and the board also by supervisors).
+        const ROSTER_FIELDS = ['id', 'name', 'hrRole', 'approvalPermissions', 'employmentStatus', 'loginDisabled'];
+        const BOARD_FIELDS = ['empId', 'empName', 'type', 'category', 'date', 'endDate', 'time', 'days', 'hours', 'status', 'timestamp'];
+        const stableJson = value => JSON.stringify(value, (k, v) => (v && typeof v === 'object' && !Array.isArray(v)) ? Object.keys(v).sort().reduce((o, key) => { o[key] = v[key]; return o; }, {}) : v);
+        const pick = (obj, fields) => { const out = {}; fields.forEach(f => { if (obj && obj[f] !== undefined && obj[f] !== null) out[f] = obj[f]; }); return out; };
+        const buildRoster = emps => {
+            const out = {};
+            Object.entries(emps || {}).forEach(([key, emp]) => {
+                if (!emp || typeof emp !== 'object') return;
+                const row = pick(emp, ROSTER_FIELDS);
+                if (typeof emp.birthday === 'string' && emp.birthday.length >= 5) row.birthday = '0000' + emp.birthday.slice(-6);
+                out[key] = row;
+            });
+            return out;
+        };
+        const buildBoard = reqs => {
+            const cutoff = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+            const out = {};
+            Object.entries(reqs || {}).forEach(([key, req]) => {
+                if (!req || req.status !== 'approved') return;
+                const last = String(req.endDate || req.date || '');
+                if (last && last < cutoff) return;
+                out[key] = pick(req, BOARD_FIELDS);
+            });
+            return out;
+        };
+        let publicSyncTimer = null;
+        const lastWritten = { roster: '', board: '' };
+        const schedulePublicSync = (data, scope) => {
+            if (window.HGE_DATA_MODE === 'mock') return;
+            clearTimeout(publicSyncTimer);
+            publicSyncTimer = setTimeout(async () => {
+                try {
+                    const updates = {};
+                    if (scope === 'admin') {
+                        const roster = buildRoster(data.employees);
+                        if (stableJson(roster) !== stableJson(data.roster || {})) updates.roster = roster;
+                    }
+                    const board = buildBoard(data.requests);
+                    const savedBoard = { ...(data.leaveBoard || {}) }; delete savedBoard._empty;
+                    if (stableJson(board) !== stableJson(savedBoard)) updates.leaveBoard = board;
+                    // Never rewrite the same content twice in one session (prevents write loops).
+                    if (updates.roster && stableJson(updates.roster) !== lastWritten.roster) { lastWritten.roster = stableJson(updates.roster); await set(ref(db, 'roster'), updates.roster); }
+                    if (updates.leaveBoard && stableJson(updates.leaveBoard) !== lastWritten.board) { lastWritten.board = stableJson(updates.leaveBoard); await set(ref(db, 'leaveBoard'), Object.keys(updates.leaveBoard).length ? updates.leaveBoard : { _empty: true }); }
+                } catch (error) { console.warn('public roster/board sync skipped', error); }
+            }, 3000);
+        };
+
+        // Colleagues: listen only to what they may see, then reuse the original renderer.
+        const startScopedSync = access => {
+            const empKey = access.empKey, empId = access.empId;
+            const state = { own: null, roster: {}, myAtt: {}, myReq: {}, board: {}, allReq: null, allEmp: null, bulletin: null, settings: {}, rosterRaw: {}, boardRaw: {} };
+            const pending = new Set(['own', 'roster', 'att', 'req', 'board', 'bulletin', 'settings']);
+            let supervisorListening = false;
+            const fail = error => {
+                const status = document.getElementById('loginStatusMsg');
+                if (status) { status.classList.remove('hidden'); status.textContent = `資料讀取失敗：${error.message}。請重新整理；若急需打卡，請先通知主管保留實際時間。`; }
+                setSystemBadges({ modeText: '讀取失敗', modeClass: 'status-pill-warn', dataText: '無法讀取資料，請重新整理', dataClass: 'status-pill-warn' });
+            };
+            const compose = () => {
+                if (pending.size) return;
+                const employeesOut = { ...(state.allEmp || state.roster) };
+                if (state.own) employeesOut[empKey] = state.own;
+                let requestsOut;
+                if (state.allReq) requestsOut = state.allReq;
+                else {
+                    requestsOut = {};
+                    Object.entries(state.board).forEach(([k, v]) => { if (k !== '_empty') requestsOut[k] = { ...v, status: 'approved' }; });
+                    Object.assign(requestsOut, state.myReq);
+                }
+                applyRootData({ employees: employeesOut, requests: requestsOut, attendance: state.myAtt, bulletin: state.bulletin || undefined, settings: state.settings || {} }, 'stream');
+                if (state.allReq) schedulePublicSync({ requests: state.allReq, leaveBoard: state.boardRaw }, 'supervisor');
+            };
+            const listen = (name, query, apply) => query.on('value', snap => { apply(snap.val()); pending.delete(name); compose(); }, fail);
+            listen('own', db.ref('employees/' + empKey), v => {
+                state.own = v;
+                if (!supervisorListening && v && v.hrRole === 'supervisor' && v.loginDisabled !== true) {
+                    supervisorListening = true;
+                    pending.add('allReq'); pending.add('allEmp');
+                    listen('allReq', db.ref('requests'), x => { state.allReq = x || {}; });
+                    listen('allEmp', db.ref('employees'), x => { state.allEmp = x || {}; });
+                }
+            });
+            listen('roster', db.ref('roster'), v => { state.rosterRaw = v || {}; state.roster = v || {}; });
+            listen('att', db.ref('attendance').orderByChild('empId').equalTo(empId), v => { state.myAtt = v || {}; });
+            listen('req', db.ref('requests').orderByChild('empId').equalTo(empId), v => { state.myReq = v || {}; });
+            listen('board', db.ref('leaveBoard'), v => { state.boardRaw = v || {}; state.board = v || {}; });
+            listen('bulletin', db.ref('bulletin'), v => { state.bulletin = v; });
+            listen('settings', db.ref('settings'), v => { state.settings = v || {}; });
+        };
+
         // Start reading data only after the account is signed in and confirmed.
-        window.HGEAuthGate.then(() => {
+        window.HGEAuthGate.then(access => {
+            const fullAccess = window.HGE_DATA_MODE === 'mock' || !access || access.admin === true || !access.empKey;
+            if (!fullAccess) { startScopedSync(access); return; }
             bootstrapRootData('initial').catch(() => {});
             onValue(ref(db), (snapshot) => {
-                applyRootData(snapshot.val() || {}, window.HGE_DATA_MODE === 'mock' ? 'mock' : 'stream');
+                const data = snapshot.val() || {};
+                applyRootData(data, window.HGE_DATA_MODE === 'mock' ? 'mock' : 'stream');
+                if (access && access.admin === true) schedulePublicSync(data, 'admin');
             }, (error) => {
                 const status = document.getElementById('loginStatusMsg');
                 if (status) { status.classList.remove('hidden'); status.textContent = `即時同步失敗：${error.message}。系統將嘗試改用備援讀取模式。`; }
