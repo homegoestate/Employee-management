@@ -727,12 +727,26 @@
         // ---- Firebase Auth gate (phase 1, 2026-11-12) ----
         // No database read happens until the signed-in account is confirmed in access/<uid>.
         // Passwords live only in Firebase Authentication; admin rights come from access/<uid>/admin.
-        const hgAuth = usingMockDb ? null : firebase.auth();
-        if (hgAuth && ['localhost','127.0.0.1'].includes(location.hostname) && new URLSearchParams(location.search).get('emulator') === '1') {
-            hgAuth.useEmulator('http://127.0.0.1:9099');
+        // Single sign-on (2026-11-12): 總管理 signs this same account into the shared app
+        // "hg-shared" on the same website, so opening 員工系統 from 總管理 needs no second login.
+        // The older default-app sign-in is still honoured so nobody is logged out by this change.
+        const HG_SHARED_APP = 'hg-shared';
+        const defaultAuth = usingMockDb ? null : firebase.auth();
+        const sharedApp = usingMockDb ? null : (firebase.apps.find(a => a.name === HG_SHARED_APP) || firebase.initializeApp(firebaseConfig, HG_SHARED_APP));
+        const sharedAuth = sharedApp ? sharedApp.auth() : null;
+        const sharedDb = sharedApp ? sharedApp.database() : null;
+        let hgAuth = sharedAuth;
+        if (sharedAuth && ['localhost','127.0.0.1'].includes(location.hostname) && new URLSearchParams(location.search).get('emulator') === '1') {
+            defaultAuth.useEmulator('http://127.0.0.1:9099');
+            sharedAuth.useEmulator('http://127.0.0.1:9099');
             db.useEmulator('127.0.0.1', 9000);
+            sharedDb.useEmulator('127.0.0.1', 9000);
             window.HGE_EMULATOR_REST = { base: 'http://127.0.0.1:9000', ns: 'homego-system-default-rtdb' };
         }
+        // Point every later database call at the app whose sign-in is in use.
+        const defaultDb = db;
+        const hgeUseAuth = auth => { hgAuth = auth; db = auth === sharedAuth ? sharedDb : defaultDb; };
+        if (!usingMockDb) hgeUseAuth(sharedAuth);
         window.HGEAccess = usingMockDb ? { active: true, admin: true, mock: true } : null;
         window.hgeIdToken = async () => (hgAuth && hgAuth.currentUser ? hgAuth.currentUser.getIdToken() : null);
         const hgeLoginKey = v => String(v || '').trim().toLowerCase().replace(/\s+/g, ' ').replace(/[.#$\[\]\/]/g, '_');
@@ -783,10 +797,19 @@
             }
         }
         window.HGEAuthGate = usingMockDb ? Promise.resolve(window.HGEAccess) : (async () => {
-            const existing = await new Promise(resolve => { const stop = hgAuth.onAuthStateChanged(user => { stop(); resolve(user); }); });
+            const firstUser = auth => new Promise(resolve => { const stop = auth.onAuthStateChanged(user => { stop(); resolve(user); }); });
+            const [sharedUser, defaultUser] = await Promise.all([firstUser(sharedAuth), firstUser(defaultAuth)]);
+            // Prefer the sign-in shared by 總管理; fall back to an older 員工系統-only sign-in.
+            if (sharedUser) hgeUseAuth(sharedAuth);
+            else if (defaultUser) hgeUseAuth(defaultAuth);
+            const existing = sharedUser || defaultUser;
             if (existing) {
                 try { window.HGEAccess = await hgeLoadAccess(existing); return window.HGEAccess; }
-                catch (error) { await hgAuth.signOut().catch(() => {}); window.HGEAccess = await hgePromptLogin(error.message); return window.HGEAccess; }
+                catch (error) {
+                    await sharedAuth.signOut().catch(() => {}); await defaultAuth.signOut().catch(() => {});
+                    hgeUseAuth(sharedAuth);
+                    window.HGEAccess = await hgePromptLogin(error.message); return window.HGEAccess;
+                }
             }
             window.HGEAccess = await hgePromptLogin();
             return window.HGEAccess;
@@ -794,7 +817,7 @@
         window.hgeSignOut = async () => {
             if (!hgAuth) return;
             const answer = await Swal.fire({ title: '登出員工系統？', text: '登出後這台裝置需要重新輸入帳號密碼。', showCancelButton: true, confirmButtonText: '登出', cancelButtonText: '取消' });
-            if (answer.isConfirmed) { await hgAuth.signOut().catch(() => {}); location.reload(); }
+            if (answer.isConfirmed) { await sharedAuth.signOut().catch(() => {}); await defaultAuth.signOut().catch(() => {}); location.reload(); }
         };
 
         let employees = {};
